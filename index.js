@@ -11,7 +11,7 @@ const quality = parseInt(process.argv[4], 10) || 85; // Default quality is 85
 const outputDir = path.join(inputDir, 'compressed');
 
 if (!inputDir) {
-  console.error('Por favor, proporciona un directorio con imágenes.');
+  console.error('Please provide a directory with images.');
   process.exit(1);
 }
 
@@ -29,11 +29,11 @@ fs.readdirSync(inputDir).forEach(file => {
     })
     .toFile(`${outputFile}.${format === 'none' ? path.extname(file).slice(1) : format}`)
     .then(() => {
-      console.log(`Procesado: ${file}`);
+      console.log(`Processed: ${file}`);
     })
     .catch(err => {
-      console.error(`Error procesando ${file}:`, err);
+      console.error(`Error processing ${file}:`, err);
     });
 });
 
-console.log(`Proceso completado. Las imágenes se encuentran en: ${outputDir}`);
+console.log(`Process completed. The images are located in: ${outputDir}`);
