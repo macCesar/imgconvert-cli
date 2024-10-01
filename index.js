@@ -8,6 +8,7 @@ const fs = require('fs');
 const inputDir = process.argv[2];
 const format = process.argv[3] || 'none';
 const quality = parseInt(process.argv[4], 10) || 85; // Default quality is 85
+const backgroundColor = process.argv[5] || '#ffffff'; // Default background color is white
 const outputDir = path.join(inputDir, 'compressed');
 
 if (!inputDir) {
@@ -30,10 +31,19 @@ fs.readdirSync(inputDir).forEach(file => {
   if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
     const outputFile = path.join(outputDir, path.parse(file).name);
 
-    sharp(inputFile)
-      .toFormat(format === 'webp' ? 'webp' : format === 'png' ? 'png' : 'jpeg', {
-        quality: quality
-      })
+    // Configure sharp to handle PNG transparency and background for JPEG
+    let sharpInstance = sharp(inputFile);
+
+    if (format === 'png' || (format === 'none' && fileExtension === '.png')) {
+      sharpInstance = sharpInstance.png({ quality: quality, compressionLevel: 9, adaptiveFiltering: true });
+    } else if (format === 'webp') {
+      sharpInstance = sharpInstance.webp({ quality: quality });
+    } else {
+      // Convert to JPEG with a specified background color
+      sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({ quality: quality });
+    }
+
+    sharpInstance
       .toFile(`${outputFile}.${format === 'none' ? fileExtension.slice(1) : format}`)
       .then(() => {
         console.log(`Processed: ${file}`);
