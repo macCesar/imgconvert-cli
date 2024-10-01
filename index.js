@@ -29,28 +29,34 @@ fs.readdirSync(inputDir).forEach(file => {
 
   // Check if the file is a valid image and not a directory
   if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
-    const outputFile = path.join(outputDir, path.parse(file).name);
+    const outputFileBase = path.join(outputDir, path.parse(file).name);
 
-    // Configure sharp to handle PNG transparency and background for JPEG
-    let sharpInstance = sharp(inputFile);
+    const processImage = (format) => {
+      let sharpInstance = sharp(inputFile);
 
-    if (format === 'png' || (format === 'none' && fileExtension === '.png')) {
-      sharpInstance = sharpInstance.png({ quality: quality, compressionLevel: 9, adaptiveFiltering: true });
-    } else if (format === 'webp') {
-      sharpInstance = sharpInstance.webp({ quality: quality });
+      if (format === 'png') {
+        sharpInstance = sharpInstance.png({ quality: quality, compressionLevel: 9, adaptiveFiltering: true });
+      } else if (format === 'webp') {
+        sharpInstance = sharpInstance.webp({ quality: quality });
+      } else {
+        sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({ quality: quality });
+      }
+
+      sharpInstance
+        .toFile(`${outputFileBase}.${format}`)
+        .then(() => {
+          console.log(`Processed: ${file} to ${format.toUpperCase()}`);
+        })
+        .catch(err => {
+          console.error(`Error processing ${file} to ${format.toUpperCase()}:`, err);
+        });
+    };
+
+    if (format === '--all') {
+      ['jpeg', 'png', 'webp'].forEach(processImage);
     } else {
-      // Convert to JPEG with a specified background color
-      sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({ quality: quality });
+      processImage(format === 'none' ? fileExtension.slice(1) : format);
     }
-
-    sharpInstance
-      .toFile(`${outputFile}.${format === 'none' ? fileExtension.slice(1) : format}`)
-      .then(() => {
-        console.log(`Processed: ${file}`);
-      })
-      .catch(err => {
-        console.error(`Error processing ${file}:`, err);
-      });
   } else {
     console.log(`Skipping unsupported or non-image file: ${file}`);
   }

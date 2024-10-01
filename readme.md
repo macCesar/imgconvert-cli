@@ -1,6 +1,6 @@
 # imgconvert-cli
 
-`imgconvert-cli` is a command-line tool for compressing and converting images using the powerful `sharp` library. It supports various image formats and allows you to optimize your images for web use or other purposes, with customizable quality and background color options.
+`imgconvert-cli` is a command-line tool for compressing and converting images using the powerful `sharp` library. It supports various image formats and allows you to optimize your images for web use or other purposes, with customizable quality, background color options, and the ability to convert to multiple formats at once.
 
 ## Features
 
@@ -9,6 +9,7 @@
 - **Batch Processing**: Process all images in a specified directory.
 - **Customizable Quality**: Adjust the quality of the output images.
 - **Configurable Background Color**: Set a background color for images converted from formats with transparency (e.g., PNG) to formats without transparency (e.g., JPEG).
+- **Multi-Format Conversion**: Convert images to all supported formats (JPEG, PNG, WebP) simultaneously using a single command.
 
 ## Installation
 
@@ -23,11 +24,11 @@ npm install -g imgconvert-cli
 The basic syntax for using `imgconvert-cli` is:
 
 ```bash
-imgconvert <input_directory> [format] [quality] [background_color]
+imgconvert <input_directory> [format|--all] [quality] [background_color]
 ```
 
 - `<input_directory>`: The path to the directory containing the images you want to process.
-- `[format]`: (Optional) The desired output format. Supported formats are `jpeg`, `png`, and `webp`. If not specified, the original format is retained.
+- `[format|--all]`: (Optional) The desired output format. Supported formats are `jpeg`, `png`, and `webp`. Use `--all` to convert to all formats simultaneously. If not specified, the original format is retained.
 - `[quality]`: (Optional) The quality of the output images, specified as an integer between 1 and 100. The default quality is 85.
 - `[background_color]`: (Optional) The background color to use when converting images with transparency to formats without transparency (e.g., PNG to JPEG). Specify the color in hexadecimal format (e.g., `#ffffff` for white). The default is white.
 
@@ -63,6 +64,14 @@ imgconvert <input_directory> [format] [quality] [background_color]
 
    ```bash
    imgconvert /path/to/images jpeg 95 #ff0000
+   ```
+
+5. **Convert Images to All Formats**
+
+   To convert all images in a directory to JPEG, PNG, and WebP formats:
+
+   ```bash
+   imgconvert /path/to/images --all
    ```
 
 ## How It Works
