@@ -3,16 +3,30 @@
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
+const minimist = require('minimist');
 
-// Parse command-line arguments
-const inputDir = process.argv[2];
-const format = process.argv[3] || 'none';
-const quality = parseInt(process.argv[4], 10) || 85; // Default quality is 85
-const backgroundColor = process.argv[5] || '#ffffff'; // Default background color is white
+// Parse command-line arguments using minimist
+const args = minimist(process.argv.slice(3), {
+  alias: {
+    q: 'quality',
+    b: 'background',
+    f: 'format'
+  },
+  default: {
+    quality: 85,
+    background: '#ffffff',
+    format: 'none'
+  }
+});
+
+const inputDir = process.argv[2]; // The source folder is now a positional argument
+const format = args.format;
+const quality = parseInt(args.quality, 10);
+const backgroundColor = args.background;
 const outputDir = path.join(inputDir, 'compressed');
 
 if (!inputDir) {
-  console.error('Please provide a directory with images.');
+  console.error('Please provide a source folder.');
   process.exit(1);
 }
 
@@ -21,11 +35,11 @@ if (!fs.existsSync(outputDir)) {
 }
 
 // Supported image formats
-const supportedFormats = ['.jpg', '.jpeg', '.png', '.webp'];
+const supportedFormats = ['jpeg', 'png', 'webp'];
 
 fs.readdirSync(inputDir).forEach(file => {
   const inputFile = path.join(inputDir, file);
-  const fileExtension = path.extname(file).toLowerCase();
+  const fileExtension = path.extname(file).toLowerCase().slice(1);
 
   // Check if the file is a valid image and not a directory
   if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
@@ -35,7 +49,7 @@ fs.readdirSync(inputDir).forEach(file => {
       let sharpInstance = sharp(inputFile);
 
       if (format === 'png') {
-        sharpInstance = sharpInstance.png({ quality: quality, compressionLevel: 9, adaptiveFiltering: true });
+        sharpInstance = sharpInstance.png({ compressionLevel: 9, palette: true, quality: quality });
       } else if (format === 'webp') {
         sharpInstance = sharpInstance.webp({ quality: quality });
       } else {
@@ -52,10 +66,10 @@ fs.readdirSync(inputDir).forEach(file => {
         });
     };
 
-    if (format === '--all') {
-      ['jpeg', 'png', 'webp'].forEach(processImage);
+    if (format === 'all') {
+      supportedFormats.forEach(processImage);
     } else {
-      processImage(format === 'none' ? fileExtension.slice(1) : format);
+      processImage(format === 'none' ? fileExtension : format);
     }
   } else {
     console.log(`Skipping unsupported or non-image file: ${file}`);

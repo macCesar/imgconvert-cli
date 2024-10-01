@@ -24,13 +24,13 @@ npm install -g imgconvert-cli
 The basic syntax for using `imgconvert-cli` is:
 
 ```bash
-imgconvert <input_directory> [format|--all] [quality] [background_color]
+imgconvert <source_folder> [-f=<format|all>] [-q=<quality>] [-b=<background_color>]
 ```
 
-- `<input_directory>`: The path to the directory containing the images you want to process.
-- `[format|--all]`: (Optional) The desired output format. Supported formats are `jpeg`, `png`, and `webp`. Use `--all` to convert to all formats simultaneously. If not specified, the original format is retained.
-- `[quality]`: (Optional) The quality of the output images, specified as an integer between 1 and 100. The default quality is 85.
-- `[background_color]`: (Optional) The background color to use when converting images with transparency to formats without transparency (e.g., PNG to JPEG). Specify the color in hexadecimal format (e.g., `#ffffff` for white). The default is white.
+- `<source_folder>`: The path to the directory containing the images you want to process. This is a required positional argument.
+- `-f, --format`: (Optional) The desired output format. Supported formats are `jpeg`, `png`, and `webp`. Use `all` to convert to all formats simultaneously. If not specified, the original format is retained.
+- `-q, --quality`: (Optional) The quality of the output images, specified as an integer between 1 and 100. The default quality is 85.
+- `-b, --background`: (Optional) The background color to use when converting images with transparency to formats without transparency (e.g., PNG to JPEG). Specify the color in hexadecimal format (e.g., `#ffffff` for white). The default is white.
 
 ### Examples
 
@@ -39,7 +39,7 @@ imgconvert <input_directory> [format|--all] [quality] [background_color]
    To compress images in a directory without changing their format, simply specify the directory:
 
    ```bash
-   imgconvert /path/to/images
+   imgconvert source_folder
    ```
 
 2. **Convert Images to WebP with Custom Quality**
@@ -47,7 +47,7 @@ imgconvert <input_directory> [format|--all] [quality] [background_color]
    To convert all images in a directory to WebP format with a quality of 75:
 
    ```bash
-   imgconvert /path/to/images webp 75
+   imgconvert source_folder -f=webp -q=75
    ```
 
 3. **Convert Images to PNG with Default Quality**
@@ -55,7 +55,7 @@ imgconvert <input_directory> [format|--all] [quality] [background_color]
    To convert all images in a directory to PNG format with the default quality:
 
    ```bash
-   imgconvert /path/to/images png
+   imgconvert source_folder -f=png
    ```
 
 4. **Convert Images to JPEG with High Quality and Custom Background**
@@ -63,7 +63,7 @@ imgconvert <input_directory> [format|--all] [quality] [background_color]
    To convert all images in a directory to JPEG format with a quality of 95 and a red background:
 
    ```bash
-   imgconvert /path/to/images jpeg 95 #ff0000
+   imgconvert source_folder -f=jpeg -q=95 -b=#ff0000
    ```
 
 5. **Convert Images to All Formats**
@@ -71,22 +71,23 @@ imgconvert <input_directory> [format|--all] [quality] [background_color]
    To convert all images in a directory to JPEG, PNG, and WebP formats:
 
    ```bash
-   imgconvert /path/to/images --all
+   imgconvert source_folder -f=all
    ```
 
 ## How It Works
 
-- The tool reads all files in the specified input directory.
+- The tool reads all files in the specified source folder.
 - It processes each image using the `sharp` library, applying compression, format conversion, and background color as specified.
-- The processed images are saved in a subdirectory named `compressed` within the input directory.
+- The processed images are saved in a subdirectory named `compressed` within the source folder.
 
 ## Dependencies
 
 - **sharp**: A high-performance image processing library for Node.js. It handles the compression, conversion, and background color application for images.
+- **minimist**: A library for parsing command-line arguments, allowing for flexible and named options.
 
 ## Error Handling
 
-- If the input directory is not specified, the tool will display an error message and exit.
+- If the source folder is not specified, the tool will display an error message and exit.
 - If an unsupported format is specified, the tool will default to retaining the original format.
 - Non-image files and directories are skipped with a log message.
 

@@ -13,6 +13,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "minimist": "^1.2.8",
     "sharp": "^0.33.5"
   }
 }
