@@ -1,0 +1,18 @@
+{
+  "name": "imgconvert-cli",
+  "version": "1.0.0",
+  "description": "A CLI tool for compressing and converting images",
+  "main": "index.js",
+  "bin": {
+    "imgconvert": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "sharp": "^0.33.5"
+  }
+}
