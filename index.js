@@ -19,21 +19,31 @@ if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir);
 }
 
+// Supported image formats
+const supportedFormats = ['.jpg', '.jpeg', '.png', '.webp'];
+
 fs.readdirSync(inputDir).forEach(file => {
   const inputFile = path.join(inputDir, file);
-  const outputFile = path.join(outputDir, path.parse(file).name);
+  const fileExtension = path.extname(file).toLowerCase();
 
-  sharp(inputFile)
-    .toFormat(format === 'webp' ? 'webp' : format === 'png' ? 'png' : 'jpeg', {
-      quality: quality
-    })
-    .toFile(`${outputFile}.${format === 'none' ? path.extname(file).slice(1) : format}`)
-    .then(() => {
-      console.log(`Processed: ${file}`);
-    })
-    .catch(err => {
-      console.error(`Error processing ${file}:`, err);
-    });
+  // Check if the file is a valid image and not a directory
+  if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
+    const outputFile = path.join(outputDir, path.parse(file).name);
+
+    sharp(inputFile)
+      .toFormat(format === 'webp' ? 'webp' : format === 'png' ? 'png' : 'jpeg', {
+        quality: quality
+      })
+      .toFile(`${outputFile}.${format === 'none' ? fileExtension.slice(1) : format}`)
+      .then(() => {
+        console.log(`Processed: ${file}`);
+      })
+      .catch(err => {
+        console.error(`Error processing ${file}:`, err);
+      });
+  } else {
+    console.log(`Skipping unsupported or non-image file: ${file}`);
+  }
 });
 
 console.log(`Process completed. The images are located in: ${outputDir}`);
