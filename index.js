@@ -12,11 +12,11 @@ const displayHelp = () => {
 Usage: ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>]')}
 
 ${chalk.green.bold('imgconvert-cli')} is a command-line tool for compressing and converting images using the ${chalk.bold('sharp')} library. 
-It supports various formats (JPEG, PNG, WebP) and allows you to optimize images for web use with customizable quality and background color options.
+It supports various formats (JPEG, PNG, WebP, AVIF, TIFF, GIF) and allows you to optimize images for web use with customizable quality and background color options.
 
 Options:
   ${chalk.green('-h, --help')}         Show this help message
-  ${chalk.green('-f, --format')}       Set the desired output format (${chalk.yellow('jpeg, png, webp, all; default: none')})
+  ${chalk.green('-f, --format')}       Set the desired output format (${chalk.yellow('jpeg, png, webp, avif, tiff, gif, all; default: none')})
   ${chalk.green('-q, --quality')}      Set the quality of the output images (${chalk.yellow('1-100; default: 85')})
   ${chalk.green('-b, --background')}   Set the background color for PNG images (${chalk.yellow('default: #ffffff')})
 
@@ -71,7 +71,7 @@ if (!fs.existsSync(outputDir)) {
 }
 
 // Supported image formats
-const supportedFormats = ['jpeg', 'png', 'webp'];
+const supportedFormats = ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif'];
 
 const processImage = async (inputFile, outputFileBase, format) => {
   let sharpInstance = sharp(inputFile);
@@ -85,6 +85,20 @@ const processImage = async (inputFile, outputFileBase, format) => {
   } else if (format === 'webp') {
     sharpInstance = sharpInstance.webp({
       quality: quality,
+    });
+  } else if (format === 'avif') {
+    sharpInstance = sharpInstance.avif({
+      quality: quality,
+    });
+  } else if (format === 'tiff') {
+    sharpInstance = sharpInstance.tiff({
+      quality: quality,
+    });
+  } else if (format === 'gif') {
+    sharpInstance = sharpInstance.gif({
+      quality: quality,
+      palette: true,
+      dither: 1.0,
     });
   } else {
     sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({

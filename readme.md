@@ -5,11 +5,11 @@
 ## Features
 
 - **Image Compression**: Compress images to reduce file size while maintaining quality.
-- **Format Conversion**: Convert images between different formats such as JPEG, PNG, and WebP.
+- **Format Conversion**: Convert images between different formats such as JPEG, PNG, WebP, AVIF, TIFF, and GIF.
 - **File and Batch Processing**: Process a single image file or all images in a specified directory.
 - **Customizable Quality**: Adjust the quality of the output images.
 - **Configurable Background Color**: Set a background color for images converted from formats with transparency (e.g., PNG) to formats without transparency (e.g., JPEG).
-- **Multi-Format Conversion**: Convert images to all supported formats (JPEG, PNG, WebP) simultaneously using a single command.
+- **Multi-Format Conversion**: Convert images to all supported formats (JPEG, PNG, WebP, AVIF, TIFF, GIF) simultaneously using a single command.
 
 ## Installation
 
@@ -28,7 +28,7 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 ```
 
 - `<source_path>`: The path to the image file or directory containing the images you want to process. This is a required positional argument.
-- `-f, --format`: (Optional) The desired output format. Supported formats are `jpeg`, `png`, and `webp`. Use `all` to convert to all formats simultaneously. If not specified, the original format is retained.
+- `-f, --format`: (Optional) The desired output format. Supported formats are `jpeg`, `png`, `webp`, `avif`, `tiff`, and `gif`. Use `all` to convert to all formats simultaneously. If not specified, the original format is retained.
 - `-q, --quality`: (Optional) The quality of the output images, specified as an integer between 1 and 100. The default quality is 85.
 - `-b, --background`: (Optional) The background color to use when converting images with transparency to formats without transparency (e.g., PNG to JPEG). Specify the color in hexadecimal format (e.g., `#ffffff` for white). The default is white.
 
@@ -76,7 +76,7 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 
 6. **Convert All Images in a Directory to All Formats**
 
-   To convert all images in a directory to JPEG, PNG, and WebP formats:
+   To convert all images in a directory to JPEG, PNG, WebP, AVIF, TIFF, and GIF formats:
 
    ```bash
    imgconvert source_folder -f=all
