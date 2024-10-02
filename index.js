@@ -93,18 +93,20 @@ const processImages = async () => {
   });
 
   const startTime = Date.now();
+  let processedCount = 0;
 
   for (const task of tasks) {
     const processedFileName = await task;
     if (processedFileName) {
-      process.stdout.write(`Processed: ${processedFileName}                \r`); // Extra spaces to clear previous longer names
+      processedCount++;
+      process.stdout.write(`Processed: ${processedFileName}                \r`);
     }
   }
 
   const endTime = Date.now();
   const elapsedTime = ((endTime - startTime) / 1000).toFixed(2);
 
-  console.log('Process completed in', elapsedTime, 'seconds. The images are located in:', outputDir);
+  console.log(processedCount, 'files were processed in', elapsedTime, 'seconds.', 'The images can be found in:', outputDir);
 };
 
 processImages();
