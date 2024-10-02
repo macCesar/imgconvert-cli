@@ -23,7 +23,9 @@ const inputPath = process.argv[2]; // The source path (file or folder) is now a 
 const format = args.format;
 const quality = parseInt(args.quality, 10);
 const backgroundColor = args.background;
-const outputDir = path.join(path.dirname(inputPath), 'compressed');
+const outputDir = fs.lstatSync(inputPath).isDirectory() 
+  ? path.join(inputPath, 'compressed') 
+  : path.join(path.dirname(inputPath), 'compressed');
 
 if (!inputPath) {
   console.error('Please provide a source file or folder.');
