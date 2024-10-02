@@ -6,6 +6,9 @@ const sharp = require('sharp');
 const chalk = require('chalk');
 const minimist = require('minimist');
 
+// Import the version from package.json
+const { version } = require('./package.json'); // Adjust the path if necessary
+
 // Function to display help message
 const displayHelp = () => {
   console.log(chalk.blue(`
@@ -16,6 +19,7 @@ It supports various formats (JPEG, PNG, WebP, AVIF, TIFF, GIF) and allows you to
 
 Options:
   ${chalk.green('-h, --help')}         Show this help message
+  ${chalk.green('-v, --version')}      Show the version of the module
   ${chalk.green('-f, --format')}       Set the desired output format (${chalk.yellow('jpeg, png, webp, avif, tiff, gif, all; default: none')})
   ${chalk.green('-q, --quality')}      Set the quality of the output images (${chalk.yellow('1-100; default: 85')})
   ${chalk.green('-b, --background')}   Set the background color for PNG images (${chalk.yellow('default: #ffffff')})
@@ -29,6 +33,7 @@ ${chalk.green('<source_path>')}        The path to the image file or directory t
 const args = minimist(process.argv.slice(2), {
   alias: {
     h: 'help',
+    v: 'version',
     q: 'quality',
     b: 'background',
     f: 'format'
@@ -43,6 +48,12 @@ const args = minimist(process.argv.slice(2), {
 // Check for help flag
 if (args.help) {
   displayHelp();
+}
+
+// Check for version flag
+if (args.version) {
+  console.log(chalk.blue(`imgconvert-cli version: ${version}`));
+  process.exit(0);
 }
 
 // Validate inputPath
@@ -84,25 +95,22 @@ const processImage = async (inputFile, outputFileBase, format) => {
     });
   } else if (format === 'webp') {
     sharpInstance = sharpInstance.webp({
-      quality: quality,
+      quality: quality, // Use the quality specified by the user
     });
   } else if (format === 'avif') {
     sharpInstance = sharpInstance.avif({
-      quality: quality,
+      quality: quality, // Use the quality specified by the user
     });
   } else if (format === 'tiff') {
     sharpInstance = sharpInstance.tiff({
-      quality: quality,
+      quality: quality, // Use the quality specified by the user
+      compression: 'lzw', // Use LZW compression to preserve transparency
     });
   } else if (format === 'gif') {
-    sharpInstance = sharpInstance.gif({
-      quality: quality,
-      palette: true,
-      dither: 1.0,
-    });
+    sharpInstance = sharpInstance.gif();
   } else {
     sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({
-      quality: quality,
+      quality: quality, // Use the quality specified by the user
     });
   }
 

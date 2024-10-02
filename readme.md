@@ -31,6 +31,8 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 - `-f, --format`: (Optional) The desired output format. Supported formats are `jpeg`, `png`, `webp`, `avif`, `tiff`, and `gif`. Use `all` to convert to all formats simultaneously. If not specified, the original format is retained.
 - `-q, --quality`: (Optional) The quality of the output images, specified as an integer between 1 and 100. The default quality is 85.
 - `-b, --background`: (Optional) The background color to use when converting images with transparency to formats without transparency (e.g., PNG to JPEG). Specify the color in hexadecimal format (e.g., `#ffffff` for white). The default is white.
+- `-v, --version`: (Optional) Display the version of the module.
+- `-h, --help`: (Optional) Show the help message with usage instructions.
 
 ### Examples
 
@@ -80,6 +82,22 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 
    ```bash
    imgconvert source_folder -f=all
+   ```
+
+7. **Check the Version of the Module**
+
+   To display the version of the `imgconvert-cli` module:
+
+   ```bash
+   imgconvert --version
+   ```
+
+8. **Show Help Message**
+
+   To display the help message with usage instructions:
+
+   ```bash
+   imgconvert --help
    ```
 
 ## How It Works
