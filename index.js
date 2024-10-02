@@ -1,13 +1,34 @@
 #!/usr/bin/env node
 
-const sharp = require('sharp');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+const sharp = require('sharp');
+const chalk = require('chalk');
 const minimist = require('minimist');
 
+// Function to display help message
+const displayHelp = () => {
+  console.log(chalk.blue(`
+Usage: ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>]')}
+
+${chalk.green.bold('imgconvert-cli')} is a command-line tool for compressing and converting images using the ${chalk.bold('sharp')} library. 
+It supports various formats (JPEG, PNG, WebP) and allows you to optimize images for web use with customizable quality and background color options.
+
+Options:
+  ${chalk.green('-h, --help')}         Show this help message
+  ${chalk.green('-f, --format')}       Set the desired output format (${chalk.yellow('jpeg, png, webp, all; default: none')})
+  ${chalk.green('-q, --quality')}      Set the quality of the output images (${chalk.yellow('1-100; default: 85')})
+  ${chalk.green('-b, --background')}   Set the background color for PNG images (${chalk.yellow('default: #ffffff')})
+
+${chalk.green('<source_path>')}        The path to the image file or directory to process (${chalk.yellow('required')})
+`));
+  process.exit(0);
+};
+
 // Parse command-line arguments using minimist
-const args = minimist(process.argv.slice(3), {
+const args = minimist(process.argv.slice(2), {
   alias: {
+    h: 'help',
     q: 'quality',
     b: 'background',
     f: 'format'
@@ -19,19 +40,31 @@ const args = minimist(process.argv.slice(3), {
   }
 });
 
-const inputPath = process.argv[2]; // The source path (file or folder) is now a positional argument
+// Check for help flag
+if (args.help) {
+  displayHelp();
+}
+
+// Validate inputPath
+const inputPath = args._[0]; // Get the first positional argument
+if (!inputPath) {
+  console.error(chalk.red('Error: Please provide a source file or folder.'));
+  process.exit(1);
+}
+
+// Check if inputPath exists
+if (!fs.existsSync(inputPath)) {
+  console.error(chalk.red(`Error: The specified path "${inputPath}" does not exist.`));
+  process.exit(1);
+}
+
 const format = args.format;
-const quality = parseInt(args.quality, 10);
 const backgroundColor = args.background;
+const quality = parseInt(args.quality, 10);
 
 const outputDir = fs.lstatSync(inputPath).isDirectory() 
   ? path.join(inputPath, 'compressed') 
   : path.join(path.dirname(inputPath), 'compressed');
-
-if (!inputPath) {
-  console.error('Please provide a source file or folder.');
-  process.exit(1);
-}
 
 if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir);
@@ -45,9 +78,9 @@ const processImage = async (inputFile, outputFileBase, format) => {
 
   if (format === 'png') {
     sharpInstance = sharpInstance.png({
-      compressionLevel: 9,
       palette: true,
       quality: quality,
+      compressionLevel: 9,
     });
   } else if (format === 'webp') {
     sharpInstance = sharpInstance.webp({
@@ -63,7 +96,7 @@ const processImage = async (inputFile, outputFileBase, format) => {
     await sharpInstance.toFile(`${outputFileBase}.${format}`);
     return path.basename(inputFile);
   } catch (err) {
-    console.error(`Error processing ${path.basename(inputFile)} to ${format.toUpperCase()}:`, err);
+    console.error(chalk.red(`Error processing ${path.basename(inputFile)} to ${format.toUpperCase()}: ${err.message}`));
     return null;
   }
 };
@@ -99,14 +132,18 @@ const processImages = async () => {
     const processedFileName = await task;
     if (processedFileName) {
       processedCount++;
-      process.stdout.write(`Processed: ${processedFileName}                \r`);
+      process.stdout.write(chalk.green(`Processed: ${processedFileName}                \r`));
     }
   }
 
   const endTime = Date.now();
   const elapsedTime = ((endTime - startTime) / 1000).toFixed(2);
 
-  console.log(processedCount, 'files were processed in', elapsedTime, 'seconds.', 'The images can be found in:', outputDir);
+  if (processedCount === 0) {
+    console.log(chalk.yellow('No valid images were found or processed in the specified location.'));
+  } else {
+    console.log(chalk.blue(`${chalk.green(processedCount)} file(s) were processed in ${chalk.green(elapsedTime)} seconds. The images can be found in: ${chalk.green(outputDir)}`));
+  }
 };
 
 processImages();
