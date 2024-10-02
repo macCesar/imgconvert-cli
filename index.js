@@ -55,6 +55,24 @@ const args = minimist(process.argv.slice(2), {
   }
 });
 
+if (args.height && (isNaN(parseInt(args.height)) || parseInt(args.height) <= 0)) {
+  console.error(chalk.red(`Error: The height argument ('-h' or '--height') must be a positive integer.`));
+  process.exit(1);
+}
+
+if (args.height) {
+  args.height = parseInt(args.height, 10);
+}
+
+if (args.width && (isNaN(parseInt(args.width)) || parseInt(args.width) <= 0)) {
+  console.error(chalk.red(`Error: The width argument ('-w' or '--width') must be a positive integer.`));
+  process.exit(1);
+}
+
+if (args.width) {
+  args.width = parseInt(args.width, 10);
+}
+
 if (args.help) {
   displayHelp();
 }
