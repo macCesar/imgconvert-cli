@@ -10,6 +10,7 @@
 - **Customizable Quality**: Adjust the quality of the output images.
 - **Configurable Background Color**: Set a background color for images converted from formats with transparency (e.g., PNG) to formats without transparency (e.g., JPEG).
 - **Multi-Format Conversion**: Convert images to all supported formats (JPEG, PNG, WebP, AVIF, TIFF, GIF) simultaneously using a single command.
+- **Replace Original Files**: Optionally replace the original files with the processed images.
 
 ## Installation
 
@@ -24,13 +25,14 @@ npm install -g imgconvert-cli
 The basic syntax for using `imgconvert-cli` is:
 
 ```bash
-imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>]
+imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>]
 ```
 
 - `<source_path>`: The path to the image file or directory containing the images you want to process. This is a required positional argument.
 - `-f, --format`: (Optional) The desired output format. Supported formats are `jpeg`, `png`, `webp`, `avif`, `tiff`, and `gif`. Use `all` to convert to all formats simultaneously. If not specified, the original format is retained.
 - `-q, --quality`: (Optional) The quality of the output images, specified as an integer between 1 and 100. The default quality is 85.
 - `-b, --background`: (Optional) The background color to use when converting images with transparency to formats without transparency (e.g., PNG to JPEG). Specify the color in hexadecimal format (e.g., `#ffffff` for white). The default is white.
+- `-r, --replace`: (Optional) Replace the original files with the processed images. Use `true` to enable this feature. The default is `false`.
 - `-v, --version`: (Optional) Display the version of the module.
 - `-h, --help`: (Optional) Show the help message with usage instructions.
 
@@ -84,7 +86,15 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
    imgconvert source_folder -f=all
    ```
 
-7. **Check the Version of the Module**
+7. **Replace Original Files with Processed Images**
+
+   To replace the original files with the processed images:
+
+   ```bash
+   imgconvert source_folder -r=true
+   ```
+
+8. **Check the Version of the Module**
 
    To display the version of the `imgconvert-cli` module:
 
@@ -92,7 +102,7 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
    imgconvert --version
    ```
 
-8. **Show Help Message**
+9. **Show Help Message**
 
    To display the help message with usage instructions:
 
@@ -104,7 +114,7 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 
 - The tool reads the specified source path, which can be a single image file or a directory.
 - It processes each image using the `sharp` library, applying compression, format conversion, and background color as specified.
-- The processed images are saved in a subdirectory named `compressed` within the source directory or the directory of the input file.
+- The processed images are saved in a subdirectory named `compressed` within the source directory or the directory of the input file, unless the `--replace` option is used, in which case the original files are replaced.
 
 ## Dependencies
 
