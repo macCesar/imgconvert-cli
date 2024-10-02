@@ -103,7 +103,7 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 
 8. **Resize All Images in a Directory to a Specific Width and Height**
 
-   To resize all images in a directory to a width of 800 pixels and a height of 600 pixels:
+   To resize all images in a directory to a width of 800 pixels and a height of 600 pixels, this will crop the images from the center:
 
    ```bash
    imgconvert source_folder -w=800 -h=600
