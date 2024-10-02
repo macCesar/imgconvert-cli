@@ -101,7 +101,7 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 
 ## Contribution
 
-Contributions are welcome! If you have suggestions or improvements, feel free to open an issue or submit a pull request on the [GitHub repository](https://github.com/yourusername/imgconvert-cli).
+Contributions are welcome! If you have suggestions or improvements, feel free to open an issue or submit a pull request on the [GitHub repository](https://github.com/macCesar/imgconvert-cli).
 
 ## License
 
