@@ -23,6 +23,7 @@ const inputPath = process.argv[2]; // The source path (file or folder) is now a 
 const format = args.format;
 const quality = parseInt(args.quality, 10);
 const backgroundColor = args.background;
+
 const outputDir = fs.lstatSync(inputPath).isDirectory() 
   ? path.join(inputPath, 'compressed') 
   : path.join(path.dirname(inputPath), 'compressed');
@@ -60,9 +61,10 @@ const processImage = async (inputFile, outputFileBase, format) => {
 
   try {
     await sharpInstance.toFile(`${outputFileBase}.${format}`);
-    console.log(`Processed: ${path.basename(inputFile)} to ${format.toUpperCase()}`);
+    return path.basename(inputFile);
   } catch (err) {
     console.error(`Error processing ${path.basename(inputFile)} to ${format.toUpperCase()}:`, err);
+    return null;
   }
 };
 
@@ -86,13 +88,23 @@ const processImages = async () => {
         return processImage(inputFile, outputFileBase, format === 'none' ? fileExtension : format);
       }
     } else {
-      // console.log(`Skipping unsupported or non-image file: ${file}`);
       return Promise.resolve();
     }
   });
 
-  await Promise.all(tasks);
-  console.log(`Process completed. The images are located in: ${outputDir}`);
+  const startTime = Date.now();
+
+  for (const task of tasks) {
+    const processedFileName = await task;
+    if (processedFileName) {
+      process.stdout.write(`Processed: ${processedFileName}                \r`); // Extra spaces to clear previous longer names
+    }
+  }
+
+  const endTime = Date.now();
+  const elapsedTime = ((endTime - startTime) / 1000).toFixed(2);
+
+  console.log('Process completed in', elapsedTime, 'seconds. The images are located in:', outputDir);
 };
 
 processImages();
