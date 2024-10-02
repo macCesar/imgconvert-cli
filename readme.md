@@ -43,8 +43,6 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 - `-v, --version`: (Optional) Display the version of the module.
 - `-H, --help`: (Optional) Show the help message with usage instructions.
 
-Certainly! Let's integrate the examples for changing the width and height into the list, and update the "How It Works" section to include resizing functionality.
-
 ### Examples
 
 1. **Compress a Single Image Without Changing Format**
