@@ -1,6 +1,10 @@
 # imgconvert-cli
 
-`imgconvert-cli` is a command-line tool for compressing and converting images using the powerful `sharp` library. It supports various image formats and allows you to optimize your images for web use or other purposes, with customizable quality, background color options, and the ability to convert to multiple formats at once.
+`imgconvert-cli` is a command-line tool for compressing, converting, and resizing images using the powerful `sharp` library.
+
+It supports various image formats and allows you to optimize your images for web use or other purposes, with customizable quality, background color options, and the ability to convert to multiple formats at once.
+
+You can also resize images by specifying the desired width and/or height, maintaining the aspect ratio unless both dimensions are provided.
 
 ## Features
 
@@ -10,6 +14,7 @@
 - **Customizable Quality**: Adjust the quality of the output images.
 - **Configurable Background Color**: Set a background color for images converted from formats with transparency (e.g., PNG) to formats without transparency (e.g., JPEG).
 - **Multi-Format Conversion**: Convert images to all supported formats (JPEG, PNG, WebP, AVIF, TIFF, GIF) simultaneously using a single command.
+- **Image Resizing**: Resize images by specifying the desired width and/or height, maintaining the aspect ratio unless both dimensions are provided.
 - **Replace Original Files**: Optionally replace the original files with the processed images.
 
 ## Installation
@@ -25,7 +30,7 @@ npm install -g imgconvert-cli
 The basic syntax for using `imgconvert-cli` is:
 
 ```bash
-imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>]
+imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>]
 ```
 
 - `<source_path>`: The path to the image file or directory containing the images you want to process. This is a required positional argument.
@@ -33,8 +38,12 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 - `-q, --quality`: (Optional) The quality of the output images, specified as an integer between 1 and 100. The default quality is 85.
 - `-b, --background`: (Optional) The background color to use when converting images with transparency to formats without transparency (e.g., PNG to JPEG). Specify the color in hexadecimal format (e.g., `#ffffff` for white). The default is white.
 - `-r, --replace`: (Optional) Replace the original files with the processed images. Use `true` to enable this feature. The default is `false`.
+- `-w, --width`: (Optional) Set the width of the output images.
+- `-h, --height`: (Optional) Set the height of the output images.
 - `-v, --version`: (Optional) Display the version of the module.
-- `-h, --help`: (Optional) Show the help message with usage instructions.
+- `-H, --help`: (Optional) Show the help message with usage instructions.
+
+Certainly! Let's integrate the examples for changing the width and height into the list, and update the "How It Works" section to include resizing functionality.
 
 ### Examples
 
@@ -78,7 +87,31 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
    imgconvert image.png -f=jpeg -q=95 -b=#ff0000
    ```
 
-6. **Convert All Images in a Directory to All Formats**
+6. **Resize a Single Image to a Specific Width**
+
+   To resize a single image file to a width of 800 pixels while maintaining the aspect ratio:
+
+   ```bash
+   imgconvert image.jpg -w=800
+   ```
+
+7. **Resize a Single Image to a Specific Height**
+
+   To resize a single image file to a height of 600 pixels while maintaining the aspect ratio:
+
+   ```bash
+   imgconvert image.jpg -h=600
+   ```
+
+8. **Resize All Images in a Directory to a Specific Width and Height**
+
+   To resize all images in a directory to a width of 800 pixels and a height of 600 pixels:
+
+   ```bash
+   imgconvert source_folder -w=800 -h=600
+   ```
+
+9. **Convert All Images in a Directory to All Formats**
 
    To convert all images in a directory to JPEG, PNG, WebP, AVIF, TIFF, and GIF formats:
 
@@ -86,35 +119,36 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
    imgconvert source_folder -f=all
    ```
 
-7. **Replace Original Files with Processed Images**
+10. **Replace Original Files with Processed Images**
 
-   To replace the original files with the processed images:
+    To replace the original files with the processed images:
 
-   ```bash
-   imgconvert source_folder -r=true
-   ```
+    ```bash
+    imgconvert source_folder -r=true
+    ```
 
-8. **Check the Version of the Module**
+11. **Check the Version of the Module**
 
-   To display the version of the `imgconvert-cli` module:
+    To display the version of the `imgconvert-cli` module:
 
-   ```bash
-   imgconvert --version
-   ```
+    ```bash
+    imgconvert --version
+    ```
 
-9. **Show Help Message**
+12. **Show Help Message**
 
-   To display the help message with usage instructions:
+    To display the help message with usage instructions:
 
-   ```bash
-   imgconvert --help
-   ```
+    ```bash
+    imgconvert --help
+    ```
 
 ## How It Works
 
 - The tool reads the specified source path, which can be a single image file or a directory.
-- It processes each image using the `sharp` library, applying compression, format conversion, and background color as specified.
+- It processes each image using the `sharp` library, applying compression, format conversion, resizing, and background color as specified.
 - The processed images are saved in a subdirectory named `compressed` within the source directory or the directory of the input file, unless the `--replace` option is used, in which case the original files are replaced.
+- Resizing is performed by specifying the desired width and/or height, maintaining the aspect ratio unless both dimensions are provided.
 
 ## Dependencies
 

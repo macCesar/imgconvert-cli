@@ -6,26 +6,28 @@ const path = require('path');
 const sharp = require('sharp');
 const chalk = require('chalk');
 const minimist = require('minimist');
-
+const { version } = require('./package.json');
 const configPath = path.join(process.cwd(), '.imgconverter.config');
+
 let config = {};
 if (fs.existsSync(configPath)) {
   config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 }
+
 
 const displayHelp = () => {
   console.log(chalk.blue(`
 Usage: ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>]')}
 
 Options:
-  ${chalk.green('-h, --help')}         Show this help message
+  ${chalk.green('-H, --help')}         Show this help message
   ${chalk.green('-v, --version')}      Show the version of the module
   ${chalk.green('-f, --format')}       Set the desired output format (${chalk.yellow('jpeg, png, webp, avif, tiff, gif, all; default: none')})
   ${chalk.green('-q, --quality')}      Set the quality of the output images (${chalk.yellow('1-100; default: 85')})
   ${chalk.green('-b, --background')}   Set the background color for PNG images (${chalk.yellow('default: #ffffff')})
-  ${chalk.green('-r, --replace')}      Replace original files (${chalk.yellow('true or false; default: false')})
   ${chalk.green('-w, --width')}        Set the width of the output images
   ${chalk.green('-h, --height')}       Set the height of the output images
+  ${chalk.green('-r, --replace')}      Replace original files (${chalk.yellow('true or false; default: false')})
 
 ${chalk.green('<source_path>')}        The path to the image file or directory to process (${chalk.yellow('required')})
 `));
@@ -34,7 +36,7 @@ ${chalk.green('<source_path>')}        The path to the image file or directory t
 
 const args = minimist(process.argv.slice(2), {
   alias: {
-    h: 'help',
+    H: 'help',
     v: 'version',
     q: 'quality',
     b: 'background',
