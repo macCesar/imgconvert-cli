@@ -19,14 +19,14 @@ const args = minimist(process.argv.slice(3), {
   }
 });
 
-const inputDir = process.argv[2]; // The source folder is now a positional argument
+const inputPath = process.argv[2]; // The source path (file or folder) is now a positional argument
 const format = args.format;
 const quality = parseInt(args.quality, 10);
 const backgroundColor = args.background;
-const outputDir = path.join(inputDir, 'compressed');
+const outputDir = path.join(path.dirname(inputPath), 'compressed');
 
-if (!inputDir) {
-  console.error('Please provide a source folder.');
+if (!inputPath) {
+  console.error('Please provide a source file or folder.');
   process.exit(1);
 }
 
@@ -37,8 +37,40 @@ if (!fs.existsSync(outputDir)) {
 // Supported image formats
 const supportedFormats = ['jpeg', 'png', 'webp'];
 
+const processImage = async (inputFile, outputFileBase, format) => {
+  let sharpInstance = sharp(inputFile);
+
+  if (format === 'png') {
+    sharpInstance = sharpInstance.png({
+      compressionLevel: 9,
+      palette: true,
+      quality: quality,
+    });
+  } else if (format === 'webp') {
+    sharpInstance = sharpInstance.webp({
+      quality: quality,
+    });
+  } else {
+    sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({
+      quality: quality,
+    });
+  }
+
+  try {
+    await sharpInstance.toFile(`${outputFileBase}.${format}`);
+    console.log(`Processed: ${path.basename(inputFile)} to ${format.toUpperCase()}`);
+  } catch (err) {
+    console.error(`Error processing ${path.basename(inputFile)} to ${format.toUpperCase()}:`, err);
+  }
+};
+
 const processImages = async () => {
-  const tasks = fs.readdirSync(inputDir).map(file => {
+  const isDirectory = fs.lstatSync(inputPath).isDirectory();
+
+  const files = isDirectory ? fs.readdirSync(inputPath) : [path.basename(inputPath)];
+  const inputDir = isDirectory ? inputPath : path.dirname(inputPath);
+
+  const tasks = files.map(file => {
     const inputFile = path.join(inputDir, file);
     const fileExtension = path.extname(file).toLowerCase().slice(1);
 
@@ -46,37 +78,10 @@ const processImages = async () => {
     if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
       const outputFileBase = path.join(outputDir, path.parse(file).name);
 
-      const processImage = async (format) => {
-        let sharpInstance = sharp(inputFile);
-
-        if (format === 'png') {
-          sharpInstance = sharpInstance.png({
-            compressionLevel: 9,
-            palette: true,
-            quality: quality,
-          });
-        } else if (format === 'webp') {
-          sharpInstance = sharpInstance.webp({
-            quality: quality,
-          });
-        } else {
-          sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({
-            quality: quality,
-          });
-        }
-
-        try {
-          await sharpInstance.toFile(`${outputFileBase}.${format}`);
-          console.log(`Processed: ${file} to ${format.toUpperCase()}`);
-        } catch (err) {
-          console.error(`Error processing ${file} to ${format.toUpperCase()}:`, err);
-        }
-      };
-
       if (format === 'all') {
-        return Promise.all(supportedFormats.map(processImage));
+        return Promise.all(supportedFormats.map(fmt => processImage(inputFile, outputFileBase, fmt)));
       } else {
-        return processImage(format === 'none' ? fileExtension : format);
+        return processImage(inputFile, outputFileBase, format === 'none' ? fileExtension : format);
       }
     } else {
       // console.log(`Skipping unsupported or non-image file: ${file}`);
