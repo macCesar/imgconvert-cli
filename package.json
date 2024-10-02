@@ -1,6 +1,6 @@
 {
   "name": "imgconvert-cli",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "A CLI tool for compressing and converting images",
   "main": "index.js",
   "bin": {
