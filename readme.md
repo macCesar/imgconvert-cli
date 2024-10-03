@@ -109,10 +109,8 @@ The alloy preset supports the following configurations:
    imgconvert source_folder -p=alloy
    ```
 
-   This will generate images in the following directories:
-   - `./app/assets/iphone/images/1x/`
-   - `./app/assets/iphone/images/2x/`
-   - `./app/assets/iphone/images/3x/`
+   This will generate images at different densities in the following directory:
+   - `./app/assets/iphone/images/`
 
 3. **Example of Using the Alloy Preset with Original File Replacement**
 
