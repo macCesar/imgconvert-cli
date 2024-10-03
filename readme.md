@@ -80,37 +80,32 @@ The alloy preset supports the following configurations:
   - `2x`: Retina resolution
   - `3x`: Super Retina resolution
 
-### Examples for the Alloy Preset
 
-1. **Process Images for Android Using the Alloy Preset**
+### Process Images Using the Alloy Preset
 
-   To process images for different screen densities on Android, you can use the `alloy` preset.
+To process images for both Android and iPhone using the Alloy preset, ensure that the base images are 4 times the size of the final images.
 
-   **Ensure that the base images are 4 times the size of the final images. For example, if you want the final image for `res-mdpi` to be 100x100 pixels, the base image should be 400x400 pixels.**
+For example, if the target image is 100x100 pixels, the base image should be 400x400 pixels.
 
-   ```bash
-   imgconvert source_folder -p=alloy
-   ```
+Run the following command:
 
-   This will generate images in the following directories:
-   - `./app/assets/android/images/res-mdpi/`
-   - `./app/assets/android/images/res-hdpi/`
-   - `./app/assets/android/images/res-xhdpi/`
-   - `./app/assets/android/images/res-xxhdpi/`
-   - `./app/assets/android/images/res-xxxhdpi/`
+```bash
+imgconvert source_folder -p=alloy
+```
 
-2. **Process Images for iPhone Using the Alloy Preset**
+This will generate images in the following directories:
 
-   To process images for different iPhone resolutions, you can also use the `alloy` preset.
+Android:
+./app/assets/android/images/res-mdpi/,
+./app/assets/android/images/res-hdpi/,
+./app/assets/android/images/res-xhdpi/,
+./app/assets/android/images/res-xxhdpi/,
+./app/assets/android/images/res-xxxhdpi/
 
-   **Ensure that the base images are 4 times the size of the final images.**
+iPhone:
+./app/assets/iphone/images/
 
-   ```bash
-   imgconvert source_folder -p=alloy
-   ```
 
-   This will generate images at different densities in the following directory:
-   - `./app/assets/iphone/images/`
 
 ### General Examples
 
