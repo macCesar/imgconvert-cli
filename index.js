@@ -141,6 +141,9 @@ if (args.preset && presets[args.preset]) {
   args.quality = presetConfig.quality || args.quality;
   args.width = presetConfig.width || args.width;
   args.height = presetConfig.height || args.height;
+  args.output = presetConfig.output || args.output;
+  args.replace = presetConfig.replace !== undefined ? presetConfig.replace : args.replace;
+  args.background = presetConfig.background || args.background;
 }
 
 // Apply environment settings
