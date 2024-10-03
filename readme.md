@@ -112,16 +112,6 @@ The alloy preset supports the following configurations:
    This will generate images at different densities in the following directory:
    - `./app/assets/iphone/images/`
 
-3. **Example of Using the Alloy Preset with Original File Replacement**
-
-   If you want to replace the original images with the processed ones for Android using the `alloy` preset, you can use the following command:
-
-   ```bash
-   imgconvert source_folder -p=alloy -r=true
-   ```
-
-   This will replace the original images in the specified output directories.
-
 ### General Examples
 
 1. **Compress a Single Image Without Changing Format**
