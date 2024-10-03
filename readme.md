@@ -96,6 +96,7 @@ imgconvert source_folder -p=alloy
 This will generate images in the following directories:
 
 Android:
+
 ./app/assets/android/images/res-mdpi/,
 ./app/assets/android/images/res-hdpi/,
 ./app/assets/android/images/res-xhdpi/,
@@ -103,6 +104,7 @@ Android:
 ./app/assets/android/images/res-xxxhdpi/
 
 iPhone:
+
 ./app/assets/iphone/images/
 
 
