@@ -9,7 +9,7 @@ const minimist = require('minimist');
 const { version } = require('./package.json');
 
 // Paths
-const configPath = path.join(process.cwd(), '.imgconverter.config');
+const configPath = path.join(process.cwd(), '.imgconverter.config.json');
 
 // Load configuration
 let config = {};
@@ -36,7 +36,10 @@ const environments = { ...defaultEnvironments, ...(config.environments || {}) };
 // Helper to display help message
 const displayHelp = () => {
   console.log(chalk.blue(`
-Usage: ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-e=<environment>] [-p=<preset>] [-d]')}
+Usage:
+  ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-e=<environment>] [-p=<preset>] [-d]')}
+
+  ${chalk.green('imgconvert config')}  Create a default configuration file
 
 Options:
   ${chalk.green('-H, --help')}         Show this help message
@@ -109,6 +112,24 @@ if (args.help) {
 
 if (args.version) {
   console.log(chalk.blue(`imgconvert-cli version: ${version}`));
+  process.exit(0);
+}
+
+// Create default configuration file
+if (args._[0] === 'config') {
+  const defaultConfig = {
+    presets: defaultPresets,
+    environments: defaultEnvironments,
+    width: null,
+    height: null,
+    quality: 85,
+    format: 'none',
+    replace: false,
+    background: '#ffffff'
+  };
+
+  fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+  console.log(chalk.green(`Default configuration file created at ${chalk.yellow(configPath)}`));
   process.exit(0);
 }
 

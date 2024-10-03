@@ -16,6 +16,8 @@ You can also resize images by specifying the desired width and/or height, mainta
 - **Multi-Format Conversion**: Convert images to all supported formats (JPEG, PNG, WebP, AVIF, TIFF, GIF) simultaneously using a single command.
 - **Image Resizing**: Resize images by specifying the desired width and/or height, maintaining the aspect ratio unless both dimensions are provided.
 - **Replace Original Files**: Optionally replace the original files with the processed images.
+- **Presets and Environments**: Use predefined settings for different use cases and environments.
+- **Debug Mode**: Enable detailed logging for troubleshooting.
 
 ## Installation
 
@@ -30,7 +32,7 @@ npm install -g imgconvert-cli
 The basic syntax for using `imgconvert-cli` is:
 
 ```bash
-imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>]
+imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-p=<preset>] [-e=<environment>] [-d]
 ```
 
 - `<source_path>`: The path to the image file or directory containing the images you want to process. This is a required positional argument.
@@ -40,6 +42,9 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 - `-r, --replace`: (Optional) Replace the original files with the processed images. Use `true` to enable this feature. The default is `false`.
 - `-w, --width`: (Optional) Set the width of the output images.
 - `-h, --height`: (Optional) Set the height of the output images.
+- `-p, --preset`: (Optional) Apply a preset configuration (e.g., `web`, `print`, `thumbnail`).
+- `-e, --environment`: (Optional) Set the environment (e.g., `dev`, `prod`).
+- `-d, --debug`: (Optional) Enable debug mode to show detailed information.
 - `-v, --version`: (Optional) Display the version of the module.
 - `-H, --help`: (Optional) Show the help message with usage instructions.
 
@@ -125,7 +130,31 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
     imgconvert source_folder -r=true
     ```
 
-11. **Check the Version of the Module**
+11. **Use a Preset Configuration**
+
+    To apply a preset configuration, such as `web`, which might include specific settings for format, quality, width, and height:
+
+    ```bash
+    imgconvert source_folder -p=web
+    ```
+
+12. **Set Environment to Production**
+
+    To set the environment to `prod`, which might include settings like replacing original files:
+
+    ```bash
+    imgconvert source_folder -e=prod
+    ```
+
+13. **Enable Debug Mode**
+
+    To enable debug mode and get detailed logging of the processing steps:
+
+    ```bash
+    imgconvert source_folder -d
+    ```
+
+14. **Check the Version of the Module**
 
     To display the version of the `imgconvert-cli` module:
 
@@ -133,13 +162,50 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
     imgconvert --version
     ```
 
-12. **Show Help Message**
+15. **Show Help Message**
 
     To display the help message with usage instructions:
 
     ```bash
     imgconvert --help
     ```
+
+## Configuration File
+
+The configuration file `.imgconverter.config.json` allows you to define custom presets and environments. This file is automatically created in the current working directory when you run `imgconvert config`.
+
+### Configuration Parameters
+
+- **presets**: Define custom presets for different use cases. Each preset can specify `format`, `quality`, `width`, and `height`.
+- **environments**: Define settings for different environments. Each environment can specify whether to `replace` original files.
+- **width**: Default width for image resizing.
+- **height**: Default height for image resizing.
+- **quality**: Default quality for image compression.
+- **format**: Default format for image conversion.
+- **replace**: Default setting for replacing original files.
+- **background**: Default background color for images with transparency.
+
+### Example Configuration File
+
+```json
+{
+  "presets": {
+    "web": { "format": "webp", "quality": 80, "width": 1024, "height": 768 },
+    "print": { "format": "jpeg", "quality": 100 },
+    "thumbnail": { "format": "png", "quality": 60, "width": 150, "height": 150 }
+  },
+  "environments": {
+    "dev": { "replace": false },
+    "prod": { "replace": true }
+  },
+  "width": null,
+  "height": null,
+  "quality": 85,
+  "format": "none",
+  "replace": false,
+  "background": "#ffffff"
+}
+```
 
 ## How It Works
 
@@ -148,10 +214,21 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 - The processed images are saved in a subdirectory named `compressed` within the source directory or the directory of the input file, unless the `--replace` option is used, in which case the original files are replaced.
 - Resizing is performed by specifying the desired width and/or height, maintaining the aspect ratio unless both dimensions are provided.
 
+## Debug Mode
+
+When debug mode is enabled with the `-d` or `--debug` option, the tool provides detailed logging of the processing steps, including:
+
+- The original and new sizes of each processed image.
+- The time taken to process each image.
+- Any errors encountered during processing.
+
+This information can be useful for troubleshooting and optimizing the image processing workflow.
+
 ## Dependencies
 
 - **sharp**: A high-performance image processing library for Node.js. It handles the compression, conversion, and background color application for images.
 - **minimist**: A library for parsing command-line arguments, allowing for flexible and named options.
+- **chalk**: A library for styling terminal strings, used for colored output in the console.
 
 ## Error Handling
 
