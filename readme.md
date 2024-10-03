@@ -20,6 +20,13 @@ You can also resize images by specifying the desired width and/or height, mainta
 - **Custom Output Directory**: Specify a custom directory for processed images, or use the default `compressed` directory.
 - **Debug Mode**: Enable detailed logging for troubleshooting.
 
+## How It Works
+
+- The tool reads the specified source path, which can be a single image file or a directory.
+- It processes each image using the `sharp` library, applying compression, format conversion, resizing, and background color as specified.
+- The processed images are saved in a subdirectory named `compressed` within the source directory or the directory of the input file, unless a custom output directory is specified or the `--replace` option is used, in which case the original files are replaced.
+- Resizing is performed by specifying the desired width and/or height, maintaining the aspect ratio unless both dimensions are provided.
+
 ## Installation
 
 To install `imgconvert-cli`, you need to have Node.js and NPM installed on your system. Then, you can install the module globally using:
@@ -50,66 +57,8 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 - `-v, --version`: (Optional) Display the version of the module.
 - `-H, --help`: (Optional) Show the help message with usage instructions.
 
-### Presets
 
-Presets are predefined configurations that allow you to quickly apply a set of options for common use cases. The available presets are:
-
-- **web**: Optimizes images for web use with a format of `webp`, quality of `80`, width of `1024`, and height of `768`.
-- **print**: Configured for high-quality prints with a format of `jpeg` and quality of `100`.
-- **thumbnail**: Creates small images suitable for thumbnails with a format of `png`, quality of `60`, width of `150`, and height of `150`.
-- **alloy**: Specifically designed for use with the Titanium SDK, this preset generates images at multiple resolutions for Android and iPhone. The base images should be 4 times the size of the final 1x images.
-
-### Alloy Preset
-
-The **alloy** preset is tailored for developers using the [Titanium SDK](https://titaniumsdk.com). It generates images at various resolutions suitable for different device densities.
-
-When using this preset, ensure that the base images are 4 times the size of the final 1x images.
-
-This means that if you want a 1x image to be 100x100 pixels, the base image should be 400x400 pixels.
-
-The alloy preset supports the following configurations:
-
-- **Android**: Generates images for different Android screen densities:
-  - `res-mdpi`: 1x
-  - `res-hdpi`: 1.5x
-  - `res-xhdpi`: 2x
-  - `res-xxhdpi`: 3x
-  - `res-xxxhdpi`: 4x
-- **iPhone**: Generates images for different iPhone screen densities:
-  - `1x`: Standard resolution
-  - `2x`: Retina resolution
-  - `3x`: Super Retina resolution
-
-
-### Process Images Using the Alloy Preset
-
-To process images for both Android and iPhone using the Alloy preset, ensure that the base images are 4 times the size of the final images.
-
-For example, if the target image is 100x100 pixels, the base image should be 400x400 pixels.
-
-Run the following command:
-
-```bash
-imgconvert source_folder -p=alloy
-```
-
-This will generate images in the following directories:
-
-Android:
-
-./app/assets/android/images/res-mdpi/,
-./app/assets/android/images/res-hdpi/,
-./app/assets/android/images/res-xhdpi/,
-./app/assets/android/images/res-xxhdpi/,
-./app/assets/android/images/res-xxxhdpi/
-
-iPhone:
-
-./app/assets/iphone/images/
-
-
-
-### General Examples
+### Examples
 
 1. **Compress a Single Image Without Changing Format**
 
@@ -239,6 +188,65 @@ iPhone:
     imgconvert --help
     ```
 
+
+### Presets
+
+Presets are predefined configurations that allow you to quickly apply a set of options for common use cases. The available presets are:
+
+- **web**: Optimizes images for web use with a format of `webp`, quality of `80`, width of `1024`, and height of `768`.
+- **print**: Configured for high-quality prints with a format of `jpeg` and quality of `100`.
+- **thumbnail**: Creates small images suitable for thumbnails with a format of `png`, quality of `60`, width of `150`, and height of `150`.
+- **alloy**: Specifically designed for use with the Titanium SDK, this preset generates images at multiple resolutions for Android and iPhone. The base images should be 4 times the size of the final 1x images.
+
+### Alloy Preset
+
+The **alloy** preset is tailored for developers using the [Titanium SDK](https://titaniumsdk.com). It generates images at various resolutions suitable for different device densities.
+
+When using this preset, ensure that the base images are 4 times the size of the final 1x images.
+
+This means that if you want a 1x image to be 100x100 pixels, the base image should be 400x400 pixels.
+
+The alloy preset supports the following configurations:
+
+- **Android**: Generates images for different Android screen densities:
+  - `res-mdpi`: 1x
+  - `res-hdpi`: 1.5x
+  - `res-xhdpi`: 2x
+  - `res-xxhdpi`: 3x
+  - `res-xxxhdpi`: 4x
+- **iPhone**: Generates images for different iPhone screen densities:
+  - `1x`: Standard resolution
+  - `2x`: Retina resolution
+  - `3x`: Super Retina resolution
+
+
+### Process Images Using the Alloy Preset
+
+To process images for both Android and iPhone using the Alloy preset, ensure that the base images are 4 times the size of the final images.
+
+For example, if the target image is 100x100 pixels, the base image should be 400x400 pixels.
+
+Run the following command:
+
+```bash
+imgconvert source_folder -p=alloy
+```
+
+This will generate images in the following directories:
+
+Android:
+
+   - `./app/assets/android/images/res-mdpi/`
+   - `./app/assets/android/images/res-hdpi/`
+   - `./app/assets/android/images/res-xhdpi/`
+   - `./app/assets/android/images/res-xxhdpi/`
+   - `./app/assets/android/images/res-xxxhdpi/`
+
+iPhone:
+
+   - `./app/assets/iphone/images/`
+
+
 ## Configuration File
 
 The configuration file `.imgconverter.config.json` allows you to define custom presets and environments. This file is automatically created in the current working directory when you run `imgconvert config`.
@@ -278,13 +286,6 @@ The configuration file `.imgconverter.config.json` allows you to define custom p
   "output": null
 }
 ```
-
-## How It Works
-
-- The tool reads the specified source path, which can be a single image file or a directory.
-- It processes each image using the `sharp` library, applying compression, format conversion, resizing, and background color as specified.
-- The processed images are saved in a subdirectory named `compressed` within the source directory or the directory of the input file, unless a custom output directory is specified or the `--replace` option is used, in which case the original files are replaced.
-- Resizing is performed by specifying the desired width and/or height, maintaining the aspect ratio unless both dimensions are provided.
 
 ## Debug Mode
 
