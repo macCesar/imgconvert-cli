@@ -36,7 +36,7 @@ const environments = { ...defaultEnvironments, ...(config.environments || {}) };
 // Helper to display help message
 const displayHelp = () => {
   console.log(chalk.blue(`
-Usage: ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-e=<environment>] [-p=<preset>]')}
+Usage: ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-e=<environment>] [-p=<preset>] [-d]')}
 
 Options:
   ${chalk.green('-H, --help')}         Show this help message
@@ -49,6 +49,7 @@ Options:
   ${chalk.green('-r, --replace')}      Replace original files (${chalk.yellow('true or false; default: false')})
   ${chalk.green('-p, --preset')}       Apply a preset configuration (${chalk.yellow('web, print, thumbnail')})
   ${chalk.green('-e, --environment')}  Set the environment (${chalk.yellow('dev, prod; default: dev')})
+  ${chalk.green('-d, --debug')}        Enable debug mode to show detailed information
 
 ${chalk.green('<source_path>')}        The path to the image file or directory to process (${chalk.yellow('required')})
 `));
@@ -67,7 +68,8 @@ const args = minimist(process.argv.slice(2), {
     w: 'width',
     h: 'height',
     p: 'preset',
-    e: 'environment'
+    e: 'environment',
+    d: 'debug'
   },
   default: {
     preset: null,
@@ -78,6 +80,7 @@ const args = minimist(process.argv.slice(2), {
     format: config.format || 'none',
     replace: config.replace || false,
     background: config.background || '#ffffff',
+    debug: false
   }
 });
 
@@ -157,6 +160,7 @@ if (!fs.existsSync(outputDir)) {
 // Supported image formats
 const supportedFormats = ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif'];
 
+// Process images
 const processImage = async (inputFile, outputFileBase, format) => {
   let sharpInstance = sharp(inputFile);
 
@@ -202,10 +206,10 @@ const processImage = async (inputFile, outputFileBase, format) => {
 
     const { size: newSize } = fs.statSync(finalOutputFile);
     const savings = ((originalSize - newSize) / originalSize * 100).toFixed(2);
-    process.stdout.write(chalk.green(`Processed: ${path.basename(inputFile)} to ${format.toUpperCase()} (${savings}%)                \r`));
+    process.stdout.write(chalk.green(`Processed: ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(format.toUpperCase())} (${savings}%)                \r`));
     return { originalSize, newSize };
   } catch (err) {
-    console.error(chalk.red(`Error processing ${path.basename(inputFile)} to ${format.toUpperCase()}: ${err.message}`));
+    console.error(chalk.red(`Error processing ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(format.toUpperCase())}: ${err.message}`));
     return null;
   }
 };
@@ -253,13 +257,19 @@ const processImages = async () => {
   if (processedCount === 0) {
     console.log(chalk.yellow('No valid images were found or processed in the specified location.'));
   } else {
-    const totalSavings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
-    console.log(chalk.blue(`${chalk.green(processedCount + ' file(s)')} were processed in ${chalk.green(elapsedTime + ' seconds')}. Total size reduction: ${chalk.green(totalSavings + '%')}.`));
-    console.log(chalk.blue(`\nThe images can be found in: ${chalk.green(outputDir)}`));
+    console.log(chalk.green(`${chalk.yellow('Process complete!')} | The images can be found in: ${chalk.yellow(outputDir)}`));
 
-    console.log(chalk.green(`\nProcessed ${processedCount} images`));
-    console.log(chalk.green(`Original Size: ${(totalOriginalSize / 1024 / 1024).toFixed(2)} MB`));
-    console.log(chalk.green(`Compressed Size: ${(totalNewSize / 1024 / 1024).toFixed(2)} MB`));
+    if (args.debug) {
+      const totalSavings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
+
+      console.log(chalk.green(`\nStats:
+  Total Images: ${chalk.yellow(processedCount)}
+  Elapsed Time: ${chalk.yellow(elapsedTime + ' secs')}
+  Original Size: ${chalk.yellow((totalOriginalSize / 1024 / 1024).toFixed(2) + ' MB')}
+  Compressed Size: ${chalk.yellow((totalNewSize / 1024 / 1024).toFixed(2) + ' MB')}
+  Total Size Reduction: ${chalk.yellow(totalSavings + '%')}`));
+    }
+
   }
 };
 
