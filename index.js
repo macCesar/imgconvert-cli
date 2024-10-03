@@ -210,13 +210,15 @@ const height = args.height ? parseInt(args.height, 10) : null;
 // Supported image formats
 const supportedFormats = ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif'];
 
-// Process images with scaling
+// Function to process images with scaling
 const processImageWithScaling = async (inputFile, scales, outputBaseDir, isIPhone) => {
   const originalImage = sharp(inputFile);
   const metadata = await originalImage.metadata();
+  const { size: originalSize } = fs.statSync(inputFile);
+  let totalNewSize = 0;
 
   for (const [scaleName, scaleFactor] of Object.entries(scales)) {
-    const outputDir = path.join(outputBaseDir, scaleName);
+    const outputDir = isIPhone ? outputBaseDir : path.join(outputBaseDir, scaleName);
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
@@ -232,15 +234,78 @@ const processImageWithScaling = async (inputFile, scales, outputBaseDir, isIPhon
 
     const outputFilePath = path.join(outputDir, outputFileName);
 
+    const targetWidth = Math.round(metadata.width / 4 * scaleFactor);
+    const targetHeight = Math.round(metadata.height / 4 * scaleFactor);
+
     await originalImage
       .resize({
-        width: Math.round(metadata.width * scaleFactor),
-        height: Math.round(metadata.height * scaleFactor),
+        width: targetWidth,
+        height: targetHeight,
         fit: 'contain'
       })
+      .withMetadata({ density: 72 })
       .toFile(outputFilePath);
 
-    console.log(chalk.green(`Generated: ${outputFilePath}`));
+    const { size: newSize } = fs.statSync(outputFilePath);
+    totalNewSize += newSize;
+
+    process.stdout.write(chalk.green(`Processed: ${chalk.yellow(outputFilePath)}                       \r`));
+  }
+
+  return { originalSize, newSize: totalNewSize };
+};
+
+// Process image
+const processImage = async (inputFile, outputFileBase, format) => {
+  let sharpInstance = sharp(inputFile);
+
+  if (width || height) {
+    sharpInstance = sharpInstance.resize(width, height);
+  }
+
+  if (format === 'png') {
+    sharpInstance = sharpInstance.png({
+      palette: true,
+      quality: quality,
+      compressionLevel: 9,
+    });
+  } else if (format === 'webp') {
+    sharpInstance = sharpInstance.webp({
+      quality: quality,
+    });
+  } else if (format === 'avif') {
+    sharpInstance = sharpInstance.avif({
+      quality: quality,
+    });
+  } else if (format === 'tiff') {
+    sharpInstance = sharpInstance.tiff({
+      quality: quality,
+      compression: 'lzw',
+    });
+  } else if (format === 'gif') {
+    sharpInstance = sharpInstance.gif();
+  } else {
+    sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({
+      quality: quality,
+    });
+  }
+
+  try {
+    const { size: originalSize } = fs.statSync(inputFile);
+    const tempOutputFile = path.join(os.tmpdir(), `${path.basename(outputFileBase)}.${format}`);
+    await sharpInstance.toFile(tempOutputFile);
+
+    const finalOutputFile = replaceOriginal ? `${outputFileBase}.${format}` : path.join(outputDir, `${path.basename(outputFileBase)}.${format}`);
+
+    fs.renameSync(tempOutputFile, finalOutputFile);
+
+    const { size: newSize } = fs.statSync(finalOutputFile);
+    const savings = ((originalSize - newSize) / originalSize * 100).toFixed(2);
+    process.stdout.write(chalk.green(`Processed: ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(format.toUpperCase())} (${savings}%)                \r`));
+    return { originalSize, newSize };
+  } catch (err) {
+    console.error(chalk.red(`Error processing ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(format.toUpperCase())}: ${err.message}`));
+    return null;
   }
 };
 
@@ -255,19 +320,19 @@ const processImages = async () => {
   let totalOriginalSize = 0;
   const startTime = Date.now();
 
-  const tasks = files.map(file => {
+  const tasks = files.flatMap(file => {
     const inputFile = path.join(inputDir, file);
     const fileExtension = path.extname(file).toLowerCase().slice(1);
 
     if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
       if (args.preset === 'alloy') {
         const alloyPreset = presets.alloy;
-        for (const [subPresetName, subPresetConfig] of Object.entries(alloyPreset)) {
+        return Object.entries(alloyPreset).map(([subPresetName, subPresetConfig]) => {
           const scales = subPresetConfig.scales;
           const outputBaseDir = subPresetConfig.output || args.output || path.join(inputDir, 'compressed');
           const isIPhone = subPresetName === 'iphone';
           return processImageWithScaling(inputFile, scales, outputBaseDir, isIPhone);
-        }
+        });
       } else {
         const outputFileBase = replaceOriginal ? path.join(inputDir, path.parse(file).name) : path.join(outputDir, path.parse(file).name);
 
@@ -278,7 +343,7 @@ const processImages = async () => {
         }
       }
     }
-    return Promise.resolve();
+    return [];
   });
 
   const results = await Promise.all(tasks);
@@ -309,7 +374,6 @@ const processImages = async () => {
   Compressed Size: ${chalk.yellow((totalNewSize / 1024 / 1024).toFixed(2) + ' MB')}
   Total Size Reduction: ${chalk.yellow(totalSavings + '%')}`));
     }
-
   }
 };
 
