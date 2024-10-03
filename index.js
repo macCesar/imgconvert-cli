@@ -36,10 +36,7 @@ const environments = { ...defaultEnvironments, ...(config.environments || {}) };
 // Helper to display help message
 const displayHelp = () => {
   console.log(chalk.blue(`
-Usage:
-  ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-e=<environment>] [-p=<preset>] [-d]')}
-
-  ${chalk.green('imgconvert config')}  Create a default configuration file
+Usage: ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-o=<output_directory>] [-e=<environment>] [-p=<preset>] [-d]')}
 
 Options:
   ${chalk.green('-H, --help')}         Show this help message
@@ -50,6 +47,7 @@ Options:
   ${chalk.green('-w, --width')}        Set the width of the output images
   ${chalk.green('-h, --height')}       Set the height of the output images
   ${chalk.green('-r, --replace')}      Replace original files (${chalk.yellow('true or false; default: false')})
+  ${chalk.green('-o, --output')}       Set the output directory for processed images
   ${chalk.green('-p, --preset')}       Apply a preset configuration (${chalk.yellow('web, print, thumbnail')})
   ${chalk.green('-e, --environment')}  Set the environment (${chalk.yellow('dev, prod; default: dev')})
   ${chalk.green('-d, --debug')}        Enable debug mode to show detailed information
@@ -70,6 +68,7 @@ const args = minimist(process.argv.slice(2), {
     r: 'replace',
     w: 'width',
     h: 'height',
+    o: 'output',
     p: 'preset',
     e: 'environment',
     d: 'debug'
@@ -83,6 +82,7 @@ const args = minimist(process.argv.slice(2), {
     format: config.format || 'none',
     replace: config.replace || false,
     background: config.background || '#ffffff',
+    output: config.output || null,
     debug: false
   }
 });
@@ -125,7 +125,8 @@ if (args._[0] === 'config') {
     quality: 85,
     format: 'none',
     replace: false,
-    background: '#ffffff'
+    background: '#ffffff',
+    output: null
   };
 
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf-8');
@@ -159,6 +160,22 @@ if (!fs.existsSync(inputPath)) {
   process.exit(1);
 }
 
+// Determine output directory
+let outputDir;
+if (args.output) {
+  outputDir = args.output;
+} else if (config.output) {
+  outputDir = config.output;
+} else {
+  const inputDir = fs.lstatSync(inputPath).isDirectory() ? inputPath : path.dirname(inputPath);
+  outputDir = path.join(inputDir, 'compressed');
+}
+
+// Ensure output directory exists
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir, { recursive: true });
+}
+
 // Variables
 const format = args.format;
 const backgroundColor = args.background;
@@ -166,17 +183,6 @@ const quality = parseInt(args.quality, 10);
 const replaceOriginal = args.replace === 'true';
 const width = args.width ? parseInt(args.width, 10) : null;
 const height = args.height ? parseInt(args.height, 10) : null;
-
-let outputDir;
-if (fs.lstatSync(inputPath).isDirectory()) {
-  outputDir = replaceOriginal ? inputPath : path.join(inputPath, 'compressed');
-} else {
-  outputDir = replaceOriginal ? path.dirname(inputPath) : path.join(path.dirname(inputPath), 'compressed');
-}
-
-if (!fs.existsSync(outputDir)) {
-  fs.mkdirSync(outputDir, { recursive: true });
-}
 
 // Supported image formats
 const supportedFormats = ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif'];
