@@ -7,17 +7,36 @@ const sharp = require('sharp');
 const chalk = require('chalk');
 const minimist = require('minimist');
 const { version } = require('./package.json');
+
+// Paths
 const configPath = path.join(process.cwd(), '.imgconverter.config');
 
+// Load configuration
 let config = {};
 if (fs.existsSync(configPath)) {
   config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 }
 
+// Default presets and environments
+const defaultPresets = {
+  web: { format: 'webp', quality: 80, width: 1024, height: 768 },
+  print: { format: 'jpeg', quality: 100 },
+  thumbnail: { format: 'png', quality: 60, width: 150, height: 150 }
+};
 
+const defaultEnvironments = {
+  dev: { replace: false },
+  prod: { replace: true }
+};
+
+// Merge config presets and environments
+const presets = { ...defaultPresets, ...(config.presets || {}) };
+const environments = { ...defaultEnvironments, ...(config.environments || {}) };
+
+// Helper to display help message
 const displayHelp = () => {
   console.log(chalk.blue(`
-Usage: ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>]')}
+Usage: ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-e=<environment>] [-p=<preset>]')}
 
 Options:
   ${chalk.green('-H, --help')}         Show this help message
@@ -28,12 +47,15 @@ Options:
   ${chalk.green('-w, --width')}        Set the width of the output images
   ${chalk.green('-h, --height')}       Set the height of the output images
   ${chalk.green('-r, --replace')}      Replace original files (${chalk.yellow('true or false; default: false')})
+  ${chalk.green('-p, --preset')}       Apply a preset configuration (${chalk.yellow('web, print, thumbnail')})
+  ${chalk.green('-e, --environment')}  Set the environment (${chalk.yellow('dev, prod; default: dev')})
 
 ${chalk.green('<source_path>')}        The path to the image file or directory to process (${chalk.yellow('required')})
 `));
   process.exit(0);
 };
 
+// Parse CLI arguments
 const args = minimist(process.argv.slice(2), {
   alias: {
     H: 'help',
@@ -43,9 +65,13 @@ const args = minimist(process.argv.slice(2), {
     f: 'format',
     r: 'replace',
     w: 'width',
-    h: 'height'
+    h: 'height',
+    p: 'preset',
+    e: 'environment'
   },
   default: {
+    preset: null,
+    environment: 'dev',
     width: config.width || null,
     height: config.height || null,
     quality: config.quality || 85,
@@ -55,6 +81,7 @@ const args = minimist(process.argv.slice(2), {
   }
 });
 
+// Handle height and width validation
 if (args.height && (isNaN(parseInt(args.height)) || parseInt(args.height) <= 0)) {
   console.error(chalk.red(`Error: The height argument ('-h' or '--height') must be a positive integer.`));
   process.exit(1);
@@ -82,17 +109,33 @@ if (args.version) {
   process.exit(0);
 }
 
+// Apply preset if specified
+if (args.preset && presets[args.preset]) {
+  const presetConfig = presets[args.preset];
+  args.format = presetConfig.format || args.format;
+  args.quality = presetConfig.quality || args.quality;
+  args.width = presetConfig.width || args.width;
+  args.height = presetConfig.height || args.height;
+}
+
+// Apply environment settings
+if (args.environment && environments[args.environment]) {
+  const envConfig = environments[args.environment];
+  args.replace = envConfig.replace || args.replace;
+}
+
+// Input validation
 const inputPath = args._[0];
 if (!inputPath) {
   console.error(chalk.red('Error: Please provide a source file or folder.'));
   process.exit(1);
 }
-
 if (!fs.existsSync(inputPath)) {
   console.error(chalk.red(`Error: The specified path "${inputPath}" does not exist.`));
   process.exit(1);
 }
 
+// Variables
 const format = args.format;
 const backgroundColor = args.background;
 const quality = parseInt(args.quality, 10);
@@ -167,6 +210,7 @@ const processImage = async (inputFile, outputFileBase, format) => {
   }
 };
 
+// Process images
 const processImages = async () => {
   const isDirectory = fs.lstatSync(inputPath).isDirectory();
   const inputDir = isDirectory ? inputPath : path.dirname(inputPath);
@@ -175,6 +219,7 @@ const processImages = async () => {
   let totalNewSize = 0;
   let processedCount = 0;
   let totalOriginalSize = 0;
+  const startTime = Date.now();
 
   const tasks = files.map(file => {
     const inputFile = path.join(inputDir, file);
@@ -188,28 +233,19 @@ const processImages = async () => {
       } else {
         return processImage(inputFile, outputFileBase, format === 'none' ? fileExtension : format);
       }
-    } else {
-      return Promise.resolve();
     }
+    return Promise.resolve();
   });
 
-  const startTime = Date.now();
+  const results = await Promise.all(tasks);
 
-  for (const task of tasks) {
-    const result = await task;
-    if (result) {
-      if (Array.isArray(result)) {
-        result.forEach(({ originalSize, newSize }) => {
-          totalNewSize += newSize;
-          totalOriginalSize += originalSize;
-        });
-      } else {
-        totalNewSize += result.newSize;
-        totalOriginalSize += result.originalSize;
-      }
-      processedCount++;
+  results.forEach(result => {
+    if (result && result.originalSize && result.newSize) {
+      processedCount += 1;
+      totalNewSize += result.newSize;
+      totalOriginalSize += result.originalSize;
     }
-  }
+  });
 
   const endTime = Date.now();
   const elapsedTime = ((endTime - startTime) / 1000).toFixed(2);
@@ -220,7 +256,14 @@ const processImages = async () => {
     const totalSavings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
     console.log(chalk.blue(`${chalk.green(processedCount + ' file(s)')} were processed in ${chalk.green(elapsedTime + ' seconds')}. Total size reduction: ${chalk.green(totalSavings + '%')}.`));
     console.log(chalk.blue(`\nThe images can be found in: ${chalk.green(outputDir)}`));
+
+    console.log(chalk.green(`\nProcessed ${processedCount} images`));
+    console.log(chalk.green(`Original Size: ${(totalOriginalSize / 1024 / 1024).toFixed(2)} MB`));
+    console.log(chalk.green(`Compressed Size: ${(totalNewSize / 1024 / 1024).toFixed(2)} MB`));
   }
 };
 
-processImages();
+processImages().catch(err => {
+  console.error(chalk.red(`Failed to process images: ${err.message}`));
+  process.exit(1);
+});
