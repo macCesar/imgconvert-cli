@@ -16,7 +16,7 @@ You can also resize images by specifying the desired width and/or height, mainta
 - **Multi-Format Conversion**: Convert images to all supported formats (JPEG, PNG, WebP, AVIF, TIFF, GIF) simultaneously using a single command.
 - **Image Resizing**: Resize images by specifying the desired width and/or height, maintaining the aspect ratio unless both dimensions are provided.
 - **Replace Original Files**: Optionally replace the original files with the processed images.
-- **Presets and Environments**: Use predefined settings for different use cases and environments.
+- **Presets**: Use predefined settings for different use cases.
 - **Custom Output Directory**: Specify a custom directory for processed images, or use the default `compressed` directory.
 - **Debug Mode**: Enable detailed logging for troubleshooting.
 
@@ -195,8 +195,8 @@ The available options for the `imgconvert-cli` command let users customize image
 
 Presets are predefined configurations that allow you to quickly apply a set of options for common use cases. The available presets are:
 
-- **web**: Optimizes images for web use with a format of `webp`, quality of `80`, width of `1024`, and height of `768`.
-- **print**: Configured for high-quality prints with a format of `jpeg` and quality of `100`.
+- **web**: Optimizes images for web use with a format of `webp`, quality of `80`.
+- **print**: Configured for high-quality prints with a format of `tiff` and quality of `100`.
 - **thumbnail**: Creates small images suitable for thumbnails with a format of `png`, quality of `60`, width of `150`, and height of `150`.
 - **alloy**: Specifically designed for use with the Titanium SDK, this preset generates images at multiple resolutions for Android and iPhone. The base images should be 4 times the size of the final 1x images.
 
@@ -251,12 +251,11 @@ iPhone:
 
 ## Configuration File
 
-The configuration file `.imgconverter.config.json` allows you to define custom presets and environments. This file is automatically created in the current working directory when you run `imgconvert config`.
+The configuration file `.imgconverter.config.json` allows you to define custom presets. This file is automatically created in the current working directory when you run `imgconvert config`.
 
 ### Configuration Parameters
 
 - **presets**: Define custom presets for different use cases. Each preset can specify `format`, `quality`, `width`, `height`, and `output`.
-- **environments**: Define settings for different environments. Each environment can specify whether to `replace` original files and the `output` directory.
 - **width**: Default width for image resizing.
 - **height**: Default height for image resizing.
 - **quality**: Default quality for image compression.
@@ -265,19 +264,15 @@ The configuration file `.imgconverter.config.json` allows you to define custom p
 - **background**: Default background color for images with transparency.
 - **output**: Default output directory for processed images. If `null`, defaults to a `compressed` directory at the same level as the source path.
 
-### Example Configuration File
+### Default Configuration File
 
 ```json
 {
   "presets": {
-    "web": { "format": "webp", "quality": 80, "width": 1024, "height": 768, "output": null },
-    "print": { "format": "jpeg", "quality": 100, "output": null },
-    "thumbnail": { "format": "png", "quality": 60, "width": 150, "height": 150, "output": null },
+    "web": { "format": "webp", "quality": 80 },
+    "print": { "format": "tiff", "quality": 100 },
+    "thumbnail": { "format": "png", "quality": 60, "width": 150, "height": 150 },
     "alloy": { "android": { "scales": { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }, "output": "./app/assets/android/images" }, "iphone": { "scales": { "1x": 1, "2x": 2, "3x": 3 }, "output": "./app/assets/iphone/images" } }
-  },
-  "environments": {
-    "dev": { "replace": false, "output": null },
-    "prod": { "replace": true, "output": null }
   },
   "width": null,
   "height": null,

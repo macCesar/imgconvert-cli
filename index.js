@@ -17,11 +17,11 @@ if (fs.existsSync(configPath)) {
   config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 }
 
-// Default presets and environments
+// Default presets
 const defaultPresets = {
-  web: { format: 'webp', quality: 80, width: 1024, height: 768 },
-  print: { format: 'jpeg', quality: 100 },
-  thumbnail: { format: 'png', quality: 60, width: 150, height: 150 },
+  web: { quality: 80, format: 'webp' },
+  print: { quality: 100, format: 'tiff' },
+  thumbnail: { width: 150, height: 150, quality: 60, format: 'png' },
   alloy: {
     android: {
       scales: {
@@ -44,14 +44,8 @@ const defaultPresets = {
   }
 };
 
-const defaultEnvironments = {
-  dev: { replace: false },
-  prod: { replace: true }
-};
-
-// Merge config presets and environments
+// Merge config presets
 const presets = { ...defaultPresets, ...(config.presets || {}) };
-const environments = { ...defaultEnvironments, ...(config.environments || {}) };
 
 // Helper to display help message
 const displayHelp = () => {
@@ -141,15 +135,14 @@ if (args.version) {
 // Create default configuration file
 if (args._[0] === 'config') {
   const defaultConfig = {
-    presets: defaultPresets,
-    environments: defaultEnvironments,
     width: null,
     height: null,
     quality: 85,
+    output: null,
     format: 'none',
     replace: false,
     background: '#ffffff',
-    output: null
+    presets: defaultPresets
   };
 
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf-8');
@@ -167,12 +160,6 @@ if (args.preset && presets[args.preset]) {
   args.output = presetConfig.output || args.output;
   args.replace = presetConfig.replace !== undefined ? presetConfig.replace : args.replace;
   args.background = presetConfig.background || args.background;
-}
-
-// Apply environment settings
-if (args.environment && environments[args.environment]) {
-  const envConfig = environments[args.environment];
-  args.replace = envConfig.replace || args.replace;
 }
 
 // Input validation
