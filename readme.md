@@ -255,32 +255,32 @@ The configuration file `.imgconverter.config.json` allows you to define custom p
 
 ### Configuration Parameters
 
-- **presets**: Define custom presets for different use cases. Each preset can specify `format`, `quality`, `width`, `height`, and `output`.
 - **width**: Default width for image resizing.
 - **height**: Default height for image resizing.
-- **quality**: Default quality for image compression.
 - **format**: Default format for image conversion.
+- **quality**: Default quality for image compression.
 - **replace**: Default setting for replacing original files.
 - **background**: Default background color for images with transparency.
 - **output**: Default output directory for processed images. If `null`, defaults to a `compressed` directory at the same level as the source path.
+- **presets**: Define custom presets for different use cases. Each preset can specify `format`, `quality`, `width`, `height`, and `output`.
 
 ### Default Configuration File
 
 ```json
 {
+  "width": null,
+  "height": null,
+  "quality": 85,
+  "output": null,
+  "format": "none",
+  "replace": false,
+  "background": "#ffffff",
   "presets": {
     "web": { "format": "webp", "quality": 80 },
     "print": { "format": "tiff", "quality": 100 },
     "thumbnail": { "format": "png", "quality": 60, "width": 150, "height": 150 },
     "alloy": { "android": { "scales": { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }, "output": "./app/assets/android/images" }, "iphone": { "scales": { "1x": 1, "2x": 2, "3x": 3 }, "output": "./app/assets/iphone/images" } }
-  },
-  "width": null,
-  "height": null,
-  "quality": 85,
-  "format": "none",
-  "replace": false,
-  "background": "#ffffff",
-  "output": null
+  }
 }
 ```
 
