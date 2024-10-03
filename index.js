@@ -56,7 +56,10 @@ const environments = { ...defaultEnvironments, ...(config.environments || {}) };
 // Helper to display help message
 const displayHelp = () => {
   console.log(chalk.blue(`
-Usage: ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-o=<output_directory>] [-e=<environment>] [-p=<preset>] [-d]')}
+Usage:
+  ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-o=<output_directory>] [-e=<environment>] [-p=<preset>] [-d]')}
+
+  ${chalk.green('imgconvert config')}  Create a default configuration file
 
 Options:
   ${chalk.green('-H, --help')}         Show this help message
@@ -216,6 +219,7 @@ const processImageWithScaling = async (inputFile, scales, outputBaseDir, isIPhon
   const metadata = await originalImage.metadata();
   const { size: originalSize } = fs.statSync(inputFile);
   let totalNewSize = 0;
+  const processedFiles = [];
 
   for (const [scaleName, scaleFactor] of Object.entries(scales)) {
     const outputDir = isIPhone ? outputBaseDir : path.join(outputBaseDir, scaleName);
@@ -248,11 +252,12 @@ const processImageWithScaling = async (inputFile, scales, outputBaseDir, isIPhon
 
     const { size: newSize } = fs.statSync(outputFilePath);
     totalNewSize += newSize;
+    processedFiles.push({ path: outputFilePath, scaleName });
 
-    process.stdout.write(chalk.green(`Processed: ${chalk.yellow(outputFilePath)}                       \r`));
+    process.stdout.write(chalk.green(`Processed: ${chalk.yellow(outputFilePath)}                \r`));
   }
 
-  return { originalSize, newSize: totalNewSize };
+  return { originalSize, newSize: totalNewSize, processedFiles };
 };
 
 // Process image
@@ -319,6 +324,7 @@ const processImages = async () => {
   let processedCount = 0;
   let totalOriginalSize = 0;
   const startTime = Date.now();
+  const processedFilesInfo = [];
 
   const tasks = files.flatMap(file => {
     const inputFile = path.join(inputDir, file);
@@ -331,7 +337,12 @@ const processImages = async () => {
           const scales = subPresetConfig.scales;
           const outputBaseDir = subPresetConfig.output || args.output || path.join(inputDir, 'compressed');
           const isIPhone = subPresetName === 'iphone';
-          return processImageWithScaling(inputFile, scales, outputBaseDir, isIPhone);
+          return processImageWithScaling(inputFile, scales, outputBaseDir, isIPhone).then(result => {
+            if (result) {
+              processedFilesInfo.push(...result.processedFiles);
+            }
+            return result;
+          });
         });
       } else {
         const outputFileBase = replaceOriginal ? path.join(inputDir, path.parse(file).name) : path.join(outputDir, path.parse(file).name);
@@ -362,7 +373,14 @@ const processImages = async () => {
   if (processedCount === 0) {
     console.log(chalk.yellow('No valid images were found or processed in the specified location.'));
   } else {
-    console.log(chalk.green(`${chalk.yellow('Process complete!')} | The images can be found in: ${chalk.yellow(outputDir)}`));
+    if (args.preset === 'alloy') {
+      console.log(chalk.green(`${chalk.yellow('Process complete!')} | The images have been processed for Alloy and can be found in the following directories:\n`));
+      processedFilesInfo.forEach(fileInfo => {
+        console.log(chalk.green(`  - ${chalk.yellow(fileInfo.path)} (Scale: ${fileInfo.scaleName})`));
+      });
+    } else {
+      console.log(chalk.green(`${chalk.yellow('Process complete!')} | The images can be found in: ${chalk.yellow(outputDir)}`));
+    }
 
     if (args.debug) {
       const totalSavings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);

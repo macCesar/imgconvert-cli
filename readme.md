@@ -44,13 +44,39 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
 - `-w, --width`: (Optional) Set the width of the output images.
 - `-h, --height`: (Optional) Set the height of the output images.
 - `-o, --output`: (Optional) Specify the output directory for processed images. If not specified, a `compressed` directory is created at the same level as the source path.
-- `-p, --preset`: (Optional) Apply a preset configuration (e.g., `web`, `print`, `thumbnail`).
+- `-p, --preset`: (Optional) Apply a preset configuration (e.g., `web`, `print`, `thumbnail`, `alloy`).
 - `-e, --environment`: (Optional) Set the environment (e.g., `dev`, `prod`).
 - `-d, --debug`: (Optional) Enable debug mode to show detailed information.
 - `-v, --version`: (Optional) Display the version of the module.
 - `-H, --help`: (Optional) Show the help message with usage instructions.
 
-### Examples
+### Presets
+
+Presets are predefined configurations that allow you to quickly apply a set of options for common use cases. The available presets are:
+
+- **web**: Optimizes images for web use with a format of `webp`, quality of `80`, width of `1024`, and height of `768`.
+- **print**: Configured for high-quality prints with a format of `jpeg` and quality of `100`.
+- **thumbnail**: Creates small images suitable for thumbnails with a format of `png`, quality of `60`, width of `150`, and height of `150`.
+- **alloy**: Specifically designed for use with the Titanium SDK, this preset generates images at multiple resolutions for Android and iPhone. The base images should be 4 times the size of the final 1x images.
+
+### Alloy Preset
+
+The **alloy** preset is tailored for developers using the [Titanium SDK](https://titaniumsdk.com). It generates images at various resolutions suitable for different device densities. When using this preset, ensure that the base images are 4 times the size of the final 1x images. This means that if you want a 1x image to be 100x100 pixels, the base image should be 400x400 pixels.
+
+The alloy preset supports the following configurations:
+
+- **Android**: Generates images for different Android screen densities:
+  - `res-mdpi`: 1x
+  - `res-hdpi`: 1.5x
+  - `res-xhdpi`: 2x
+  - `res-xxhdpi`: 3x
+  - `res-xxxhdpi`: 4x
+- **iPhone**: Generates images for different iPhone screen densities:
+  - `1x`: Standard resolution
+  - `2x`: Retina resolution
+  - `3x`: Super Retina resolution
+
+### Ejemplos Generales
 
 1. **Compress a Single Image Without Changing Format**
 
@@ -180,6 +206,50 @@ imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>
     imgconvert --help
     ```
 
+### Examples for the Alloy Preset
+
+1. **Process Images for Android Using the Alloy Preset**
+
+   To process images for different screen densities on Android, you can use the `alloy` preset.
+
+   **Ensure that the base images are 4 times the size of the final images. For example, if you want the final image for `res-mdpi` to be 100x100 pixels, the base image should be 400x400 pixels.**
+
+   ```bash
+   imgconvert source_folder -p=alloy
+   ```
+
+   This will generate images in the following directories:
+   - `./app/assets/android/images/res-mdpi/`
+   - `./app/assets/android/images/res-hdpi/`
+   - `./app/assets/android/images/res-xhdpi/`
+   - `./app/assets/android/images/res-xxhdpi/`
+   - `./app/assets/android/images/res-xxxhdpi/`
+
+2. **Process Images for iPhone Using the Alloy Preset**
+
+   To process images for different iPhone resolutions, you can also use the `alloy` preset.
+
+   **Ensure that the base images are 4 times the size of the final images.**
+
+   ```bash
+   imgconvert source_folder -p=alloy
+   ```
+
+   This will generate images in the following directories:
+   - `./app/assets/iphone/images/1x/`
+   - `./app/assets/iphone/images/2x/`
+   - `./app/assets/iphone/images/3x/`
+
+3. **Example of Using the Alloy Preset with Original File Replacement**
+
+   If you want to replace the original images with the processed ones for Android using the `alloy` preset, you can use the following command:
+
+   ```bash
+   imgconvert source_folder -p=alloy -r=true
+   ```
+
+   This will replace the original images in the specified output directories.
+
 ## Configuration File
 
 The configuration file `.imgconverter.config.json` allows you to define custom presets and environments. This file is automatically created in the current working directory when you run `imgconvert config`.
@@ -203,7 +273,8 @@ The configuration file `.imgconverter.config.json` allows you to define custom p
   "presets": {
     "web": { "format": "webp", "quality": 80, "width": 1024, "height": 768, "output": null },
     "print": { "format": "jpeg", "quality": 100, "output": null },
-    "thumbnail": { "format": "png", "quality": 60, "width": 150, "height": 150, "output": null }
+    "thumbnail": { "format": "png", "quality": 60, "width": 150, "height": 150, "output": null },
+    "alloy": { "android": { "scales": { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }, "output": "./app/assets/android/images" }, "iphone": { "scales": { "1x": 1, "2x": 2, "3x": 3 }, "output": "./app/assets/iphone/images" } }
   },
   "environments": {
     "dev": { "replace": false, "output": null },
