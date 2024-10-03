@@ -76,7 +76,7 @@ The alloy preset supports the following configurations:
   - `2x`: Retina resolution
   - `3x`: Super Retina resolution
 
-### Ejemplos Generales
+### General Examples
 
 1. **Compress a Single Image Without Changing Format**
 
