@@ -21,7 +21,27 @@ if (fs.existsSync(configPath)) {
 const defaultPresets = {
   web: { format: 'webp', quality: 80, width: 1024, height: 768 },
   print: { format: 'jpeg', quality: 100 },
-  thumbnail: { format: 'png', quality: 60, width: 150, height: 150 }
+  thumbnail: { format: 'png', quality: 60, width: 150, height: 150 },
+  alloy: {
+    android: {
+      scales: {
+        "res-mdpi": 1,
+        "res-hdpi": 1.5,
+        "res-xhdpi": 2,
+        "res-xxhdpi": 3,
+        "res-xxxhdpi": 4
+      },
+      output: "./app/assets/android/images"
+    },
+    iphone: {
+      scales: {
+        "1x": 1,
+        "2x": 2,
+        "3x": 3
+      },
+      output: "./app/assets/iphone/images"
+    }
+  }
 };
 
 const defaultEnvironments = {
@@ -48,7 +68,7 @@ Options:
   ${chalk.green('-h, --height')}       Set the height of the output images
   ${chalk.green('-r, --replace')}      Replace original files (${chalk.yellow('true or false; default: false')})
   ${chalk.green('-o, --output')}       Set the output directory for processed images
-  ${chalk.green('-p, --preset')}       Apply a preset configuration (${chalk.yellow('web, print, thumbnail')})
+  ${chalk.green('-p, --preset')}       Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy')})
   ${chalk.green('-e, --environment')}  Set the environment (${chalk.yellow('dev, prod; default: dev')})
   ${chalk.green('-d, --debug')}        Enable debug mode to show detailed information
 
@@ -190,57 +210,37 @@ const height = args.height ? parseInt(args.height, 10) : null;
 // Supported image formats
 const supportedFormats = ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif'];
 
-// Process images
-const processImage = async (inputFile, outputFileBase, format) => {
-  let sharpInstance = sharp(inputFile);
+// Process images with scaling
+const processImageWithScaling = async (inputFile, scales, outputBaseDir, isIPhone) => {
+  const originalImage = sharp(inputFile);
+  const metadata = await originalImage.metadata();
 
-  if (width || height) {
-    sharpInstance = sharpInstance.resize(width, height);
-  }
+  for (const [scaleName, scaleFactor] of Object.entries(scales)) {
+    const outputDir = path.join(outputBaseDir, scaleName);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
 
-  if (format === 'png') {
-    sharpInstance = sharpInstance.png({
-      palette: true,
-      quality: quality,
-      compressionLevel: 9,
-    });
-  } else if (format === 'webp') {
-    sharpInstance = sharpInstance.webp({
-      quality: quality,
-    });
-  } else if (format === 'avif') {
-    sharpInstance = sharpInstance.avif({
-      quality: quality,
-    });
-  } else if (format === 'tiff') {
-    sharpInstance = sharpInstance.tiff({
-      quality: quality,
-      compression: 'lzw',
-    });
-  } else if (format === 'gif') {
-    sharpInstance = sharpInstance.gif();
-  } else {
-    sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({
-      quality: quality,
-    });
-  }
+    let outputFileName;
+    if (isIPhone) {
+      outputFileName = scaleName === '1x'
+        ? `${path.basename(inputFile)}`
+        : `${path.basename(inputFile, path.extname(inputFile))}@${scaleName}${path.extname(inputFile)}`;
+    } else {
+      outputFileName = path.basename(inputFile);
+    }
 
-  try {
-    const { size: originalSize } = fs.statSync(inputFile);
-    const tempOutputFile = path.join(os.tmpdir(), `${path.basename(outputFileBase)}.${format}`);
-    await sharpInstance.toFile(tempOutputFile);
+    const outputFilePath = path.join(outputDir, outputFileName);
 
-    const finalOutputFile = replaceOriginal ? `${outputFileBase}.${format}` : path.join(outputDir, `${path.basename(outputFileBase)}.${format}`);
+    await originalImage
+      .resize({
+        width: Math.round(metadata.width * scaleFactor),
+        height: Math.round(metadata.height * scaleFactor),
+        fit: 'contain'
+      })
+      .toFile(outputFilePath);
 
-    fs.renameSync(tempOutputFile, finalOutputFile);
-
-    const { size: newSize } = fs.statSync(finalOutputFile);
-    const savings = ((originalSize - newSize) / originalSize * 100).toFixed(2);
-    process.stdout.write(chalk.green(`Processed: ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(format.toUpperCase())} (${savings}%)                \r`));
-    return { originalSize, newSize };
-  } catch (err) {
-    console.error(chalk.red(`Error processing ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(format.toUpperCase())}: ${err.message}`));
-    return null;
+    console.log(chalk.green(`Generated: ${outputFilePath}`));
   }
 };
 
@@ -260,12 +260,22 @@ const processImages = async () => {
     const fileExtension = path.extname(file).toLowerCase().slice(1);
 
     if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
-      const outputFileBase = replaceOriginal ? path.join(inputDir, path.parse(file).name) : path.join(outputDir, path.parse(file).name);
-
-      if (format === 'all') {
-        return Promise.all(supportedFormats.map(fmt => processImage(inputFile, outputFileBase, fmt)));
+      if (args.preset === 'alloy') {
+        const alloyPreset = presets.alloy;
+        for (const [subPresetName, subPresetConfig] of Object.entries(alloyPreset)) {
+          const scales = subPresetConfig.scales;
+          const outputBaseDir = subPresetConfig.output || args.output || path.join(inputDir, 'compressed');
+          const isIPhone = subPresetName === 'iphone';
+          return processImageWithScaling(inputFile, scales, outputBaseDir, isIPhone);
+        }
       } else {
-        return processImage(inputFile, outputFileBase, format === 'none' ? fileExtension : format);
+        const outputFileBase = replaceOriginal ? path.join(inputDir, path.parse(file).name) : path.join(outputDir, path.parse(file).name);
+
+        if (format === 'all') {
+          return Promise.all(supportedFormats.map(fmt => processImage(inputFile, outputFileBase, fmt)));
+        } else {
+          return processImage(inputFile, outputFileBase, format === 'none' ? fileExtension : format);
+        }
       }
     }
     return Promise.resolve();
