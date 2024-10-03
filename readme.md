@@ -76,6 +76,50 @@ The alloy preset supports the following configurations:
   - `2x`: Retina resolution
   - `3x`: Super Retina resolution
 
+### Examples for the Alloy Preset
+
+1. **Process Images for Android Using the Alloy Preset**
+
+   To process images for different screen densities on Android, you can use the `alloy` preset.
+
+   **Ensure that the base images are 4 times the size of the final images. For example, if you want the final image for `res-mdpi` to be 100x100 pixels, the base image should be 400x400 pixels.**
+
+   ```bash
+   imgconvert source_folder -p=alloy
+   ```
+
+   This will generate images in the following directories:
+   - `./app/assets/android/images/res-mdpi/`
+   - `./app/assets/android/images/res-hdpi/`
+   - `./app/assets/android/images/res-xhdpi/`
+   - `./app/assets/android/images/res-xxhdpi/`
+   - `./app/assets/android/images/res-xxxhdpi/`
+
+2. **Process Images for iPhone Using the Alloy Preset**
+
+   To process images for different iPhone resolutions, you can also use the `alloy` preset.
+
+   **Ensure that the base images are 4 times the size of the final images.**
+
+   ```bash
+   imgconvert source_folder -p=alloy
+   ```
+
+   This will generate images in the following directories:
+   - `./app/assets/iphone/images/1x/`
+   - `./app/assets/iphone/images/2x/`
+   - `./app/assets/iphone/images/3x/`
+
+3. **Example of Using the Alloy Preset with Original File Replacement**
+
+   If you want to replace the original images with the processed ones for Android using the `alloy` preset, you can use the following command:
+
+   ```bash
+   imgconvert source_folder -p=alloy -r=true
+   ```
+
+   This will replace the original images in the specified output directories.
+
 ### General Examples
 
 1. **Compress a Single Image Without Changing Format**
@@ -205,50 +249,6 @@ The alloy preset supports the following configurations:
     ```bash
     imgconvert --help
     ```
-
-### Examples for the Alloy Preset
-
-1. **Process Images for Android Using the Alloy Preset**
-
-   To process images for different screen densities on Android, you can use the `alloy` preset.
-
-   **Ensure that the base images are 4 times the size of the final images. For example, if you want the final image for `res-mdpi` to be 100x100 pixels, the base image should be 400x400 pixels.**
-
-   ```bash
-   imgconvert source_folder -p=alloy
-   ```
-
-   This will generate images in the following directories:
-   - `./app/assets/android/images/res-mdpi/`
-   - `./app/assets/android/images/res-hdpi/`
-   - `./app/assets/android/images/res-xhdpi/`
-   - `./app/assets/android/images/res-xxhdpi/`
-   - `./app/assets/android/images/res-xxxhdpi/`
-
-2. **Process Images for iPhone Using the Alloy Preset**
-
-   To process images for different iPhone resolutions, you can also use the `alloy` preset.
-
-   **Ensure that the base images are 4 times the size of the final images.**
-
-   ```bash
-   imgconvert source_folder -p=alloy
-   ```
-
-   This will generate images in the following directories:
-   - `./app/assets/iphone/images/1x/`
-   - `./app/assets/iphone/images/2x/`
-   - `./app/assets/iphone/images/3x/`
-
-3. **Example of Using the Alloy Preset with Original File Replacement**
-
-   If you want to replace the original images with the processed ones for Android using the `alloy` preset, you can use the following command:
-
-   ```bash
-   imgconvert source_folder -p=alloy -r=true
-   ```
-
-   This will replace the original images in the specified output directories.
 
 ## Configuration File
 
