@@ -61,7 +61,11 @@ Presets are predefined configurations that allow you to quickly apply a set of o
 
 ### Alloy Preset
 
-The **alloy** preset is tailored for developers using the [Titanium SDK](https://titaniumsdk.com). It generates images at various resolutions suitable for different device densities. When using this preset, ensure that the base images are 4 times the size of the final 1x images. This means that if you want a 1x image to be 100x100 pixels, the base image should be 400x400 pixels.
+The **alloy** preset is tailored for developers using the [Titanium SDK](https://titaniumsdk.com). It generates images at various resolutions suitable for different device densities.
+
+When using this preset, ensure that the base images are 4 times the size of the final 1x images.
+
+This means that if you want a 1x image to be 100x100 pixels, the base image should be 400x400 pixels.
 
 The alloy preset supports the following configurations:
 
