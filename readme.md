@@ -35,15 +35,17 @@ To install `imgconvert-cli`, you need to have Node.js and NPM installed on your 
 npm install -g imgconvert-cli
 ```
 
-## Usage
-
-The basic syntax for using `imgconvert-cli` is:
+## Basic Usage
 
 ```bash
-imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-o=<output_directory>] [-p=<preset>] [-e=<environment>] [-d]
+imgconvert <source_path>
 ```
-
 - `<source_path>`: The path to the image file or directory containing the images you want to process. This is a required positional argument.
+
+## Options
+
+The available options for the `imgconvert-cli` command let users customize image conversions easily.
+
 - `-f, --format`: (Optional) The desired output format. Supported formats are `jpeg`, `png`, `webp`, `avif`, `tiff`, and `gif`. Use `all` to convert to all formats simultaneously. If not specified, the original format is retained.
 - `-q, --quality`: (Optional) The quality of the output images, specified as an integer between 1 and 100. The default quality is 85.
 - `-b, --background`: (Optional) The background color to use when converting images with transparency to formats without transparency (e.g., PNG to JPEG). Specify the color in hexadecimal format (e.g., `#ffffff` for white). The default is white.
