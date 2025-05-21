@@ -19,27 +19,19 @@ if (fs.existsSync(configPath)) {
 
 // Default presets
 const defaultPresets = {
-  web: { quality: 80, format: 'webp' },
-  print: { quality: 100, format: 'tiff' },
-  thumbnail: { width: 150, height: 150, quality: 60, format: 'png' },
+  web: { source: null, quality: 80, format: 'webp' },
+  print: { source: null, quality: 100, format: 'tiff' },
+  thumbnail: { source: null, width: 150, height: 150, quality: 60, format: 'png' },
   alloy: {
     android: {
-      scales: {
-        "res-mdpi": 1,
-        "res-hdpi": 1.5,
-        "res-xhdpi": 2,
-        "res-xxhdpi": 3,
-        "res-xxxhdpi": 4
-      },
-      output: "./app/assets/android/images"
+      source: null,
+      output: "./app/assets/android/images",
+      scales: { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }
     },
     iphone: {
-      scales: {
-        "1x": 1,
-        "2x": 2,
-        "3x": 3
-      },
-      output: "./app/assets/iphone/images"
+      source: null,
+      output: "./app/assets/iphone/images",
+      scales: { "1x": 1, "2x": 2, "3x": 3 }
     }
   }
 };
@@ -51,7 +43,7 @@ const presets = { ...defaultPresets, ...(config.presets || {}) };
 const displayHelp = () => {
   console.log(chalk.blue(`
 Usage:
-  ${chalk.green('imgconvert <source_path> [-f=<format|all>] [-q=<quality>] [-b=<background_color>] [-r=<replace>] [-w=<width>] [-h=<height>] [-o=<output_directory>] [-e=<environment>] [-p=<preset>] [-d]')}
+  ${chalk.green('imgconvert <source_path> [-f <format|all>] [-q <quality>] [-b <background_color>] [-r] [-w <width>] [-h <height>] [-o <output_directory>] [-e <environment>] [-p <preset>] [-d]')}
 
   ${chalk.green('imgconvert config')}  Create a default configuration file
 
@@ -63,7 +55,7 @@ Options:
   ${chalk.green('-b, --background')}   Set the background color for PNG images (${chalk.yellow('default: #ffffff')})
   ${chalk.green('-w, --width')}        Set the width of the output images
   ${chalk.green('-h, --height')}       Set the height of the output images
-  ${chalk.green('-r, --replace')}      Replace original files (${chalk.yellow('true or false; default: false')})
+  ${chalk.green('-r, --replace')}      Enables replacement of original files (default: false)
   ${chalk.green('-o, --output')}       Set the output directory for processed images
   ${chalk.green('-p, --preset')}       Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy')})
   ${chalk.green('-e, --environment')}  Set the environment (${chalk.yellow('dev, prod; default: dev')})
@@ -90,13 +82,14 @@ const args = minimist(process.argv.slice(2), {
     e: 'environment',
     d: 'debug'
   },
+  boolean: ['replace'],
   default: {
     preset: null,
     environment: 'dev',
     width: config.width || null,
     height: config.height || null,
     quality: config.quality || 85,
-    format: config.format || 'none',
+    format: config.format !== undefined ? config.format : null,
     replace: config.replace || false,
     background: config.background || '#ffffff',
     output: config.output || null,
@@ -138,8 +131,9 @@ if (args._[0] === 'config') {
     width: null,
     height: null,
     quality: 85,
+    source: null,
     output: null,
-    format: 'none',
+    format: null,
     replace: false,
     background: '#ffffff',
     presets: defaultPresets
@@ -160,13 +154,44 @@ if (args.preset && presets[args.preset]) {
   args.output = presetConfig.output || args.output;
   args.replace = presetConfig.replace !== undefined ? presetConfig.replace : args.replace;
   args.background = presetConfig.background || args.background;
+  // If the preset has source, use it, else use global config.source
+  if (presetConfig.source) {
+    args.presetSource = presetConfig.source;
+  } else if (config.source) {
+    args.presetSource = config.source;
+  }
 }
 
 // Input validation
-const inputPath = args._[0];
+let inputPath = args._[0];
 if (!inputPath) {
-  console.error(chalk.red('Error: Please provide a source file or folder.'));
-  process.exit(1);
+  // Try to use the source folder from the preset or global config
+  if (args.presetSource) {
+    inputPath = args.presetSource;
+    console.log(chalk.blue(`Using source folder from preset or global config: ${chalk.yellow(inputPath)}`));
+  } else if (args.preset === 'alloy') {
+    // Try to use source from alloy subpresets
+    const alloyPreset = presets.alloy;
+    const androidSource = alloyPreset.android && alloyPreset.android.source;
+    const iphoneSource = alloyPreset.iphone && alloyPreset.iphone.source;
+    if (androidSource) {
+      inputPath = androidSource;
+      console.log(chalk.blue(`Using source folder from alloy.android preset: ${chalk.yellow(inputPath)}`));
+    } else if (iphoneSource) {
+      inputPath = iphoneSource;
+      console.log(chalk.blue(`Using source folder from alloy.iphone preset: ${chalk.yellow(inputPath)}`));
+    } else if (config.source) {
+      inputPath = config.source;
+      console.log(chalk.blue(`Using global source folder from config: ${chalk.yellow(inputPath)}`));
+    }
+  } else if (config.source) {
+    inputPath = config.source;
+    console.log(chalk.blue(`Using global source folder from config: ${chalk.yellow(inputPath)}`));
+  }
+  if (!inputPath) {
+    console.error(chalk.red('Error: Please provide a source file or folder.'));
+    process.exit(1);
+  }
 }
 if (!fs.existsSync(inputPath)) {
   console.error(chalk.red(`Error: The specified path "${inputPath}" does not exist.`));
@@ -190,10 +215,10 @@ if (!fs.existsSync(outputDir)) {
 }
 
 // Variables
-const format = args.format;
+const format = args.format === undefined || args.format === 'none' ? null : args.format;
 const backgroundColor = args.background;
 const quality = parseInt(args.quality, 10);
-const replaceOriginal = args.replace === 'true';
+const replaceOriginal = !!args.replace;
 const width = args.width ? parseInt(args.width, 10) : null;
 const height = args.height ? parseInt(args.height, 10) : null;
 
@@ -306,10 +331,9 @@ const processImages = async () => {
   const isDirectory = fs.lstatSync(inputPath).isDirectory();
   const inputDir = isDirectory ? inputPath : path.dirname(inputPath);
   const files = isDirectory ? fs.readdirSync(inputPath) : [path.basename(inputPath)];
-
-  let totalNewSize = 0;
   let processedCount = 0;
   let totalOriginalSize = 0;
+  let totalNewSize = 0;
   const startTime = Date.now();
   const processedFilesInfo = [];
 
@@ -337,7 +361,7 @@ const processImages = async () => {
         if (format === 'all') {
           return Promise.all(supportedFormats.map(fmt => processImage(inputFile, outputFileBase, fmt)));
         } else {
-          return processImage(inputFile, outputFileBase, format === 'none' ? fileExtension : format);
+          return processImage(inputFile, outputFileBase, !format ? fileExtension : format);
         }
       }
     }
