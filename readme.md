@@ -19,6 +19,7 @@ It supports various formats and lets you optimize images for the web or other pu
     - [Configuration Parameters](#configuration-parameters)
     - [Default Configuration File](#default-configuration-file)
   - [Debug Mode](#debug-mode)
+  - [Environment Mode](#environment-mode)
   - [Dependencies](#dependencies)
   - [Error Handling](#error-handling)
   - [Contribution](#contribution)
@@ -34,16 +35,17 @@ It supports various formats and lets you optimize images for the web or other pu
 - **Configurable Background Color**: Set a background color for images converted from formats with transparency (e.g., PNG) to formats without transparency (e.g., JPEG).
 - **Multi-Format Conversion**: Convert images to all supported formats in one command.
 - **Image Resizing**: Resize images by specifying width and/or height.
-- **Replace Original Files**: Optionally replace original files with processed images.
+- **Replace Original Files**: Optionally replace original files with processed images (**see Environment Mode for restrictions**).
 - **Presets**: Use predefined settings for different use cases.
 - **Custom Output Directory**: Set a custom directory for processed images, or use the default `compressed` directory.
 - **Debug Mode**: Enable detailed logging for troubleshooting.
+- **Environment Mode**: Switch between development and production behaviors for safer testing and real deployments.
 
 ## How It Works
 
 - Accepts a single file or a directory as input.
 - Uses `sharp` to apply compression, format conversion, resizing, and optional background color.
-- Outputs to a `compressed` subfolder by default, or replaces original files if `--replace` is used.
+- Outputs to a `compressed` subfolder by default, or replaces original files if `--replace` is used (**only in production mode**).
 - Resizing preserves aspect ratio unless both width and height are specified.
 
 ## Installation
@@ -69,15 +71,33 @@ The available options for the `imgconvert-cli` command let users customize image
 - `-f, --format`: (Optional) The desired output format. Supported formats: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, or `all`. If not specified, the original format is retained.
 - `-q, --quality`: (Optional) Output image quality (1-100). Default: 85.
 - `-b, --background`: (Optional) Hex color for filling transparent areas when converting to formats that do not support transparency (e.g., PNG to JPEG). Ignored if the output format supports transparency. Default: `#ffffff`.
-- `-r, --replace`: (Optional) Enables replacement of original files. Default: `false`.
+- `-r, --replace`: (Optional) Enables replacement of original files. Default: `false`. **Note: This is only allowed in production mode. In development mode, this option is ignored and files are never overwritten.**
 - `-w, --width`: (Optional) Set output image width.
 - `-h, --height`: (Optional) Set output image height.
-- `-o, --output`: (Optional) Set a custom output directory. If not specified, a `compressed` directory is created at the same level as the source path.
+- `-o, --output`: (Optional) Set a custom output directory. If not specified, a `compressed` directory is created at the same level as the source path (or `compressed-dev` in development mode).
 - `-p, --preset`: (Optional) Apply a preset configuration (e.g., `web`, `print`, `thumbnail`, `alloy`).
-- `-e, --environment`: (Optional) Set the environment (`dev`, `prod`).
-- `-d, --debug`: (Optional) Enable debug mode for detailed information.
+- `-e, --environment`: (Optional) Set the environment mode. Allowed values: `dev` (default), `prod`.
+    - In `dev` mode: original files are never overwritten, output goes to `compressed-dev`, and debug logs are always enabled.
+    - In `prod` mode: original files can be overwritten if `--replace` is used, output goes to `compressed`, and debug logs are only shown if `--debug` is set.
+- `-d, --debug`: (Optional) Enable debug mode for detailed information (always enabled in `dev` mode).
 - `-v, --version`: (Optional) Displays the version and exits.
 - `-H, --help`: (Optional) Show the help message.
+
+## Environment Mode
+
+The `--environment` (or `-e`) option controls the behavior of the CLI for safer development and real production use:
+
+- **Development mode (`--environment=dev`, default):**
+  - Original files are never overwritten, even if `--replace` is specified (the option is ignored).
+  - Output images are always written to a `compressed-dev` folder next to the source.
+  - Debug logs are always enabled.
+  - A warning is shown if you try to use `--replace`.
+- **Production mode (`--environment=prod`):**
+  - Original files can be overwritten if `--replace` is specified.
+  - Output images are written to the normal `compressed` folder (or the one specified with `--output`).
+  - Debug logs are only shown if `--debug` is specified.
+
+This allows you to safely test your image processing workflow in development without risking your original files, and then switch to production for real conversions.
 
 ## Examples
 
@@ -135,10 +155,10 @@ The available options for the `imgconvert-cli` command let users customize image
    imgconvert source_folder -f all
    ```
 
-10. Replace original files with processed images:
+10. Replace original files with processed images (only in production mode):
 
     ```bash
-    imgconvert source_folder -r
+    imgconvert source_folder -r -e prod
     ```
 
 11. Use a preset configuration:
@@ -225,7 +245,7 @@ The configuration file `.imgconverter.config.json` allows you to define global d
 - **quality**: Default quality for image compression.
 - **replace**: Default setting for replacing original files.
 - **source**: Global default source folder for images. If not provided as a CLI argument or in a preset, this will be used as the input folder.
-- **output**: Default output directory for processed images. If `null`, defaults to a `compressed` directory at the same level as the source path.
+- **output**: Default output directory for processed images. If `null`, defaults to a `compressed` directory at the same level as the source path (or `compressed-dev` in development mode).
 - **background**: Hex color used to fill transparent areas only when converting images with transparency to formats that do not support it (e.g., PNG to JPEG). Ignored if the output format supports transparency.
 - **presets**: Define custom presets for different use cases. Each preset can specify its own `format`, `quality`, `width`, `height`, `output`, and `source`. If a preset does not define `source`, the global `source` will be used.
 
@@ -263,7 +283,7 @@ The configuration file `.imgconverter.config.json` allows you to define global d
 
 ## Debug Mode
 
-When debug mode is enabled with the `-d` or `--debug` option, the tool displays summary statistics after processing:
+When debug mode is enabled with the `-d` or `--debug` option, the tool displays summary statistics after processing. In development mode, debug mode is always enabled.
 
 **Sample Debug Output:**
 ```

@@ -97,6 +97,24 @@ const args = minimist(process.argv.slice(2), {
   }
 });
 
+// Environment logic
+const environment = args.environment || 'dev';
+let effectiveReplace = !!args.replace;
+let effectiveDebug = !!args.debug;
+let effectiveOutput = args.output;
+
+if (environment === 'dev') {
+  if (args.replace) {
+    console.log(chalk.yellow('[DEV MODE] Overwriting original files is disabled in development environment. Output will be written to "compressed-dev" folder.'));
+  }
+  effectiveReplace = false;
+  effectiveDebug = true;
+  // If output is not set, use compressed-dev
+  if (!args.output && !config.output) {
+    effectiveOutput = null; // will be set to compressed-dev below
+  }
+}
+
 // Handle height and width validation
 if (args.height && (isNaN(parseInt(args.height)) || parseInt(args.height) <= 0)) {
   console.error(chalk.red(`Error: The height argument ('-h' or '--height') must be a positive integer.`));
@@ -200,13 +218,15 @@ if (!fs.existsSync(inputPath)) {
 
 // Determine output directory
 let outputDir;
-if (args.output) {
-  outputDir = args.output;
+if (effectiveOutput) {
+  outputDir = effectiveOutput;
 } else if (config.output) {
   outputDir = config.output;
 } else {
   const inputDir = fs.lstatSync(inputPath).isDirectory() ? inputPath : path.dirname(inputPath);
-  outputDir = path.join(inputDir, 'compressed');
+  outputDir = environment === 'dev'
+    ? path.join(inputDir, 'compressed-dev')
+    : path.join(inputDir, 'compressed');
 }
 
 // Ensure output directory exists
@@ -218,9 +238,10 @@ if (!fs.existsSync(outputDir)) {
 const format = args.format === undefined || args.format === 'none' ? null : args.format;
 const backgroundColor = args.background;
 const quality = parseInt(args.quality, 10);
-const replaceOriginal = !!args.replace;
+const replaceOriginal = effectiveReplace;
 const width = args.width ? parseInt(args.width, 10) : null;
 const height = args.height ? parseInt(args.height, 10) : null;
+const debugMode = effectiveDebug;
 
 // Supported image formats
 const supportedFormats = ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif'];
@@ -393,7 +414,7 @@ const processImages = async () => {
       console.log(chalk.green(`${chalk.yellow('Process complete!')} | The images can be found in: ${chalk.yellow(outputDir)}`));
     }
 
-    if (args.debug) {
+    if (debugMode) {
       const totalSavings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
 
       console.log(chalk.green(`\nStats:
