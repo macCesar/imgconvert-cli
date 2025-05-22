@@ -350,6 +350,20 @@ const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPh
 const processImage = async (inputFile, outputFileBase, format) => {
   let sharpInstance = sharp(inputFile);
 
+  // Conservar la extensión original para el output
+  let outputExtension = format;
+  let sharpFormat = format;
+
+  if (!outputExtension) {
+    outputExtension = path.extname(inputFile).slice(1).toLowerCase();
+    sharpFormat = outputExtension;
+  }
+
+  // Solo normalizar para Sharp, no para el nombre del archivo
+  if (sharpFormat === 'jpg') {
+    sharpFormat = 'jpeg';
+  }
+
   // Si formato es 'all', procesar para todos los formatos soportados
   if (format === 'all') {
     let results = [];
@@ -357,46 +371,39 @@ const processImage = async (inputFile, outputFileBase, format) => {
       const result = await processImage(inputFile, outputFileBase, fmt);
       if (result) results.push(result);
     }
-    // Sumar todos los tamaños originales y nuevos
     const totalOriginal = results.reduce((sum, r) => sum + r.originalSize, 0);
     const totalNew = results.reduce((sum, r) => sum + r.newSize, 0);
     return { originalSize: totalOriginal / results.length, newSize: totalNew };
-  }
-
-  // Si no se especificó formato, usar el formato original del archivo
-  let effectiveFormat = format;
-  if (!effectiveFormat) {
-    effectiveFormat = path.extname(inputFile).slice(1).toLowerCase();
-    // Normaliza 'jpg' a 'jpeg' para sharp
-    if (effectiveFormat === 'jpg') effectiveFormat = 'jpeg';
   }
 
   if (width || height) {
     sharpInstance = sharpInstance.resize(width, height);
   }
 
-  if (effectiveFormat === 'png') {
+  // Usar sharpFormat para Sharp (puede ser 'jpeg')
+  if (sharpFormat === 'png') {
     sharpInstance = sharpInstance.png({
       palette: true,
       quality: quality,
       compressionLevel: 9,
     });
-  } else if (effectiveFormat === 'webp') {
+  } else if (sharpFormat === 'webp') {
     sharpInstance = sharpInstance.webp({
       quality: quality,
     });
-  } else if (effectiveFormat === 'avif') {
+  } else if (sharpFormat === 'avif') {
     sharpInstance = sharpInstance.avif({
       quality: quality,
     });
-  } else if (effectiveFormat === 'tiff') {
+  } else if (sharpFormat === 'tiff') {
     sharpInstance = sharpInstance.tiff({
       quality: quality,
       compression: 'lzw',
     });
-  } else if (effectiveFormat === 'gif') {
+  } else if (sharpFormat === 'gif') {
     sharpInstance = sharpInstance.gif();
   } else {
+    // Para JPEG (incluyendo archivos JPG originales)
     sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({
       quality: quality,
     });
@@ -404,25 +411,31 @@ const processImage = async (inputFile, outputFileBase, format) => {
 
   try {
     const { size: originalSize } = fs.statSync(inputFile);
-    const tempOutputFile = path.join(os.tmpdir(), `${path.basename(outputFileBase)}.${effectiveFormat}`);
+
+    // Usar outputExtension para el nombre del archivo (conserva 'jpg' si era 'jpg')
+    const tempOutputFile = path.join(os.tmpdir(), `${path.basename(outputFileBase)}.${outputExtension}`);
     await sharpInstance.toFile(tempOutputFile);
 
-    const finalOutputFile = replaceOriginal ? `${outputFileBase}.${effectiveFormat}` : path.join(outputDir, `${path.basename(outputFileBase)}.${effectiveFormat}`);
+    const finalOutputFile = replaceOriginal
+      ? `${outputFileBase}.${outputExtension}`
+      : path.join(outputDir, `${path.basename(outputFileBase)}.${outputExtension}`);
 
     fs.renameSync(tempOutputFile, finalOutputFile);
 
     const { size: newSize } = fs.statSync(finalOutputFile);
 
-    // Calcular savings de manera segura para evitar NaN
     let savings = '0.00';
     if (originalSize > 0) {
       savings = ((originalSize - newSize) / originalSize * 100).toFixed(2);
     }
 
-    process.stdout.write(chalk.green(`Processed: ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(effectiveFormat ? effectiveFormat.toUpperCase() : 'UNKNOWN')} (${savings}%)                \r`));
+    // Para el log, usar la extensión original
+    const displayFormat = outputExtension.toUpperCase();
+    process.stdout.write(chalk.green(`Processed: ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(displayFormat)} (${savings}%)                \r`));
     return { originalSize, newSize };
   } catch (err) {
-    console.error(chalk.red(`Error processing ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(effectiveFormat ? effectiveFormat.toUpperCase() : 'UNKNOWN')}: ${err.message}`));
+    const displayFormat = outputExtension ? outputExtension.toUpperCase() : 'UNKNOWN';
+    console.error(chalk.red(`Error processing ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(displayFormat)}: ${err.message}`));
     return null;
   }
 };
