@@ -12,15 +12,15 @@ It supports various formats and lets you optimize images for the web or other pu
   - [Installation](#installation)
   - [Basic Usage](#basic-usage)
   - [Options](#options)
+  - [Environment Mode](#environment-mode)
   - [Examples](#examples)
   - [Presets](#presets)
-    - [Output for Alloy (Android & iPhone)](#output-for-alloy-android--iphone)
+    - [Output for Alloy (Android \& iPhone)](#output-for-alloy-android--iphone)
     - [Using Preset Source Folders](#using-preset-source-folders)
   - [Configuration File](#configuration-file)
     - [Configuration Parameters](#configuration-parameters)
     - [Default Configuration File](#default-configuration-file)
   - [Debug Mode](#debug-mode)
-  - [Environment Mode](#environment-mode)
   - [Dependencies](#dependencies)
   - [Error Handling](#error-handling)
   - [Contribution](#contribution)
@@ -65,11 +65,13 @@ imgconvert <source_path>
 
 - `<source_path>`: The path to the image file or directory containing the images you want to process. This is a required positional argument.
 
+> **Note:** Whether you provide a single file or a directory, if you do **not** specify the `-f`/`--format` option, each output image will keep its original format. This applies to both single-file and batch (directory) processing.
+
 ## Options
 
 The available options for the `imgconvert-cli` command let users customize image conversions easily.
 
-- `-f, --format`: (Optional) The desired output format. Supported formats: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, or `all`. If not specified, the original format is retained.
+- `-f, --format`: (Optional) The desired output format. Supported formats: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, or `all`. If not specified, **the original format of each file is retained**.
 - `-q, --quality`: (Optional) Output image quality (1-100). Default: 85.
 - `-b, --background`: (Optional) Hex color for filling transparent areas when converting to formats that do not support transparency (e.g., PNG to JPEG). Ignored if the output format supports transparency. Default: `#ffffff`.
 - `-r, --replace`: (Optional) Enables replacement of original files. Default: `false`. **Note: This is only allowed in production mode. In development mode, this option is ignored and files are never overwritten.**
@@ -108,7 +110,7 @@ This allows you to safely test your image processing workflow in development wit
    imgconvert image.jpg
    ```
 
-2. Compress all images in a directory without changing format:
+2. Compress all images in a directory without changing format (each file keeps its original format):
 
    ```bash
    imgconvert source_folder

@@ -235,7 +235,8 @@ if (!fs.existsSync(outputDir)) {
 }
 
 // Variables
-const format = args.format === undefined || args.format === 'none' ? null : args.format;
+const userSpecifiedFormat = args.format && args.format !== 'none';
+const format = userSpecifiedFormat ? args.format : null; // null si no se especifica
 const backgroundColor = args.background;
 const quality = parseInt(args.quality, 10);
 const replaceOriginal = effectiveReplace;
@@ -344,31 +345,38 @@ const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPh
 // Process image
 const processImage = async (inputFile, outputFileBase, format) => {
   let sharpInstance = sharp(inputFile);
+  // Si no se especificó formato, usar el formato original del archivo
+  let effectiveFormat = format;
+  if (!effectiveFormat) {
+    effectiveFormat = path.extname(inputFile).slice(1).toLowerCase();
+    // Normaliza 'jpg' a 'jpeg' para sharp
+    if (effectiveFormat === 'jpg') effectiveFormat = 'jpeg';
+  }
 
   if (width || height) {
     sharpInstance = sharpInstance.resize(width, height);
   }
 
-  if (format === 'png') {
+  if (effectiveFormat === 'png') {
     sharpInstance = sharpInstance.png({
       palette: true,
       quality: quality,
       compressionLevel: 9,
     });
-  } else if (format === 'webp') {
+  } else if (effectiveFormat === 'webp') {
     sharpInstance = sharpInstance.webp({
       quality: quality,
     });
-  } else if (format === 'avif') {
+  } else if (effectiveFormat === 'avif') {
     sharpInstance = sharpInstance.avif({
       quality: quality,
     });
-  } else if (format === 'tiff') {
+  } else if (effectiveFormat === 'tiff') {
     sharpInstance = sharpInstance.tiff({
       quality: quality,
       compression: 'lzw',
     });
-  } else if (format === 'gif') {
+  } else if (effectiveFormat === 'gif') {
     sharpInstance = sharpInstance.gif();
   } else {
     sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({
@@ -378,19 +386,19 @@ const processImage = async (inputFile, outputFileBase, format) => {
 
   try {
     const { size: originalSize } = fs.statSync(inputFile);
-    const tempOutputFile = path.join(os.tmpdir(), `${path.basename(outputFileBase)}.${format}`);
+    const tempOutputFile = path.join(os.tmpdir(), `${path.basename(outputFileBase)}.${effectiveFormat}`);
     await sharpInstance.toFile(tempOutputFile);
 
-    const finalOutputFile = replaceOriginal ? `${outputFileBase}.${format}` : path.join(outputDir, `${path.basename(outputFileBase)}.${format}`);
+    const finalOutputFile = replaceOriginal ? `${outputFileBase}.${effectiveFormat}` : path.join(outputDir, `${path.basename(outputFileBase)}.${effectiveFormat}`);
 
     fs.renameSync(tempOutputFile, finalOutputFile);
 
     const { size: newSize } = fs.statSync(finalOutputFile);
     const savings = ((originalSize - newSize) / originalSize * 100).toFixed(2);
-    process.stdout.write(chalk.green(`Processed: ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(format.toUpperCase())} (${savings}%)                \r`));
+    process.stdout.write(chalk.green(`Processed: ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(effectiveFormat ? effectiveFormat.toUpperCase() : 'UNKNOWN')} (${savings}%)                \r`));
     return { originalSize, newSize };
   } catch (err) {
-    console.error(chalk.red(`Error processing ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(format.toUpperCase())}: ${err.message}`));
+    console.error(chalk.red(`Error processing ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(format ? format.toUpperCase() : 'UNKNOWN')}: ${err.message}`));
     return null;
   }
 };
@@ -419,46 +427,4 @@ const processImages = async () => {
           const isIPhone = subPresetName === 'iphone';
           const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig);
           return processImageWithScaling(inputFile, scales, outputSubfolder, isIPhone, effectiveQuality).then(result => {
-            if (result) {
-              processedFilesInfo.push(...result.processedFiles);
-              totalOriginalSize += result.originalSize;
-              totalNewSize += result.newSize;
-              processedCount++;
-            }
-            return result;
-          });
-        });
-      } else {
-        const outputFileBase = path.join(outputDir, path.parse(inputFile).name);
-        return processImage(inputFile, outputFileBase, format).then(result => {
-          if (result) {
-            totalOriginalSize += result.originalSize;
-            totalNewSize += result.newSize;
-            processedCount++;
-          }
-          return result;
-        });
-      }
-    }
-    return [];
-  });
-
-  // Execute all tasks concurrently
-  await Promise.all(tasks);
-
-  // Log processed files information
-  processedFilesInfo.forEach(fileInfo => {
-    console.log(chalk.green(`Processed file: ${chalk.yellow(fileInfo.path)} (Scale: ${fileInfo.scaleName})`));
-  });
-
-  const endTime = Date.now();
-  const duration = ((endTime - startTime) / 1000).toFixed(2);
-  const totalSavings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
-  console.log(chalk.blue(`Processed ${processedCount} files in ${duration} seconds. Total size reduction: ${totalSavings}%`));
-};
-
-// Run the image processing
-processImages().catch(err => {
-  console.error(chalk.red(`Error: ${err.message}`));
-  process.exit(1);
-});
+            if
