@@ -245,7 +245,7 @@ const height = args.height ? parseInt(args.height, 10) : null;
 const debugMode = effectiveDebug;
 
 // Supported image formats
-const supportedFormats = ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif'];
+const supportedFormats = ['jpeg', 'jpg', 'png', 'webp', 'avif', 'tiff', 'gif'];
 
 // Helper to normalize output subfolder (removes leading/trailing slashes)
 function normalizeOutputSubfolder(subfolder) {
@@ -440,7 +440,7 @@ const processImages = async () => {
 
   const tasks = files.flatMap(file => {
     const inputFile = path.join(inputDir, file);
-    const fileExtension = path.extname(file).toLowerCase().slice(1);
+    let fileExtension = path.extname(file).toLowerCase().slice(1);
 
     if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
       if (args.preset === 'alloy') {
