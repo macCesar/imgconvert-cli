@@ -345,6 +345,20 @@ const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPh
 // Process image
 const processImage = async (inputFile, outputFileBase, format) => {
   let sharpInstance = sharp(inputFile);
+
+  // Si formato es 'all', procesar para todos los formatos soportados
+  if (format === 'all') {
+    let results = [];
+    for (const fmt of supportedFormats) {
+      const result = await processImage(inputFile, outputFileBase, fmt);
+      if (result) results.push(result);
+    }
+    // Sumar todos los tamaños originales y nuevos
+    const totalOriginal = results.reduce((sum, r) => sum + r.originalSize, 0);
+    const totalNew = results.reduce((sum, r) => sum + r.newSize, 0);
+    return { originalSize: totalOriginal / results.length, newSize: totalNew };
+  }
+
   // Si no se especificó formato, usar el formato original del archivo
   let effectiveFormat = format;
   if (!effectiveFormat) {
