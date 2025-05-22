@@ -398,7 +398,7 @@ const processImage = async (inputFile, outputFileBase, format) => {
     process.stdout.write(chalk.green(`Processed: ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(effectiveFormat ? effectiveFormat.toUpperCase() : 'UNKNOWN')} (${savings}%)                \r`));
     return { originalSize, newSize };
   } catch (err) {
-    console.error(chalk.red(`Error processing ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(format ? format.toUpperCase() : 'UNKNOWN')}: ${err.message}`));
+    console.error(chalk.red(`Error processing ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(effectiveFormat ? effectiveFormat.toUpperCase() : 'UNKNOWN')}: ${err.message}`));
     return null;
   }
 };
@@ -427,4 +427,57 @@ const processImages = async () => {
           const isIPhone = subPresetName === 'iphone';
           const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig);
           return processImageWithScaling(inputFile, scales, outputSubfolder, isIPhone, effectiveQuality).then(result => {
-            if
+            if (result) {
+              processedFilesInfo.push(...result.processedFiles);
+              totalOriginalSize += result.originalSize;
+              totalNewSize += result.newSize;
+              processedCount++;
+            }
+            return result;
+          });
+        });
+      } else {
+        const outputFileBase = path.join(outputDir, path.parse(inputFile).name);
+        // Si no se especificó formato, pásale null para que processImage use el formato original
+        return processImage(inputFile, outputFileBase, format).then(result => {
+          if (result) {
+            totalOriginalSize += result.originalSize;
+            totalNewSize += result.newSize;
+            processedCount++;
+          }
+          return result;
+        });
+      }
+    }
+    return [];
+  });
+
+  await Promise.all(tasks);
+
+  // Log processed files info
+  if (debugMode) {
+    console.log(chalk.blue(`Processed files:`));
+    processedFilesInfo.forEach(fileInfo => {
+      console.log(chalk.blue(` - ${fileInfo.path} (scale: ${fileInfo.scaleName})`));
+    });
+  }
+
+  // Summary
+  const endTime = Date.now();
+  const duration = ((endTime - startTime) / 1000).toFixed(2);
+  const savings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
+  console.log(chalk.green(`
+Processing complete! Summary:
+  - Processed files: ${chalk.yellow(processedCount)}
+  - Total original size: ${chalk.yellow((totalOriginalSize / 1024).toFixed(2) + ' KB')}
+  - Total new size: ${chalk.yellow((totalNewSize / 1024).toFixed(2) + ' KB')}
+  - Total savings: ${chalk.yellow(savings + '%')}
+  - Duration: ${chalk.yellow(duration + ' seconds')}
+`));
+};
+
+// Start processing
+processImages().catch(err => {
+  console.error(chalk.red(`Unexpected error: ${err.message}`));
+  process.exit(1);
+});
