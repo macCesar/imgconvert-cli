@@ -14,6 +14,7 @@ It supports various formats and lets you optimize images for the web or other pu
   - [Options](#options)
   - [Examples](#examples)
   - [Presets](#presets)
+    - [Output for Alloy (Android & iPhone)](#output-for-alloy-android--iphone)
     - [Using Preset Source Folders](#using-preset-source-folders)
   - [Configuration File](#configuration-file)
     - [Configuration Parameters](#configuration-parameters)
@@ -206,6 +207,46 @@ Presets are predefined configurations for common use cases:
 - **thumbnail**: Small previews (`png`, quality `60`, 150x150). Optionally defines a `source` path.
 - **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iPhone. Each platform can define its own `source` path.
 
+### Output for Alloy (Android & iPhone)
+
+When using the `alloy` preset, the output base path is always fixed:
+
+- Android: `app/assets/android/images`
+- iPhone: `app/assets/iphone/images`
+
+You only need to specify the relative subfolder (without leading or trailing slashes, e.g. `cards/thumbs/baby`) as the `output` in the preset or CLI. The script will generate the correct structure for each density:
+
+**Correct usage:**
+
+```
+"output": "cards/thumbs/baby"
+```
+
+**Do NOT use:**
+- `/cards/thumbs/baby`
+- `cards/thumbs/baby/`
+- `/cards/thumbs/baby/`
+
+**Android Example:**
+
+```
+app/assets/android/images/res-mdpi/cards/thumbs/baby/logo.png
+app/assets/android/images/res-hdpi/cards/thumbs/baby/logo.png
+app/assets/android/images/res-xhdpi/cards/thumbs/baby/logo.png
+app/assets/android/images/res-xxhdpi/cards/thumbs/baby/logo.png
+app/assets/android/images/res-xxxhdpi/cards/thumbs/baby/logo.png
+```
+
+**iPhone Example:**
+
+```
+app/assets/iphone/images/cards/thumbs/baby/logo.png
+app/assets/iphone/images/cards/thumbs/baby/logo@2x.png
+app/assets/iphone/images/cards/thumbs/baby/logo@3x.png
+```
+
+You do **not** need to specify the full output path, just the subfolder as shown above. The script will handle the rest.
+
 ### Using Preset Source Folders
 
 If you do not provide a `<source_path>` argument and the selected preset (or alloy subpreset) defines a `source` property, `imgconvert-cli` will automatically use that folder as the input. This works for top-level presets (like `web`, `print`, `thumbnail`) and for `alloy` subpresets (`android` and `iphone`).
@@ -214,10 +255,17 @@ For example:
 
 ```json
 "presets": {
-  "web": { "format": "webp", "quality": 80, "source": "./images/web" },
   "alloy": {
-    "android": { "scales": { ... }, "output": "./app/assets/android/images", "source": "./images/alloy/android" },
-    "iphone": { "scales": { ... }, "output": "./app/assets/iphone/images", "source": "./images/alloy/iphone" }
+    "android": {
+      "source": "./images/alloy/android",
+      "output": "cards/thumbs/baby",
+      "scales": { ... }
+    },
+    "iphone": {
+      "source": "./images/alloy/iphone",
+      "output": "cards/thumbs/baby",
+      "scales": { ... }
+    }
   }
 }
 ```
@@ -225,13 +273,10 @@ For example:
 Then you can simply run:
 
 ```bash
-imgconvert -p web
 imgconvert -p alloy
 ```
 
-The `alloy` preset runs both `android` and `iphone` subpresets if defined.
-
-And the tool will use the defined source folders automatically.
+And the tool will use the defined source folders and output subfolders automatically.
 
 ## Configuration File
 

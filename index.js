@@ -25,12 +25,12 @@ const defaultPresets = {
   alloy: {
     android: {
       source: null,
-      output: "./app/assets/android/images",
+      output: "",
       scales: { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }
     },
     iphone: {
       source: null,
-      output: "./app/assets/iphone/images",
+      output: "",
       scales: { "1x": 1, "2x": 2, "3x": 3 }
     }
   }
@@ -246,42 +246,90 @@ const debugMode = effectiveDebug;
 // Supported image formats
 const supportedFormats = ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif'];
 
+// Helper to normalize output subfolder (removes leading/trailing slashes)
+function normalizeOutputSubfolder(subfolder) {
+  if (!subfolder) return '';
+  return subfolder.replace(/^\/+|\/+$/g, '');
+}
+
+// Function to get the effective quality for Alloy (CLI > preset > global > default)
+function getEffectiveQuality(subPresetName, subPresetConfig) {
+  // CLI flag always wins
+  if (args.quality) return parseInt(args.quality, 10);
+  // Subpreset (android/iphone) quality
+  if (subPresetConfig && subPresetConfig.quality) return parseInt(subPresetConfig.quality, 10);
+  // Alloy preset quality
+  if (presets.alloy && presets.alloy.quality) return parseInt(presets.alloy.quality, 10);
+  // Global config
+  if (config.quality) return parseInt(config.quality, 10);
+  // Default
+  return 85;
+}
+
 // Function to process images with scaling
-const processImageWithScaling = async (inputFile, scales, outputBaseDir, isIPhone) => {
+const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPhone, quality) => {
+  // Normalize output subfolder to remove leading/trailing slashes
+  const normalizedSubfolder = normalizeOutputSubfolder(outputSubfolder);
   const originalImage = sharp(inputFile);
   const metadata = await originalImage.metadata();
   const { size: originalSize } = fs.statSync(inputFile);
   let totalNewSize = 0;
   const processedFiles = [];
 
+  // Set fixed output base for Alloy
+  const outputBaseDir = isIPhone
+    ? path.join('app', 'assets', 'iphone', 'images')
+    : path.join('app', 'assets', 'android', 'images');
+
   for (const [scaleName, scaleFactor] of Object.entries(scales)) {
-    const outputDir = isIPhone ? outputBaseDir : path.join(outputBaseDir, scaleName);
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
+    let outputDir;
     let outputFileName;
-    if (isIPhone) {
-      outputFileName = scaleName === '1x'
-        ? `${path.basename(inputFile)}`
-        : `${path.basename(inputFile, path.extname(inputFile))}@${scaleName}${path.extname(inputFile)}`;
-    } else {
-      outputFileName = path.basename(inputFile);
-    }
+    let outputFilePath;
 
-    const outputFilePath = path.join(outputDir, outputFileName);
+    if (isIPhone) {
+      outputDir = normalizedSubfolder ? path.join(outputBaseDir, normalizedSubfolder) : outputBaseDir;
+      const baseName = path.parse(inputFile).name;
+      const ext = path.extname(inputFile);
+      outputFileName = scaleName === '1x'
+        ? `${baseName}${ext}`
+        : `${baseName}@${scaleName}${ext}`;
+      outputFilePath = path.join(outputDir, outputFileName);
+    } else {
+      outputDir = normalizedSubfolder
+        ? path.join(outputBaseDir, scaleName, normalizedSubfolder)
+        : path.join(outputBaseDir, scaleName);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      outputFileName = path.basename(inputFile);
+      outputFilePath = path.join(outputDir, outputFileName);
+    }
 
     const targetWidth = Math.round(metadata.width / 4 * scaleFactor);
     const targetHeight = Math.round(metadata.height / 4 * scaleFactor);
 
-    await originalImage
-      .resize({
-        width: targetWidth,
-        height: targetHeight,
-        fit: 'contain'
-      })
-      .withMetadata({ density: 72 })
-      .toFile(outputFilePath);
+    // Detect output format from extension
+    const ext = path.extname(inputFile).toLowerCase();
+    let sharpInstance = sharp(inputFile).resize({
+      width: targetWidth,
+      height: targetHeight,
+      fit: 'contain'
+    });
+    // Apply quality to the output format
+    if (ext === '.png') {
+      sharpInstance = sharpInstance.png({ quality: quality, compressionLevel: 9 });
+    } else if (ext === '.webp') {
+      sharpInstance = sharpInstance.webp({ quality: quality });
+    } else if (ext === '.avif') {
+      sharpInstance = sharpInstance.avif({ quality: quality });
+    } else if (ext === '.tiff') {
+      sharpInstance = sharpInstance.tiff({ quality: quality, compression: 'lzw' });
+    } else if (ext === '.gif') {
+      sharpInstance = sharpInstance.gif();
+    } else {
+      sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({ quality: quality });
+    }
+    await sharpInstance.withMetadata({ density: 72 }).toFile(outputFilePath);
 
     const { size: newSize } = fs.statSync(outputFilePath);
     totalNewSize += newSize;
@@ -367,67 +415,50 @@ const processImages = async () => {
         const alloyPreset = presets.alloy;
         return Object.entries(alloyPreset).map(([subPresetName, subPresetConfig]) => {
           const scales = subPresetConfig.scales;
-          const outputBaseDir = subPresetConfig.output || args.output || path.join(inputDir, 'compressed');
+          const outputSubfolder = args.output || subPresetConfig.output || '';
           const isIPhone = subPresetName === 'iphone';
-          return processImageWithScaling(inputFile, scales, outputBaseDir, isIPhone).then(result => {
+          const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig);
+          return processImageWithScaling(inputFile, scales, outputSubfolder, isIPhone, effectiveQuality).then(result => {
             if (result) {
               processedFilesInfo.push(...result.processedFiles);
+              totalOriginalSize += result.originalSize;
+              totalNewSize += result.newSize;
+              processedCount++;
             }
             return result;
           });
         });
       } else {
-        const outputFileBase = replaceOriginal ? path.join(inputDir, path.parse(file).name) : path.join(outputDir, path.parse(file).name);
-
-        if (format === 'all') {
-          return Promise.all(supportedFormats.map(fmt => processImage(inputFile, outputFileBase, fmt)));
-        } else {
-          return processImage(inputFile, outputFileBase, !format ? fileExtension : format);
-        }
+        const outputFileBase = path.join(outputDir, path.parse(inputFile).name);
+        return processImage(inputFile, outputFileBase, format).then(result => {
+          if (result) {
+            totalOriginalSize += result.originalSize;
+            totalNewSize += result.newSize;
+            processedCount++;
+          }
+          return result;
+        });
       }
     }
     return [];
   });
 
-  const results = await Promise.all(tasks);
+  // Execute all tasks concurrently
+  await Promise.all(tasks);
 
-  results.forEach(result => {
-    if (result && result.originalSize && result.newSize) {
-      processedCount += 1;
-      totalNewSize += result.newSize;
-      totalOriginalSize += result.originalSize;
-    }
+  // Log processed files information
+  processedFilesInfo.forEach(fileInfo => {
+    console.log(chalk.green(`Processed file: ${chalk.yellow(fileInfo.path)} (Scale: ${fileInfo.scaleName})`));
   });
 
   const endTime = Date.now();
-  const elapsedTime = ((endTime - startTime) / 1000).toFixed(2);
-
-  if (processedCount === 0) {
-    console.log(chalk.yellow('No valid images were found or processed in the specified location.'));
-  } else {
-    if (args.preset === 'alloy') {
-      console.log(chalk.green(`${chalk.yellow('Process complete!')} | The images have been processed for Alloy and can be found in the following directories:\n`));
-      processedFilesInfo.forEach(fileInfo => {
-        console.log(chalk.green(`  - ${chalk.yellow(fileInfo.path)} (Scale: ${fileInfo.scaleName})`));
-      });
-    } else {
-      console.log(chalk.green(`${chalk.yellow('Process complete!')} | The images can be found in: ${chalk.yellow(outputDir)}`));
-    }
-
-    if (debugMode) {
-      const totalSavings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
-
-      console.log(chalk.green(`\nStats:
-  Total Images: ${chalk.yellow(processedCount)}
-  Elapsed Time: ${chalk.yellow(elapsedTime + ' secs')}
-  Original Size: ${chalk.yellow((totalOriginalSize / 1024 / 1024).toFixed(2) + ' MB')}
-  Compressed Size: ${chalk.yellow((totalNewSize / 1024 / 1024).toFixed(2) + ' MB')}
-  Total Size Reduction: ${chalk.yellow(totalSavings + '%')}`));
-    }
-  }
+  const duration = ((endTime - startTime) / 1000).toFixed(2);
+  const totalSavings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
+  console.log(chalk.blue(`Processed ${processedCount} files in ${duration} seconds. Total size reduction: ${totalSavings}%`));
 };
 
+// Run the image processing
 processImages().catch(err => {
-  console.error(chalk.red(`Failed to process images: ${err.message}`));
+  console.error(chalk.red(`Error: ${err.message}`));
   process.exit(1);
 });
