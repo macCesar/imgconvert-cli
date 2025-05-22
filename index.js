@@ -289,6 +289,10 @@ const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPh
 
     if (isIPhone) {
       outputDir = normalizedSubfolder ? path.join(outputBaseDir, normalizedSubfolder) : outputBaseDir;
+      // Asegurar que el directorio existe
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
       const baseName = path.parse(inputFile).name;
       const ext = path.extname(inputFile);
       outputFileName = scaleName === '1x'
@@ -408,7 +412,13 @@ const processImage = async (inputFile, outputFileBase, format) => {
     fs.renameSync(tempOutputFile, finalOutputFile);
 
     const { size: newSize } = fs.statSync(finalOutputFile);
-    const savings = ((originalSize - newSize) / originalSize * 100).toFixed(2);
+
+    // Calcular savings de manera segura para evitar NaN
+    let savings = '0.00';
+    if (originalSize > 0) {
+      savings = ((originalSize - newSize) / originalSize * 100).toFixed(2);
+    }
+
     process.stdout.write(chalk.green(`Processed: ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(effectiveFormat ? effectiveFormat.toUpperCase() : 'UNKNOWN')} (${savings}%)                \r`));
     return { originalSize, newSize };
   } catch (err) {
@@ -479,7 +489,13 @@ const processImages = async () => {
   // Summary
   const endTime = Date.now();
   const duration = ((endTime - startTime) / 1000).toFixed(2);
-  const savings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
+
+  // Calcular savings de manera segura para evitar NaN
+  let savings = '0.00';
+  if (totalOriginalSize > 0) {
+    savings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
+  }
+
   console.log(chalk.green(`
 Processing complete! Summary:
   - Processed files: ${chalk.yellow(processedCount)}
