@@ -236,7 +236,7 @@ if (!fs.existsSync(outputDir)) {
 
 // Variables
 const userSpecifiedFormat = args.format && args.format !== 'none';
-const format = userSpecifiedFormat ? args.format : null; // null si no se especifica
+const format = userSpecifiedFormat ? args.format : null; // null if not specified
 const backgroundColor = args.background;
 const quality = parseInt(args.quality, 10);
 const replaceOriginal = effectiveReplace;
@@ -289,7 +289,7 @@ const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPh
 
     if (isIPhone) {
       outputDir = normalizedSubfolder ? path.join(outputBaseDir, normalizedSubfolder) : outputBaseDir;
-      // Asegurar que el directorio existe
+      // Ensure the directory exists
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
       }
