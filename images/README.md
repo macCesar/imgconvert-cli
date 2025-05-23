@@ -1,17 +1,17 @@
-# Imágenes de prueba
+# Test Images
 
-Este directorio contiene imágenes mínimas para pruebas.
+This directory contains minimal images for testing purposes.
 
-Durante la ejecución de los tests, se crean archivos JPG y PNG mínimos válidos para realizar las pruebas.
+During test execution, valid minimal JPG and PNG files are created for testing.
 
-Estos archivos son temporales y se limpian después de que los tests se completan.
+These files are temporary and are cleaned up after the tests complete.
 
-## ¿Por qué no incluir las imágenes en el repositorio?
+## Why not include images in the repository?
 
-1. **Tamaño del repositorio**: Mantiene el repositorio pequeño al no incluir archivos binarios innecesarios.
-2. **Simplicidad**: Evita problemas de licencias o derechos de autor con imágenes.
-3. **Portabilidad**: Garantiza que las pruebas funcionen en cualquier entorno sin dependencias externas.
+1. **Repository size**: Keeps the repository small by not including unnecessary binary files.
+2. **Simplicity**: Avoids licensing or copyright issues with images.
+3. **Portability**: Ensures tests work in any environment without external dependencies.
 
-## Generación de imágenes
+## Image Generation
 
-Las imágenes se generan automáticamente en el archivo `integration.test.js` con el tamaño mínimo posible para ser reconocidas como archivos de imagen válidos por las bibliotecas utilizadas.
+Images are automatically generated in the `integration.test.js` file with the smallest possible size to be recognized as valid image files by the libraries used.
