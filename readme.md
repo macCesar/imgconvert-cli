@@ -1,5 +1,14 @@
 # imgconvert-cli
 
+<div align="center">
+
+  ![npm version](https://img.shields.io/npm/v/imgconvert-cli)
+  ![downloads](https://img.shields.io/npm/dm/imgconvert-cli)
+  ![license](https://img.shields.io/npm/l/imgconvert-cli)
+  ![test coverage](https://img.shields.io/badge/tests-26%20passing-brightgreen)
+
+</div>
+
 `imgconvert-cli` is a command-line tool for compressing, converting, and resizing images using the `sharp` library.
 
 It supports various formats and lets you optimize images for the web or other purposes, with customizable quality, background color, and multi-format conversion.
@@ -11,6 +20,9 @@ It supports various formats and lets you optimize images for the web or other pu
   - [How It Works](#how-it-works)
   - [Installation](#installation)
   - [Basic Usage](#basic-usage)
+  - [File Extension Behavior](#file-extension-behavior)
+    - [**Preserve Original Extensions**](#preserve-original-extensions)
+    - [**Format Conversion Changes Extensions**](#format-conversion-changes-extensions)
   - [Options](#options)
   - [Environment Mode](#environment-mode)
   - [Examples](#examples)
@@ -23,6 +35,8 @@ It supports various formats and lets you optimize images for the web or other pu
   - [Debug Mode](#debug-mode)
   - [Dependencies](#dependencies)
   - [Error Handling](#error-handling)
+  - [Troubleshooting](#troubleshooting)
+    - [Common Issues](#common-issues)
   - [Contribution](#contribution)
   - [Roadmap / Future Features](#roadmap--future-features)
   - [License](#license)
@@ -32,6 +46,7 @@ It supports various formats and lets you optimize images for the web or other pu
 - **Image Compression**: Compress images to reduce file size while maintaining quality.
 - **Format Conversion**: Convert images between JPEG, PNG, WebP, AVIF, TIFF, and GIF.
 - **File and Batch Processing**: Process a single image file or all images in a directory.
+- **Smart Extension Handling**: Preserves original file extensions when no format conversion is specified.
 - **Customizable Quality**: Adjust output image quality.
 - **Configurable Background Color**: Set a background color for images converted from formats with transparency (e.g., PNG) to formats without transparency (e.g., JPEG).
 - **Multi-Format Conversion**: Convert images to all supported formats in one command.
@@ -46,6 +61,8 @@ It supports various formats and lets you optimize images for the web or other pu
 
 - Accepts a single file or a directory as input.
 - Uses `sharp` to apply compression, format conversion, resizing, and optional background color.
+- **Preserves original file extensions** when no format is specified (e.g., `image.jpg` → `image.jpg`).
+- Only changes file extension when explicitly converting formats (e.g., `image.jpg -f webp` → `image.webp`).
 - Outputs to a `compressed` subfolder by default, or replaces original files if `--replace` is used (**only in production mode**).
 - Resizing preserves aspect ratio unless both width and height are specified.
 
@@ -65,13 +82,41 @@ imgconvert <source_path>
 
 - `<source_path>`: The path to the image file or directory containing the images you want to process. This is a required positional argument.
 
-> **Note:** Whether you provide a single file or a directory, if you do **not** specify the `-f`/`--format` option, each output image will keep its original format. This applies to both single-file and batch (directory) processing.
+> **📝 Important:** When you don't specify the `-f`/`--format` option, each output image will **preserve its original file extension**. For example:
+> - `image.jpg` → `image.jpg` (compressed but same format)
+> - `image.png` → `image.png` (compressed but same format)
+>
+> The file extension only changes when you explicitly specify a different format with `-f`.
+
+## File Extension Behavior
+
+`imgconvert-cli` has intelligent file extension handling:
+
+### **Preserve Original Extensions**
+When no format is specified with `-f`, the original file extension is preserved:
+
+| Input       | Command                | Output      |
+| ----------- | ---------------------- | ----------- |
+| `photo.jpg` | `imgconvert photo.jpg` | `photo.jpg` |
+| `logo.png`  | `imgconvert logo.png`  | `logo.png`  |
+| `icon.webp` | `imgconvert icon.webp` | `icon.webp` |
+
+### **Format Conversion Changes Extensions**
+When using `-f` to specify a format, the extension changes accordingly:
+
+| Input       | Command                        | Output       |
+| ----------- | ------------------------------ | ------------ |
+| `photo.jpg` | `imgconvert photo.jpg -f webp` | `photo.webp` |
+| `logo.png`  | `imgconvert logo.png -f jpeg`  | `logo.jpeg`  |
+| `icon.webp` | `imgconvert icon.webp -f png`  | `icon.png`   |
+
+> **💡 Tip:** This behavior ensures consistency and user expectations while maintaining technical compatibility with the Sharp image processing library.
 
 ## Options
 
 The available options for the `imgconvert-cli` command let users customize image conversions easily.
 
-- `-f, --format`: (Optional) The desired output format. Supported formats: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, or `all`. If not specified, **the original format of each file is retained**.
+- `-f, --format`: (Optional) The desired output format. Supported formats: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, or `all`. If not specified, **the original format and extension of each file is retained**.
 - `-q, --quality`: (Optional) Output image quality (1-100). Default: 85.
 - `-b, --background`: (Optional) Hex color for filling transparent areas when converting to formats that do not support transparency (e.g., PNG to JPEG). Ignored if the output format supports transparency. Default: `#ffffff`.
 - `-r, --replace`: (Optional) Enables replacement of original files. Default: `false`. **Note: This is only allowed in production mode. In development mode, this option is ignored and files are never overwritten.**
@@ -104,97 +149,94 @@ This allows you to safely test your image processing workflow in development wit
 
 ## Examples
 
-1. Compress a single image without changing format:
+1. **Compress images without changing format (preserves extensions):**
 
    ```bash
-   imgconvert image.jpg
+   imgconvert image.jpg      # → image.jpg (compressed)
+   imgconvert image.png      # → image.png (compressed)
    ```
 
-2. Compress all images in a directory without changing format (each file keeps its original format):
+2. **Compress all images in directory (preserves original formats):**
 
    ```bash
-   imgconvert source_folder
+   imgconvert source_folder  # Each file keeps its original extension
    ```
 
-3. Convert a single image to WebP with custom quality:
+3. **Convert to different format (changes extension):**
 
    ```bash
-   imgconvert image.jpg -f webp -q 75
+   imgconvert image.jpg -f webp -q 75    # → image.webp
+   imgconvert image.png -f jpeg          # → image.jpeg
    ```
 
-4. Convert all images in a directory to PNG with default quality:
+4. **Batch conversion with format change:**
 
    ```bash
-   imgconvert source_folder -f png
+   imgconvert source_folder -f webp      # All images → .webp
    ```
 
-5. Convert a single image to JPEG with high quality and custom background:
+5. **Convert a single image to JPEG with high quality and custom background:**
 
    ```bash
    imgconvert image.png -f jpeg -q 95 -b "#ff0000"
    ```
 
-6. Resize a single image to a specific width:
+6. **Resize without format change:**
 
    ```bash
-   imgconvert image.jpg -w 800
+   imgconvert image.jpg -w 800           # → image.jpg (resized)
+   imgconvert image.jpg -h 600           # → image.jpg (resized)
    ```
 
-7. Resize a single image to a specific height:
-
-   ```bash
-   imgconvert image.jpg -h 600
-   ```
-
-8. Resize all images in a directory to a specific width and height:
+7. **Resize all images in a directory to a specific width and height:**
 
    ```bash
    imgconvert source_folder -w 800 -h 600
    ```
 
-9. Convert all images in a directory to all formats:
+8. **Convert all images in a directory to all formats:**
 
    ```bash
    imgconvert source_folder -f all
    ```
 
-10. Replace original files with processed images (only in production mode):
+9. **Replace original files with processed images (only in production mode):**
 
     ```bash
     imgconvert source_folder -r -e prod
     ```
 
-11. Use a preset configuration:
+10. **Use a preset configuration:**
 
     ```bash
     imgconvert source_folder -p web
     ```
 
-12. Set environment to production:
+11. **Set environment to production:**
 
     ```bash
     imgconvert source_folder -e prod
     ```
 
-13. Specify a custom output directory:
+12. **Specify a custom output directory:**
 
     ```bash
     imgconvert source_folder -o custom_output_directory
     ```
 
-14. Enable debug mode:
+13. **Enable debug mode:**
 
     ```bash
     imgconvert source_folder -d
     ```
 
-15. Check the version of the module:
+14. **Check the version of the module:**
 
     ```bash
     imgconvert --version
     ```
 
-16. Show help message:
+15. **Show help message:**
 
     ```bash
     imgconvert --help
@@ -334,12 +376,12 @@ When debug mode is enabled with the `-d` or `--debug` option, the tool displays 
 
 **Sample Debug Output:**
 ```
-Stats:
-  Total Images: 5
-  Elapsed Time: 0.24 secs
-  Original Size: 0.87 MB
-  Compressed Size: 0.25 MB
-  Total Size Reduction: 71.11%
+Processing complete! Summary:
+  - Processed files: 5
+  - Total original size: 0.87 MB
+  - Total new size: 0.25 MB
+  - Total savings: 71.11%
+  - Duration: 0.24 seconds
 ```
 
 This information can be useful for troubleshooting and optimizing the image processing workflow.
@@ -347,6 +389,7 @@ This information can be useful for troubleshooting and optimizing the image proc
 ## Dependencies
 
 - **sharp**: A high-performance image processing library for Node.js. It handles the compression, conversion, and background color application for images.
+  - *Note: Sharp internally uses 'jpeg' format specification, but imgconvert-cli preserves user-friendly '.jpg' extensions in output filenames.*
 - **minimist**: A library for parsing command-line arguments, allowing for flexible and named options.
 - **chalk**: A library for styling terminal strings, used for colored output in the console.
 
@@ -355,6 +398,25 @@ This information can be useful for troubleshooting and optimizing the image proc
 - If the source path is not specified, the tool will display an error message and exit.
 - If an unsupported format is specified, the tool will default to retaining the original format.
 - Non-image files and directories are skipped with a log message.
+
+## Troubleshooting
+
+### Common Issues
+
+**Q: Why did my `.jpg` file become `.jpeg` in older versions?**
+A: This was an issue in versions prior to 1.1.4. Update to the latest version where original extensions are preserved when no format conversion is specified.
+
+**Q: The CLI says "format not supported" for my file**
+A: Ensure your file has one of these extensions: `.jpeg`, `.jpg`, `.png`, `.webp`, `.avif`, `.tiff`, `.gif`
+
+**Q: Batch processing failed on some files**
+A: Check file permissions and ensure the output directory is writable. Use `--debug` flag for detailed error information.
+
+**Q: Output quality seems poor**
+A: Adjust quality with `-q` parameter (1-100). Default is 85. Use `-q 95` for higher quality.
+
+**Q: Files are not being overwritten in development mode**
+A: This is intentional. Use `-e prod` for production mode if you need to replace original files.
 
 ## Contribution
 
@@ -365,7 +427,6 @@ Contributions are welcome! If you have suggestions or improvements, feel free to
 - CLI wizard for common presets
 - Custom scale sets per platform
 - Plugin support for user-defined transformations
-
 
 ## License
 

@@ -7,11 +7,11 @@
     "imgconvert": "./index.js"
   },
   "scripts": {
-    "start": "node index.js",
     "test": "mocha test/simple.test.js --timeout 300000",
-    "test:verbose": "mocha test/simple.test.js --timeout 300000 --reporter spec",
-    "clean-test": "rm -rf test/temp-test app/assets",
-    "clean-all": "rm -rf test/temp-test app/assets"
+    "test:verbose": "VERBOSE_TESTS=true mocha test/simple.test.js --timeout 300000 --reporter spec",
+    "test:watch": "mocha test/simple.test.js --timeout 300000 --watch",
+    "test:debug": "VERBOSE_TESTS=true mocha test/simple.test.js --timeout 300000 --reporter spec --inspect-brk",
+    "clean-all": "rm -rf test/temp-test app"
   },
   "keywords": [
     "cli",
