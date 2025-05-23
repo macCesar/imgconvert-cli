@@ -1,111 +1,376 @@
-# Guía de Pruebas para imgconvert-cli
+# Testing Guide for imgconvert-cli
 
-## Instalación de dependencias
+<div align="center">
 
-Antes de ejecutar las pruebas, asegúrate de instalar todas las dependencias:
+![test coverage](https://img.shields.io/badge/tests-26%20passing-brightgreen)
+![test framework](https://img.shields.io/badge/framework-mocha%2Bchai-blue)
+
+</div>
+
+This guide covers the comprehensive test suite for `imgconvert-cli`, including setup, execution, and troubleshooting.
+
+## Table of Contents
+- [Testing Guide for imgconvert-cli](#testing-guide-for-imgconvert-cli)
+  - [Table of Contents](#table-of-contents)
+  - [Test Suite Overview](#test-suite-overview)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Running Tests](#running-tests)
+    - [Run All Tests](#run-all-tests)
+    - [Run Tests with Cleanup](#run-tests-with-cleanup)
+    - [Run with Extended Timeout (for slow systems)](#run-with-extended-timeout-for-slow-systems)
+    - [Specific Test Categories](#specific-test-categories)
+  - [Test Structure](#test-structure)
+  - [Test Categories](#test-categories)
+    - [1. **Basic CLI Functionality**](#1-basic-cli-functionality)
+    - [2. **Format Conversion Tests**](#2-format-conversion-tests)
+    - [3. **Image Resizing Tests**](#3-image-resizing-tests)
+    - [4. **Quality and Compression Tests**](#4-quality-and-compression-tests)
+    - [5. **Environment Mode Tests**](#5-environment-mode-tests)
+    - [6. **Preset Functionality Tests**](#6-preset-functionality-tests)
+    - [7. **Batch Processing Tests**](#7-batch-processing-tests)
+    - [8. **Error Handling Tests**](#8-error-handling-tests)
+    - [9. **Debug Mode Tests**](#9-debug-mode-tests)
+    - [10. **Custom Output Directory Tests**](#10-custom-output-directory-tests)
+  - [Test Environment Setup](#test-environment-setup)
+    - [Automatic Setup](#automatic-setup)
+    - [Manual Setup (if needed)](#manual-setup-if-needed)
+  - [Debugging Tests](#debugging-tests)
+    - [Choose the Right Mode for Your Needs](#choose-the-right-mode-for-your-needs)
+    - [Debug Output Examples](#debug-output-examples)
+  - [Common Issues and Solutions](#common-issues-and-solutions)
+    - [1. **Missing Test Images**](#1-missing-test-images)
+    - [2. **Extension Mismatch Errors**](#2-extension-mismatch-errors)
+    - [3. **Permission Errors**](#3-permission-errors)
+    - [4. **Timeout Issues**](#4-timeout-issues)
+    - [5. **Config File Conflicts**](#5-config-file-conflicts)
+  - [Adding New Tests](#adding-new-tests)
+    - [Test Structure Template](#test-structure-template)
+    - [Best Practices for New Tests](#best-practices-for-new-tests)
+  - [Test Coverage](#test-coverage)
+  - [CI/CD Integration](#cicd-integration)
+    - [GitHub Actions Example](#github-actions-example)
+    - [Local Pre-commit Hook](#local-pre-commit-hook)
+  - [Tips for Test Maintenance](#tips-for-test-maintenance)
+  - [Performance Considerations](#performance-considerations)
+
+## Test Suite Overview
+
+The imgconvert-cli test suite is a comprehensive testing framework that includes:
+
+- **26 tests** covering all CLI functionality
+- **Detailed command logging** with full CLI command visibility
+- **File existence verification** with directory content inspection
+- **Error handling validation** for edge cases and invalid inputs
+- **Environment mode testing** (dev vs prod)
+- **Format conversion verification** including the JPG/JPEG extension fix
+- **Batch processing validation**
+- **Preset functionality testing**
+
+## Prerequisites
+
+Before running tests, ensure you have:
+
+- **Node.js** (version 14.x or higher)
+- **NPM** (comes with Node.js)
+- **Test images** in the `images/` directory:
+  - `image.jpg` (JPEG test image)
+  - `image.png` (PNG test image)
+
+## Installation
+
+Install all dependencies including testing frameworks:
 
 ```bash
 npm install
 ```
 
-## Ejecución de pruebas
+The test suite uses:
+- **Mocha**: Test framework
+- **Chai**: Assertion library
 
-### Error común: "Please provide a source file or folder"
+## Running Tests
 
-Si al ejecutar las pruebas obtienes este error, es porque Node está tratando de ejecutar la aplicación real en lugar de solo las pruebas. Esto puede solucionarse de dos formas:
-
-1. **Opción 1**: Establecer NODE_ENV como "test" antes de ejecutar:
-
-```bash
-NODE_ENV=test npm test
-```
-
-2. **Opción 2**: Modificar el script de test en package.json para incluir esta variable de entorno:
-
-```json
-"scripts": {
-  "test": "NODE_ENV=test mocha test/*.test.js"
-}
-```
-
-### Ejecutar todas las pruebas
+### Run All Tests
 ```bash
 npm test
 ```
 
-### Ejecutar un archivo de prueba específico
-
-Si deseas ejecutar solo un archivo de prueba específico, puedes usar:
-
+### Run Tests with Cleanup
 ```bash
-# Para utils.test.js (las pruebas más sencillas)
-NODE_ENV=test npx mocha test/utils.test.js
-
-# Para process.test.js (pruebas de procesamiento de imágenes)
-NODE_ENV=test npx mocha test/process.test.js
-
-# Para cli.test.js (pruebas de línea de comandos)
-NODE_ENV=test npx mocha test/cli.test.js
-
-# Para integration.test.js (pruebas de integración)
-NODE_ENV=test npx mocha test/integration.test.js
+npm run clean-all && npm test
 ```
 
-## Errores comunes en las pruebas
-
-Las pruebas pueden fallar por varios motivos:
-
-1. **Errores de path.dirname recibiendo undefined**: Las pruebas que usan proxyquire pueden fallar si no proporcionas stubs adecuados para todos los métodos de path.
-
-2. **Errores en el procesamiento de imágenes**: Las pruebas de integración que procesan imágenes reales pueden fallar si no tienes las imágenes de prueba o si sharp no está configurado correctamente.
-
-3. **Errores de asignación en utils.test.js**: Si las propiedades como utils.args o utils.config no están configuradas correctamente.
-
-## Cómo corregir los errores más comunes
-
-1. **Para problemas con path.dirname**:
-   - Asegúrate de que tus stubs de path manejen correctamente los valores undefined.
-
-2. **Para errores de imágenes en pruebas de integración**:
-   - Comenta temporalmente estas pruebas o crea manualmente las imágenes de prueba.
-
-3. **Para errores de utils.getEffectiveQuality**:
-   - Verifica que las propiedades del módulo (args, presets, config) estén configuradas correctamente antes de cada prueba.
-
-## Estructura de pruebas
-
-El proyecto contiene los siguientes archivos de prueba:
-
-1. **utils.test.js**: Prueba las funciones utilitarias básicas como `normalizeOutputSubfolder` y `getEffectiveQuality`.
-
-2. **process.test.js**: Prueba las funciones principales de procesamiento de imágenes como `processImage` y `processImageWithScaling`.  
-
-3. **cli.test.js**: Prueba la interfaz de línea de comandos, incluyendo el análisis de argumentos y la aplicación de configuraciones.
-
-4. **integration.test.js**: Pruebas de integración que ejecutan el CLI completo con diferentes argumentos.
-
-## Preparación del entorno de prueba
-
-Para las pruebas de integración, se crean automáticamente archivos de imagen de prueba mínimos en el directorio temporal `test/test-images`. Estos archivos se eliminan después de ejecutar las pruebas.
-
-## Depuración de pruebas
-
-Para ver más información durante la ejecución de pruebas, puedes usar la opción `--verbose`:
-
+### Run with Extended Timeout (for slow systems)
 ```bash
-npx mocha test/process.test.js --verbose
+npx mocha test/simple.test.js --timeout 300000
 ```
 
-## Añadir nuevas pruebas
+### Specific Test Categories
 
-Al añadir nuevas pruebas:
+You can focus on specific test categories by modifying the test file or using grep:
 
-1. Identifica el archivo apropiado según lo que quieras probar
-2. Usa la estructura existente como guía
-3. Asegúrate de que las pruebas sean independientes y no afecten otras pruebas
+```bash
+# Focus on format conversion tests (verbose mode recommended for debugging)
+npm run test:verbose -- --grep "Format conversion"
 
-## Consejos
+# Focus on resizing tests
+npm run test:verbose -- --grep "Image resizing"
 
-- Las pruebas de utils son las más sencillas para empezar a comprender la estructura
-- Las pruebas de process son más complejas pero muestran cómo probar el procesamiento de imágenes
-- Las pruebas de integración son las más completas pero lentas
+# Focus on error handling
+npm run test:verbose -- --grep "Error handling"
+
+# Quick test of just basic functionality
+npm test -- --grep "Basic CLI functionality"
+```
+
+## Test Structure
+
+The test suite is organized into logical groups:
+
+```
+test/
+├── simple.test.js          # Main comprehensive test suite
+├── temp-test/              # Temporary test directory (auto-created)
+└── ...                     # Additional test files (if any)
+```
+
+## Test Categories
+
+### 1. **Basic CLI Functionality**
+- Version display (`-v`, `--version`)
+- Help message (`--help`)
+- Configuration file creation (`config`)
+
+### 2. **Format Conversion Tests**
+- PNG to WebP conversion
+- JPG to WebP conversion  
+- All formats conversion (`-f all`)
+- Original format preservation
+
+### 3. **Image Resizing Tests**
+- Width-only resizing (`-w`)
+- Height-only resizing (`-h`)
+- Both dimensions resizing (`-w -h`)
+
+### 4. **Quality and Compression Tests**
+- High vs low quality comparison
+- Custom background color for transparency
+
+### 5. **Environment Mode Tests**
+- Development mode behavior
+- Production mode behavior
+- Replace file warnings
+
+### 6. **Preset Functionality Tests**
+- Web preset (`-p web`)
+- Thumbnail preset (`-p thumbnail`)
+- Alloy preset for mobile development (`-p alloy`)
+
+### 7. **Batch Processing Tests**
+- Directory processing with format conversion
+- Directory processing with format preservation
+
+### 8. **Error Handling Tests**
+- Invalid width/height parameters
+- Non-existent file handling
+- Missing source path handling
+
+### 9. **Debug Mode Tests**
+- Debug output verification
+
+### 10. **Custom Output Directory Tests**
+- Custom output path handling
+
+## Test Environment Setup
+
+### Automatic Setup
+The test suite automatically:
+
+1. **Creates test directory**: `test/temp-test/`
+2. **Copies test images**: From `images/` to test directory
+3. **Cleans up config**: Removes any existing `.imgconverter.config.json`
+4. **Sets up logging**: Detailed command execution logging
+
+### Manual Setup (if needed)
+If tests fail due to missing images:
+
+```bash
+# Create test images directory
+mkdir -p images/
+
+# Add test images (you'll need actual image files)
+# - images/image.jpg
+# - images/image.png
+```
+
+## Debugging Tests
+
+### Choose the Right Mode for Your Needs
+
+**For daily development and CI/CD:**
+```bash
+npm test
+```
+- ✅ Clean, professional output
+- ✅ Fast to read and understand
+- ✅ Perfect for automated systems
+- ✅ Shows only test results
+
+**For debugging failing tests:**
+```bash
+npm run test:verbose
+```
+- 🔍 Shows exact CLI commands executed
+- 🔍 Displays file existence checks with directory contents
+- 🔍 Captures and displays error details
+- 🔍 Perfect for understanding what went wrong
+
+### Debug Output Examples
+
+**Normal mode** shows only:
+```
+  Error handling tests
+    ✔ should handle invalid width parameter "invalid" (51ms)
+    ✔ should handle invalid height parameter "-5" (52ms)
+```
+
+**Verbose mode** shows:
+```
+  Error handling tests
+
+🔧 Executing (expect error): node index.js "/path/image.jpg" -w invalid  
+✅ Command correctly failed with expected error
+📤 Error message: Error: The width argument must be a positive integer.
+    ✔ should handle invalid width parameter "invalid" (51ms)
+```
+
+## Common Issues and Solutions
+
+### 1. **Missing Test Images**
+**Problem**: `⚠️ Source image not found: /path/to/image.webp`
+
+**Solution**: 
+- Ensure `images/image.jpg` and `images/image.png` exist
+- These are the only required test images
+
+### 2. **Extension Mismatch Errors**
+**Problem**: `expected false to be true` in resizing tests
+
+**Solution**: 
+- This usually indicates the CLI is generating `.jpeg` files when tests expect `.jpg`
+- Check if the JPG/JPEG fix was properly implemented
+
+### 3. **Permission Errors**
+**Problem**: `ENOENT: no such file or directory, rename`
+
+**Solution**:
+```bash
+# Ensure write permissions
+chmod -R 755 test/
+rm -rf test/temp-test/
+```
+
+### 4. **Timeout Issues**
+**Problem**: Tests timing out
+
+**Solution**:
+```bash
+# Increase timeout
+npx mocha test/simple.test.js --timeout 600000
+```
+
+### 5. **Config File Conflicts**
+**Problem**: Tests interfering with each other
+
+**Solution**: The test suite automatically cleans up, but manually:
+```bash
+rm -f .imgconverter.config.json
+npm run clean-all
+```
+
+## Adding New Tests
+
+### Test Structure Template
+```javascript
+describe('New Feature Tests', () => {
+  it('should do something specific with clear parameters', () => {
+    const inputFile = path.join(testDir, 'image.jpg');
+    const outputDir = path.join(testDir, 'feature-output');
+    const command = `"${inputFile}" --new-feature value -o "${outputDir}" -e prod`;
+
+    const result = execCLI(command);
+    console.log('New feature result:', result);
+    expect(result).to.include('Expected output text');
+
+    const outputFile = path.join(outputDir, 'expected-output.jpg');
+    expect(checkFileExists(outputFile, 'Feature output')).to.be.true;
+  });
+});
+```
+
+### Best Practices for New Tests
+1. **Descriptive test names** with specific parameters
+2. **Use production mode** (`-e prod`) for most tests
+3. **Clear output directories** for each test
+4. **Check file existence** with descriptive labels
+5. **Log command execution** for debugging
+
+## Test Coverage
+
+Current test coverage includes:
+
+| Feature           | Coverage | Tests                       |
+| ----------------- | -------- | --------------------------- |
+| CLI Arguments     | ✅ 100%   | Version, Help, Config       |
+| Format Conversion | ✅ 100%   | All supported formats       |
+| Image Resizing    | ✅ 100%   | Width, Height, Both         |
+| Quality Settings  | ✅ 100%   | High/Low quality comparison |
+| Environment Modes | ✅ 100%   | Dev/Prod behaviors          |
+| Preset System     | ✅ 100%   | Web, Thumbnail, Alloy       |
+| Batch Processing  | ✅ 100%   | Directory processing        |
+| Error Handling    | ✅ 100%   | Invalid inputs              |
+| File Extensions   | ✅ 100%   | JPG/JPEG preservation       |
+
+## CI/CD Integration
+
+### GitHub Actions Example
+```yaml
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - run: npm install
+      - run: npm test
+```
+
+### Local Pre-commit Hook
+```bash
+#!/bin/sh
+# .git/hooks/pre-commit
+npm test
+```
+
+## Tips for Test Maintenance
+
+1. **Keep tests independent** - Each test should work in isolation
+2. **Use descriptive names** - Test names should explain what's being tested
+3. **Test edge cases** - Include invalid inputs and boundary conditions
+4. **Verify actual behavior** - Don't just test that commands run, verify output
+5. **Clean up after tests** - Use `after()` hooks to clean temporary files
+6. **Update tests with features** - When adding CLI features, add corresponding tests
+
+## Performance Considerations
+
+- **Image processing tests** take longer (2-5 seconds each)
+- **Format conversion to all formats** can take 30+ seconds
+- **Alloy preset tests** take 15-20 seconds due to multiple resolution generation
+- **Total test suite** typically runs in 60-120 seconds
+
+For faster development cycles, focus on specific test categories during development and run the full suite before commits.

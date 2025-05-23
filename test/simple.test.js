@@ -24,6 +24,7 @@ describe('imgconvert CLI Tests', function () {
     try {
       const result = execSync(fullCommand, {
         encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'], // Capture all output streams
         ...options
       });
 
@@ -39,6 +40,35 @@ describe('imgconvert CLI Tests', function () {
         console.log(`📤 STDERR: ${error.stderr || 'empty'}`);
       }
       throw error;
+    }
+  };
+
+  // Helper function for expected errors (silent capture)
+  const execCLIExpectError = (command, options = {}) => {
+    const fullCommand = `node index.js ${command}`;
+
+    if (isVerbose) {
+      console.log(`\n🔧 Executing (expect error): ${fullCommand}`);
+    }
+
+    try {
+      const result = execSync(fullCommand, {
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'], // Capture stderr silently
+        ...options
+      });
+
+      if (isVerbose) {
+        console.log(`❌ Command unexpectedly succeeded when error was expected`);
+      }
+
+      return result;
+    } catch (error) {
+      if (isVerbose) {
+        console.log(`✅ Command correctly failed with expected error`);
+        console.log(`📤 Error message: ${error.stderr || error.stdout || 'empty'}`);
+      }
+      return error;
     }
   };
 
@@ -433,58 +463,46 @@ describe('imgconvert CLI Tests', function () {
       const inputFile = path.join(testDir, 'image.jpg');
       const command = `"${inputFile}" -w invalid`;
 
-      try {
-        execCLI(command);
-        expect.fail('Should have thrown an error for invalid width');
-      } catch (error) {
-        if (isVerbose) {
-          console.log('✅ Correctly caught invalid width error');
-        }
-        expect(error.stderr || error.stdout).to.include('must be a positive integer');
+      const error = execCLIExpectError(command);
+
+      if (isVerbose) {
+        console.log('✅ Correctly caught invalid width error');
       }
+      expect(error.stderr || error.stdout).to.include('must be a positive integer');
     });
 
     it('should handle invalid height parameter "-5"', () => {
       const inputFile = path.join(testDir, 'image.jpg');
       const command = `"${inputFile}" -h -5`;
 
-      try {
-        execCLI(command);
-        expect.fail('Should have thrown an error for negative height');
-      } catch (error) {
-        if (isVerbose) {
-          console.log('✅ Correctly caught invalid height error');
-        }
-        expect(error.stderr || error.stdout).to.include('must be a positive integer');
+      const error = execCLIExpectError(command);
+
+      if (isVerbose) {
+        console.log('✅ Correctly caught invalid height error');
       }
+      expect(error.stderr || error.stdout).to.include('must be a positive integer');
     });
 
     it('should handle non-existent file "non-existent-file.jpg"', () => {
       const command = `"non-existent-file.jpg" -e prod`;
 
-      try {
-        execCLI(command);
-        expect.fail('Should have thrown an error for non-existent file');
-      } catch (error) {
-        if (isVerbose) {
-          console.log('✅ Correctly caught non-existent file error');
-        }
-        expect(error.stderr || error.stdout).to.include('does not exist');
+      const error = execCLIExpectError(command);
+
+      if (isVerbose) {
+        console.log('✅ Correctly caught non-existent file error');
       }
+      expect(error.stderr || error.stdout).to.include('does not exist');
     });
 
     it('should handle missing source path', () => {
       const command = `-f webp`;
 
-      try {
-        execCLI(command);
-        expect.fail('Should have thrown an error for missing source');
-      } catch (error) {
-        if (isVerbose) {
-          console.log('✅ Correctly caught missing source error');
-        }
-        expect(error.stderr || error.stdout).to.include('provide a source file or folder');
+      const error = execCLIExpectError(command);
+
+      if (isVerbose) {
+        console.log('✅ Correctly caught missing source error');
       }
+      expect(error.stderr || error.stdout).to.include('provide a source file or folder');
     });
   });
 
