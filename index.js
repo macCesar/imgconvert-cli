@@ -212,30 +212,22 @@ if (!inputPath) {
     inputPath = args.presetSource;
     console.log(chalk.blue(`Using source folder from preset or global config: ${chalk.yellow(inputPath)}`));
   } else if (args.preset === 'alloy') {
-    // Try to use source from alloy subpresets
-    const alloyPreset = presets.alloy;
-    const androidSource = alloyPreset.android && alloyPreset.android.source;
-    const iphoneSource = alloyPreset.iphone && alloyPreset.iphone.source;
-    if (androidSource) {
-      inputPath = androidSource;
-      console.log(chalk.blue(`Using source folder from alloy.android preset: ${chalk.yellow(inputPath)}`));
-    } else if (iphoneSource) {
-      inputPath = iphoneSource;
-      console.log(chalk.blue(`Using source folder from alloy.iphone preset: ${chalk.yellow(inputPath)}`));
-    } else if (config.source) {
-      inputPath = config.source;
-      console.log(chalk.blue(`Using global source folder from config: ${chalk.yellow(inputPath)}`));
-    }
+    // For alloy preset, we'll handle multiple sources in processImages
+    // Just set a flag to indicate we're using alloy preset
+    args.useAlloyMultipleSources = true;
   } else if (config.source) {
     inputPath = config.source;
     console.log(chalk.blue(`Using global source folder from config: ${chalk.yellow(inputPath)}`));
   }
-  if (!inputPath) {
+  if (!inputPath && !args.useAlloyMultipleSources) {
     console.error(chalk.red('Error: Please provide a source file or folder.'));
     process.exit(1);
   }
 }
-if (!fs.existsSync(inputPath)) {
+
+// For alloy preset with multiple sources, we don't check path existence here
+// as we'll handle multiple paths in processImages
+if (inputPath && !fs.existsSync(inputPath)) {
   console.error(chalk.red(`Error: The specified path "${inputPath}" does not exist.`));
   process.exit(1);
 }
@@ -246,13 +238,18 @@ if (args.output) {
   outputDir = args.output;
 } else if (config.output) {
   outputDir = config.output;
-} else {
+} else if (inputPath) {
   const inputDir = fs.lstatSync(inputPath).isDirectory() ? inputPath : path.dirname(inputPath);
   outputDir = path.join(inputDir, 'converted');
+} else {
+  // For alloy preset with multiple sources, we don't need a default output dir
+  // as each platform will create its own directories
+  outputDir = null;
 }
 
-// Ensure output directory exists
-if (!fs.existsSync(outputDir)) {
+// Ensure output directory exists (only if we have a single output directory)
+// Skip creation for alloy preset as each platform creates its own specific directories
+if (outputDir && !fs.existsSync(outputDir) && args.preset !== 'alloy') {
   fs.mkdirSync(outputDir, { recursive: true });
 }
 
@@ -488,8 +485,102 @@ const processImage = async (inputFile, outputFileBase, format) => {
   }
 };
 
+// Process images for alloy preset with multiple sources
+const processAlloyMultipleSources = async () => {
+  let totalNewSize = 0;
+  let processedCount = 0;
+  let totalOriginalSize = 0;
+  const startTime = Date.now();
+  const processedFilesInfo = [];
+  const alloyPreset = presets.alloy;
+
+  // Process each platform separately with its own source
+  for (const [subPresetName, subPresetConfig] of Object.entries(alloyPreset)) {
+    const sourceFolder = subPresetConfig.source;
+
+    if (!sourceFolder) {
+      console.log(chalk.yellow(`Warning: No source folder defined for ${subPresetName}, skipping...`));
+      continue;
+    }
+
+    if (!fs.existsSync(sourceFolder)) {
+      console.log(chalk.yellow(`Warning: Source folder "${sourceFolder}" for ${subPresetName} does not exist, skipping...`));
+      continue;
+    }
+
+    // Clear any previous progress line before showing platform message
+    process.stdout.write('\r' + ' '.repeat(100) + '\r');
+    console.log(chalk.blue(`Processing ${subPresetName} from: ${chalk.yellow(sourceFolder)}`));
+
+    const isDirectory = fs.lstatSync(sourceFolder).isDirectory();
+    const inputDir = isDirectory ? sourceFolder : path.dirname(sourceFolder);
+    const files = isDirectory ? fs.readdirSync(sourceFolder) : [path.basename(sourceFolder)];
+
+    const tasks = files.flatMap(file => {
+      const inputFile = path.join(inputDir, file);
+      let fileExtension = path.extname(file).toLowerCase().slice(1);
+
+      if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
+        const scales = subPresetConfig.scales;
+        const outputSubfolder = args.output || subPresetConfig.output || '';
+        const isIPhone = subPresetName === 'iphone';
+        const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig);
+        const effectiveFormat = getEffectiveFormat(subPresetName, subPresetConfig, path.extname(inputFile));
+
+        return processImageWithScaling(inputFile, scales, outputSubfolder, isIPhone, effectiveQuality, effectiveFormat).then(result => {
+          if (result) {
+            processedFilesInfo.push(...result.processedFiles);
+            totalOriginalSize += result.originalSize;
+            totalNewSize += result.newSize;
+            processedCount++;
+          }
+          return result;
+        });
+      }
+      return [];
+    });
+
+    await Promise.all(tasks);
+
+    // Clear the progress line after processing this platform
+    process.stdout.write('\r' + ' '.repeat(100) + '\r');
+  }
+
+  // Log processed files info
+  if (debugMode) {
+    console.log(chalk.blue(`Processed files:`));
+    processedFilesInfo.forEach(fileInfo => {
+      console.log(chalk.blue(` - ${fileInfo.path} (scale: ${fileInfo.scaleName})`));
+    });
+  }
+
+  // Summary
+  const endTime = Date.now();
+  const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+  // Calcular savings de manera segura para evitar NaN
+  let savings = '0.00';
+  if (totalOriginalSize > 0) {
+    savings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
+  }
+
+  console.log(chalk.green(`
+Processing complete! Summary:
+  - Processed files: ${chalk.yellow(processedCount)}
+  - Total original size: ${chalk.yellow((totalOriginalSize / 1024).toFixed(2) + ' KB')}
+  - Total new size: ${chalk.yellow((totalNewSize / 1024).toFixed(2) + ' KB')}
+  - Total savings: ${chalk.yellow(savings + '%')}
+  - Duration: ${chalk.yellow(duration + ' seconds')}
+`));
+};
+
 // Process images
 const processImages = async () => {
+  // Special handling for alloy preset with multiple sources
+  if (args.preset === 'alloy' && args.useAlloyMultipleSources) {
+    return await processAlloyMultipleSources();
+  }
+
   const isDirectory = fs.lstatSync(inputPath).isDirectory();
   const inputDir = isDirectory ? inputPath : path.dirname(inputPath);
   const files = isDirectory ? fs.readdirSync(inputPath) : [path.basename(inputPath)];
