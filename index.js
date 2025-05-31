@@ -66,8 +66,8 @@ ${chalk.green('<source_path>')}        The path to the image file or directory t
   process.exit(0);
 };
 
-// Parse CLI arguments
-const args = minimist(process.argv.slice(2), {
+// Parse CLI arguments first without defaults to detect user-specified values
+const userArgs = minimist(process.argv.slice(2), {
   alias: {
     H: 'help',
     v: 'version',
@@ -82,20 +82,25 @@ const args = minimist(process.argv.slice(2), {
     e: 'environment',
     d: 'debug'
   },
-  boolean: ['replace'],
-  default: {
-    preset: null,
-    environment: 'dev',
-    width: config.width || null,
-    height: config.height || null,
-    quality: config.quality || 85,
-    format: config.format !== undefined ? config.format : null,
-    replace: config.replace || false,
-    background: config.background || '#ffffff',
-    output: config.output || null,
-    debug: false
-  }
+  boolean: ['replace']
 });
+
+// Create args object with proper precedence: CLI > Preset > Config > Default
+const args = {
+  preset: userArgs.preset || null,
+  environment: userArgs.environment || 'dev',
+  width: userArgs.width || null,
+  height: userArgs.height || null,
+  quality: userArgs.quality || null,
+  format: userArgs.format || null,
+  replace: userArgs.replace || false,
+  background: userArgs.background || null,
+  output: userArgs.output || null,
+  debug: userArgs.debug || false,
+  help: userArgs.help,
+  version: userArgs.version,
+  _: userArgs._
+};
 
 // Environment logic
 const environment = args.environment || 'dev';
@@ -165,18 +170,59 @@ if (args._[0] === 'config') {
 // Apply preset if specified
 if (args.preset && presets[args.preset]) {
   const presetConfig = presets[args.preset];
-  args.format = presetConfig.format || args.format;
-  args.quality = presetConfig.quality || args.quality;
-  args.width = presetConfig.width || args.width;
-  args.height = presetConfig.height || args.height;
-  args.output = presetConfig.output || args.output;
-  args.replace = presetConfig.replace !== undefined ? presetConfig.replace : args.replace;
-  args.background = presetConfig.background || args.background;
+
+  // Apply correct precedence: CLI > Preset > Config > Default
+  // Only apply preset/config values if user didn't specify them via CLI
+  if (!userArgs.format) {
+    args.format = presetConfig.format || config.format || null;
+  }
+  if (!userArgs.quality) {
+    args.quality = presetConfig.quality || config.quality || 85;
+  }
+  if (!userArgs.width) {
+    args.width = presetConfig.width || config.width || null;
+  }
+  if (!userArgs.height) {
+    args.height = presetConfig.height || config.height || null;
+  }
+  if (!userArgs.output) {
+    args.output = presetConfig.output || config.output || null;
+  }
+  if (!userArgs.replace) {
+    args.replace = presetConfig.replace !== undefined ? presetConfig.replace : (config.replace !== undefined ? config.replace : false);
+  }
+  if (!userArgs.background) {
+    args.background = presetConfig.background || config.background || '#ffffff';
+  }
+
   // If the preset has source, use it, else use global config.source
   if (presetConfig.source) {
     args.presetSource = presetConfig.source;
   } else if (config.source) {
     args.presetSource = config.source;
+  }
+} else {
+  // No preset specified, apply config defaults if user didn't specify CLI values
+  if (!userArgs.format) {
+    args.format = config.format || null;
+  }
+  if (!userArgs.quality) {
+    args.quality = config.quality || 85;
+  }
+  if (!userArgs.width) {
+    args.width = config.width || null;
+  }
+  if (!userArgs.height) {
+    args.height = config.height || null;
+  }
+  if (!userArgs.output) {
+    args.output = config.output || null;
+  }
+  if (!userArgs.replace) {
+    args.replace = config.replace !== undefined ? config.replace : false;
+  }
+  if (!userArgs.background) {
+    args.background = config.background || '#ffffff';
   }
 }
 
@@ -256,7 +302,7 @@ function normalizeOutputSubfolder(subfolder) {
 // Function to get the effective quality for Alloy (CLI > preset > global > default)
 function getEffectiveQuality(subPresetName, subPresetConfig) {
   // CLI flag always wins
-  if (args.quality) return parseInt(args.quality, 10);
+  if (userArgs.quality) return parseInt(userArgs.quality, 10);
   // Subpreset (android/iphone) quality
   if (subPresetConfig && subPresetConfig.quality) return parseInt(subPresetConfig.quality, 10);
   // Alloy preset quality
@@ -267,8 +313,22 @@ function getEffectiveQuality(subPresetName, subPresetConfig) {
   return 85;
 }
 
+// Function to get the effective format for Alloy (CLI > preset > global > original)
+function getEffectiveFormat(subPresetName, subPresetConfig, originalExt) {
+  // CLI flag always wins
+  if (userArgs.format) return userArgs.format;
+  // Subpreset (android/iphone) format
+  if (subPresetConfig && subPresetConfig.format) return subPresetConfig.format;
+  // Alloy preset format
+  if (presets.alloy && presets.alloy.format) return presets.alloy.format;
+  // Global config
+  if (config.format) return config.format;
+  // Default: preserve original extension
+  return originalExt.slice(1).toLowerCase();
+}
+
 // Function to process images with scaling
-const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPhone, quality) => {
+const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPhone, quality, outputFormat) => {
   // Normalize output subfolder to remove leading/trailing slashes
   const normalizedSubfolder = normalizeOutputSubfolder(outputSubfolder);
   const originalImage = sharp(inputFile);
@@ -294,7 +354,8 @@ const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPh
         fs.mkdirSync(outputDir, { recursive: true });
       }
       const baseName = path.parse(inputFile).name;
-      const ext = path.extname(inputFile);
+      // Use the specified output format instead of original extension
+      const ext = outputFormat ? `.${outputFormat}` : path.extname(inputFile);
       outputFileName = scaleName === '1x'
         ? `${baseName}${ext}`
         : `${baseName}@${scaleName}${ext}`;
@@ -306,30 +367,41 @@ const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPh
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
       }
-      outputFileName = path.basename(inputFile);
+      const baseName = path.parse(inputFile).name;
+      // Use the specified output format instead of original extension
+      const ext = outputFormat ? `.${outputFormat}` : path.extname(inputFile);
+      outputFileName = `${baseName}${ext}`;
       outputFilePath = path.join(outputDir, outputFileName);
     }
 
     const targetWidth = Math.round(metadata.width / 4 * scaleFactor);
     const targetHeight = Math.round(metadata.height / 4 * scaleFactor);
 
-    // Detect output format from extension
-    const ext = path.extname(inputFile).toLowerCase();
+    // Use the specified output format instead of detecting from extension
+    const formatToUse = outputFormat || path.extname(inputFile).toLowerCase().slice(1);
+    let sharpFormat = formatToUse;
+
+    // Normalize format for Sharp (jpg -> jpeg)
+    if (sharpFormat === 'jpg') {
+      sharpFormat = 'jpeg';
+    }
+
     let sharpInstance = sharp(inputFile).resize({
       width: targetWidth,
       height: targetHeight,
       fit: 'contain'
     });
+
     // Apply quality to the output format
-    if (ext === '.png') {
+    if (sharpFormat === 'png') {
       sharpInstance = sharpInstance.png({ quality: quality, compressionLevel: 9 });
-    } else if (ext === '.webp') {
+    } else if (sharpFormat === 'webp') {
       sharpInstance = sharpInstance.webp({ quality: quality });
-    } else if (ext === '.avif') {
+    } else if (sharpFormat === 'avif') {
       sharpInstance = sharpInstance.avif({ quality: quality });
-    } else if (ext === '.tiff') {
+    } else if (sharpFormat === 'tiff') {
       sharpInstance = sharpInstance.tiff({ quality: quality, compression: 'lzw' });
-    } else if (ext === '.gif') {
+    } else if (sharpFormat === 'gif') {
       sharpInstance = sharpInstance.gif();
     } else {
       sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({ quality: quality });
@@ -463,7 +535,8 @@ const processImages = async () => {
           const outputSubfolder = args.output || subPresetConfig.output || '';
           const isIPhone = subPresetName === 'iphone';
           const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig);
-          return processImageWithScaling(inputFile, scales, outputSubfolder, isIPhone, effectiveQuality).then(result => {
+          const effectiveFormat = getEffectiveFormat(subPresetName, subPresetConfig, path.extname(inputFile));
+          return processImageWithScaling(inputFile, scales, outputSubfolder, isIPhone, effectiveQuality, effectiveFormat).then(result => {
             if (result) {
               processedFilesInfo.push(...result.processedFiles);
               totalOriginalSize += result.originalSize;

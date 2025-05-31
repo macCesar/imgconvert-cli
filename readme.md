@@ -30,6 +30,7 @@ It supports various formats and lets you optimize images for the web or other pu
     - [Output for Alloy (Android \& iPhone)](#output-for-alloy-android--iphone)
     - [Using Preset Source Folders](#using-preset-source-folders)
   - [Configuration File](#configuration-file)
+    - [Configuration Precedence](#configuration-precedence)
     - [Configuration Parameters](#configuration-parameters)
     - [Default Configuration File](#default-configuration-file)
   - [Debug Mode](#debug-mode)
@@ -212,31 +213,52 @@ This allows you to safely test your image processing workflow in development wit
     imgconvert source_folder -p web
     ```
 
-11. **Set environment to production:**
+11. **Use alloy preset with platform-specific formats:**
+
+    ```bash
+    imgconvert source_folder -p alloy
+    # Generates images according to subpreset format configuration
+    ```
+
+12. **Override preset settings with CLI arguments:**
+
+    ```bash
+    imgconvert source_folder -p alloy -f png -q 95
+    # CLI arguments override preset: both Android and iPhone will use PNG at 95% quality
+    ```
+
+13. **Use preset settings with partial CLI override:**
+
+    ```bash
+    imgconvert source_folder -p alloy -q 80
+    # Only quality is overridden: Android uses WebP, iPhone uses PNG, both at 80% quality
+    ```
+
+14. **Set environment to production:**
 
     ```bash
     imgconvert source_folder -e prod
     ```
 
-12. **Specify a custom output directory:**
+15. **Specify a custom output directory:**
 
     ```bash
     imgconvert source_folder -o custom_output_directory
     ```
 
-13. **Enable debug mode:**
+16. **Enable debug mode:**
 
     ```bash
     imgconvert source_folder -d
     ```
 
-14. **Check the version of the module:**
+17. **Check the version of the module:**
 
     ```bash
     imgconvert --version
     ```
 
-15. **Show help message:**
+18. **Show help message:**
 
     ```bash
     imgconvert --help
@@ -326,6 +348,17 @@ And the tool will use the defined source folders and output subfolders automatic
 
 The configuration file `.imgconverter.config.json` allows you to define global default parameters and custom presets for image processing. This file is automatically created in the current working directory when you run `imgconvert config`.
 
+### Configuration Precedence
+
+The tool follows a consistent 4-level precedence system for all configuration parameters:
+
+1. **CLI Arguments** (highest priority) - Values provided via command line flags
+2. **Preset Settings** - Values defined in the specific preset being used
+3. **Global Config** - Values in the `.imgconverter.config.json` file
+4. **Default Values** (lowest priority) - Built-in fallback values
+
+This means CLI arguments always override preset settings, preset settings override global config, and global config overrides defaults. This precedence applies to all parameters: `quality`, `format`, `width`, `height`, `output`, `replace`, and `background`.
+
 ### Configuration Parameters
 
 - **width**: Default width for image resizing.
@@ -336,7 +369,7 @@ The configuration file `.imgconverter.config.json` allows you to define global d
 - **source**: Global default source folder for images. If not provided as a CLI argument or in a preset, this will be used as the input folder.
 - **output**: Default output directory for processed images. If `null`, defaults to a `compressed` directory at the same level as the source path (or `compressed-dev` in development mode).
 - **background**: Hex color used to fill transparent areas only when converting images with transparency to formats that do not support it (e.g., PNG to JPEG). Ignored if the output format supports transparency.
-- **presets**: Define custom presets for different use cases. Each preset can specify its own `format`, `quality`, `width`, `height`, `output`, and `source`. If a preset does not define `source`, the global `source` will be used.
+- **presets**: Define custom presets for different use cases. Each preset can specify its own `format`, `quality`, `width`, `height`, `output`, and `source`. All preset configurations follow the precedence system: CLI arguments always override preset values, which override global config values.
 
 ### Default Configuration File
 
@@ -369,6 +402,35 @@ The configuration file `.imgconverter.config.json` allows you to define global d
   }
 }
 ```
+
+**Example: How Precedence Works**
+
+Given this configuration file:
+```json
+{
+  "quality": 75,
+  "format": "jpeg",
+  "presets": {
+    "alloy": {
+      "android": {
+        "quality": 90,
+        "format": "webp"
+      },
+      "iphone": {
+        "quality": 95,
+        "format": "png"
+      }
+    }
+  }
+}
+```
+
+Different command scenarios would result in:
+
+- `imgconvert -p alloy` → Android: WebP at 90%, iPhone: PNG at 95%
+- `imgconvert -p alloy -q 80` → Android: WebP at 80%, iPhone: PNG at 80% (CLI overrides quality)
+- `imgconvert -p alloy -f jpeg` → Android: JPEG at 90%, iPhone: JPEG at 95% (CLI overrides format)
+- `imgconvert -p alloy -f jpeg -q 80` → Both platforms: JPEG at 80% (CLI overrides everything)
 
 ## Debug Mode
 
