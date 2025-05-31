@@ -19,18 +19,18 @@ if (fs.existsSync(configPath)) {
 
 // Default presets
 const defaultPresets = {
-  web: { source: null, quality: 80, format: 'webp' },
-  print: { source: null, quality: 100, format: 'tiff' },
-  thumbnail: { source: null, width: 150, height: 150, quality: 60, format: 'png' },
+  web: { source: null, output: null, quality: 80, format: 'webp' },
+  print: { source: null, output: null, quality: 100, format: 'tiff' },
+  thumbnail: { source: null, output: null, width: 150, height: 150, quality: 60, format: 'png' },
   alloy: {
     android: {
       source: null,
-      output: "",
+      output: null,
       scales: { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }
     },
     iphone: {
       source: null,
-      output: "",
+      output: null,
       scales: { "1x": 1, "2x": 2, "3x": 3 }
     }
   }
@@ -84,18 +84,18 @@ const userArgs = minimist(process.argv.slice(2), {
 
 // Create args object with proper precedence: CLI > Preset > Config > Default
 const args = {
-  preset: userArgs.preset || null,
-  width: userArgs.width || null,
-  height: userArgs.height || null,
-  quality: userArgs.quality || null,
-  format: userArgs.format || null,
-  'replace-originals': userArgs['replace-originals'] || false,
-  background: userArgs.background || null,
-  output: userArgs.output || null,
-  debug: userArgs.debug || false,
+  _: userArgs._,
   help: userArgs.help,
   version: userArgs.version,
-  _: userArgs._
+  width: userArgs.width || null,
+  debug: userArgs.debug || false,
+  output: userArgs.output || null,
+  preset: userArgs.preset || null,
+  height: userArgs.height || null,
+  format: userArgs.format || null,
+  quality: userArgs.quality || null,
+  background: userArgs.background || null,
+  'replace-originals': userArgs['replace-originals'] || false,
 };
 
 // Handle height and width validation
@@ -129,15 +129,15 @@ if (args.version) {
 // Create default configuration file
 if (args._[0] === 'config') {
   const defaultConfig = {
+    quality: 85,
     width: null,
     height: null,
-    quality: 85,
     source: null,
     output: null,
     format: null,
-    'replace-originals': false,
     background: '#ffffff',
-    presets: defaultPresets
+    presets: defaultPresets,
+    'replace-originals': false
   };
 
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf-8');
