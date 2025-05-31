@@ -43,25 +43,24 @@ const presets = { ...defaultPresets, ...(config.presets || {}) };
 const displayHelp = () => {
   console.log(chalk.blue(`
 Usage:
-  ${chalk.green('imgconvert <source_path> [-f <format|all>] [-q <quality>] [-b <background_color>] [-r] [-w <width>] [-h <height>] [-o <output_directory>] [-e <environment>] [-p <preset>] [-d]')}
+  ${chalk.green('imgconvert <source_path> [-f <format|all>] [-q <quality>] [-b <background_color>] [--replace-originals] [-w <width>] [-h <height>] [-o <output_directory>] [-p <preset>] [-d]')}
 
   ${chalk.green('imgconvert config')}  Create a default configuration file
 
 Options:
-  ${chalk.green('-H, --help')}         Show this help message
-  ${chalk.green('-v, --version')}      Show the version of the module
-  ${chalk.green('-f, --format')}       Set the desired output format (${chalk.yellow('jpeg, png, webp, avif, tiff, gif, all; default: none')})
-  ${chalk.green('-q, --quality')}      Set the quality of the output images (${chalk.yellow('1-100; default: 85')})
-  ${chalk.green('-b, --background')}   Set the background color for PNG images (${chalk.yellow('default: #ffffff')})
-  ${chalk.green('-w, --width')}        Set the width of the output images
-  ${chalk.green('-h, --height')}       Set the height of the output images
-  ${chalk.green('-r, --replace')}      Enables replacement of original files (default: false)
-  ${chalk.green('-o, --output')}       Set the output directory for processed images
-  ${chalk.green('-p, --preset')}       Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy')})
-  ${chalk.green('-e, --environment')}  Set the environment (${chalk.yellow('dev, prod; default: dev')})
-  ${chalk.green('-d, --debug')}        Enable debug mode to show detailed information
+  ${chalk.green('-H, --help')}             Show this help message
+  ${chalk.green('-v, --version')}          Show the version of the module
+  ${chalk.green('-f, --format')}           Set the desired output format (${chalk.yellow('jpeg, png, webp, avif, tiff, gif, all; default: none')})
+  ${chalk.green('-q, --quality')}          Set the quality of the output images (${chalk.yellow('1-100; default: 85')})
+  ${chalk.green('-b, --background')}       Set the background color for PNG images (${chalk.yellow('default: #ffffff')})
+  ${chalk.green('-w, --width')}            Set the width of the output images
+  ${chalk.green('-h, --height')}           Set the height of the output images
+  ${chalk.green('--replace-originals')}    Replace original files instead of creating copies (default: false)
+  ${chalk.green('-o, --output')}           Set the output directory for processed images
+  ${chalk.green('-p, --preset')}           Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy')})
+  ${chalk.green('-d, --debug')}            Enable debug mode to show detailed information
 
-${chalk.green('<source_path>')}        The path to the image file or directory to process (${chalk.yellow('required')})
+${chalk.green('<source_path>')}            The path to the image file or directory to process (${chalk.yellow('required')})
 `));
   process.exit(0);
 };
@@ -74,26 +73,23 @@ const userArgs = minimist(process.argv.slice(2), {
     q: 'quality',
     b: 'background',
     f: 'format',
-    r: 'replace',
     w: 'width',
     h: 'height',
     o: 'output',
     p: 'preset',
-    e: 'environment',
     d: 'debug'
   },
-  boolean: ['replace']
+  boolean: ['replace-originals', 'debug']
 });
 
 // Create args object with proper precedence: CLI > Preset > Config > Default
 const args = {
   preset: userArgs.preset || null,
-  environment: userArgs.environment || 'dev',
   width: userArgs.width || null,
   height: userArgs.height || null,
   quality: userArgs.quality || null,
   format: userArgs.format || null,
-  replace: userArgs.replace || false,
+  'replace-originals': userArgs['replace-originals'] || false,
   background: userArgs.background || null,
   output: userArgs.output || null,
   debug: userArgs.debug || false,
@@ -101,24 +97,6 @@ const args = {
   version: userArgs.version,
   _: userArgs._
 };
-
-// Environment logic
-const environment = args.environment || 'dev';
-let effectiveReplace = !!args.replace;
-let effectiveDebug = !!args.debug;
-let effectiveOutput = args.output;
-
-if (environment === 'dev') {
-  if (args.replace) {
-    console.log(chalk.yellow('[DEV MODE] Overwriting original files is disabled in development environment. Output will be written to "compressed-dev" folder.'));
-  }
-  effectiveReplace = false;
-  effectiveDebug = true;
-  // If output is not set, use compressed-dev
-  if (!args.output && !config.output) {
-    effectiveOutput = null; // will be set to compressed-dev below
-  }
-}
 
 // Handle height and width validation
 if (args.height && (isNaN(parseInt(args.height)) || parseInt(args.height) <= 0)) {
@@ -157,7 +135,7 @@ if (args._[0] === 'config') {
     source: null,
     output: null,
     format: null,
-    replace: false,
+    'replace-originals': false,
     background: '#ffffff',
     presets: defaultPresets
   };
@@ -188,8 +166,8 @@ if (args.preset && presets[args.preset]) {
   if (!userArgs.output) {
     args.output = presetConfig.output || config.output || null;
   }
-  if (!userArgs.replace) {
-    args.replace = presetConfig.replace !== undefined ? presetConfig.replace : (config.replace !== undefined ? config.replace : false);
+  if (!userArgs['replace-originals']) {
+    args['replace-originals'] = presetConfig['replace-originals'] !== undefined ? presetConfig['replace-originals'] : (config['replace-originals'] !== undefined ? config['replace-originals'] : false);
   }
   if (!userArgs.background) {
     args.background = presetConfig.background || config.background || '#ffffff';
@@ -218,8 +196,8 @@ if (args.preset && presets[args.preset]) {
   if (!userArgs.output) {
     args.output = config.output || null;
   }
-  if (!userArgs.replace) {
-    args.replace = config.replace !== undefined ? config.replace : false;
+  if (!userArgs['replace-originals']) {
+    args['replace-originals'] = config['replace-originals'] !== undefined ? config['replace-originals'] : false;
   }
   if (!userArgs.background) {
     args.background = config.background || '#ffffff';
@@ -264,15 +242,13 @@ if (!fs.existsSync(inputPath)) {
 
 // Determine output directory
 let outputDir;
-if (effectiveOutput) {
-  outputDir = effectiveOutput;
+if (args.output) {
+  outputDir = args.output;
 } else if (config.output) {
   outputDir = config.output;
 } else {
   const inputDir = fs.lstatSync(inputPath).isDirectory() ? inputPath : path.dirname(inputPath);
-  outputDir = environment === 'dev'
-    ? path.join(inputDir, 'compressed-dev')
-    : path.join(inputDir, 'compressed');
+  outputDir = path.join(inputDir, 'compressed');
 }
 
 // Ensure output directory exists
@@ -285,10 +261,10 @@ const userSpecifiedFormat = args.format && args.format !== 'none';
 const format = userSpecifiedFormat ? args.format : null; // null if not specified
 const backgroundColor = args.background;
 const quality = parseInt(args.quality, 10);
-const replaceOriginal = effectiveReplace;
+const replaceOriginal = args['replace-originals'];
 const width = args.width ? parseInt(args.width, 10) : null;
 const height = args.height ? parseInt(args.height, 10) : null;
-const debugMode = effectiveDebug;
+const debugMode = args.debug;
 
 // Supported image formats
 const supportedFormats = ['jpeg', 'jpg', 'png', 'webp', 'avif', 'tiff', 'gif'];

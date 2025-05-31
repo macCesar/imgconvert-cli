@@ -24,7 +24,6 @@ It supports various formats and lets you optimize images for the web or other pu
     - [**Preserve Original Extensions**](#preserve-original-extensions)
     - [**Format Conversion Changes Extensions**](#format-conversion-changes-extensions)
   - [Options](#options)
-  - [Environment Mode](#environment-mode)
   - [Examples](#examples)
   - [Presets](#presets)
     - [Output for Alloy (Android \& iPhone)](#output-for-alloy-android--iphone)
@@ -52,11 +51,10 @@ It supports various formats and lets you optimize images for the web or other pu
 - **Configurable Background Color**: Set a background color for images converted from formats with transparency (e.g., PNG) to formats without transparency (e.g., JPEG).
 - **Multi-Format Conversion**: Convert images to all supported formats in one command.
 - **Image Resizing**: Resize images by specifying width and/or height.
-- **Replace Original Files**: Optionally replace original files with processed images (**see Environment Mode for restrictions**).
+- **Replace Original Files**: Optionally replace original files with processed images using the `--replace-originals` flag.
 - **Presets**: Use predefined settings for different use cases.
 - **Custom Output Directory**: Set a custom directory for processed images, or use the default `compressed` directory.
 - **Debug Mode**: Enable detailed logging for troubleshooting.
-- **Environment Mode**: Switch between development and production behaviors for safer testing and real deployments.
 
 ## How It Works
 
@@ -64,7 +62,7 @@ It supports various formats and lets you optimize images for the web or other pu
 - Uses `sharp` to apply compression, format conversion, resizing, and optional background color.
 - **Preserves original file extensions** when no format is specified (e.g., `image.jpg` → `image.jpg`).
 - Only changes file extension when explicitly converting formats (e.g., `image.jpg -f webp` → `image.webp`).
-- Outputs to a `compressed` subfolder by default, or replaces original files if `--replace` is used (**only in production mode**).
+- Outputs to a `compressed` subfolder by default, or replaces original files if `--replace-originals` is used.
 - Resizing preserves aspect ratio unless both width and height are specified.
 
 ## Installation
@@ -120,33 +118,14 @@ The available options for the `imgconvert-cli` command let users customize image
 - `-f, --format`: (Optional) The desired output format. Supported formats: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, or `all`. If not specified, **the original format and extension of each file is retained**.
 - `-q, --quality`: (Optional) Output image quality (1-100). Default: 85.
 - `-b, --background`: (Optional) Hex color for filling transparent areas when converting to formats that do not support transparency (e.g., PNG to JPEG). Ignored if the output format supports transparency. Default: `#ffffff`.
-- `-r, --replace`: (Optional) Enables replacement of original files. Default: `false`. **Note: This is only allowed in production mode. In development mode, this option is ignored and files are never overwritten.**
+- `--replace-originals`: (Optional) Replace original files with processed images. Default: `false`.
 - `-w, --width`: (Optional) Set output image width.
 - `-h, --height`: (Optional) Set output image height.
-- `-o, --output`: (Optional) Set a custom output directory. If not specified, a `compressed` directory is created at the same level as the source path (or `compressed-dev` in development mode).
+- `-o, --output`: (Optional) Set a custom output directory. If not specified, a `compressed` directory is created at the same level as the source path.
 - `-p, --preset`: (Optional) Apply a preset configuration (e.g., `web`, `print`, `thumbnail`, `alloy`).
-- `-e, --environment`: (Optional) Set the environment mode. Allowed values: `dev` (default), `prod`.
-    - In `dev` mode: original files are never overwritten, output goes to `compressed-dev`, and debug logs are always enabled.
-    - In `prod` mode: original files can be overwritten if `--replace` is used, output goes to `compressed`, and debug logs are only shown if `--debug` is set.
-- `-d, --debug`: (Optional) Enable debug mode for detailed information (always enabled in `dev` mode).
+- `-d, --debug`: (Optional) Enable debug mode for detailed information.
 - `-v, --version`: (Optional) Displays the version and exits.
 - `-H, --help`: (Optional) Show the help message.
-
-## Environment Mode
-
-The `--environment` (or `-e`) option controls the behavior of the CLI for safer development and real production use:
-
-- **Development mode (`--environment=dev`, default):**
-  - Original files are never overwritten, even if `--replace` is specified (the option is ignored).
-  - Output images are always written to a `compressed-dev` folder next to the source.
-  - Debug logs are always enabled.
-  - A warning is shown if you try to use `--replace`.
-- **Production mode (`--environment=prod`):**
-  - Original files can be overwritten if `--replace` is specified.
-  - Output images are written to the normal `compressed` folder (or the one specified with `--output`).
-  - Debug logs are only shown if `--debug` is specified.
-
-This allows you to safely test your image processing workflow in development without risking your original files, and then switch to production for real conversions.
 
 ## Examples
 
@@ -201,10 +180,10 @@ This allows you to safely test your image processing workflow in development wit
    imgconvert source_folder -f all
    ```
 
-9. **Replace original files with processed images (only in production mode):**
+9. **Replace original files with processed images:**
 
     ```bash
-    imgconvert source_folder -r -e prod
+    imgconvert source_folder --replace-originals
     ```
 
 10. **Use a preset configuration:**
@@ -234,31 +213,25 @@ This allows you to safely test your image processing workflow in development wit
     # Only quality is overridden: Android uses WebP, iPhone uses PNG, both at 80% quality
     ```
 
-14. **Set environment to production:**
-
-    ```bash
-    imgconvert source_folder -e prod
-    ```
-
-15. **Specify a custom output directory:**
+14. **Specify a custom output directory:**
 
     ```bash
     imgconvert source_folder -o custom_output_directory
     ```
 
-16. **Enable debug mode:**
+15. **Enable debug mode:**
 
     ```bash
     imgconvert source_folder -d
     ```
 
-17. **Check the version of the module:**
+16. **Check the version of the module:**
 
     ```bash
     imgconvert --version
     ```
 
-18. **Show help message:**
+17. **Show help message:**
 
     ```bash
     imgconvert --help
@@ -357,7 +330,7 @@ The tool follows a consistent 4-level precedence system for all configuration pa
 3. **Global Config** - Values in the `.imgconverter.config.json` file
 4. **Default Values** (lowest priority) - Built-in fallback values
 
-This means CLI arguments always override preset settings, preset settings override global config, and global config overrides defaults. This precedence applies to all parameters: `quality`, `format`, `width`, `height`, `output`, `replace`, and `background`.
+This means CLI arguments always override preset settings, preset settings override global config, and global config overrides defaults. This precedence applies to all parameters: `quality`, `format`, `width`, `height`, `output`, `replace-originals`, and `background`.
 
 ### Configuration Parameters
 
@@ -365,9 +338,9 @@ This means CLI arguments always override preset settings, preset settings overri
 - **height**: Default height for image resizing.
 - **format**: Default format for image conversion.
 - **quality**: Default quality for image compression.
-- **replace**: Default setting for replacing original files.
+- **replace-originals**: Default setting for replacing original files.
 - **source**: Global default source folder for images. If not provided as a CLI argument or in a preset, this will be used as the input folder.
-- **output**: Default output directory for processed images. If `null`, defaults to a `compressed` directory at the same level as the source path (or `compressed-dev` in development mode).
+- **output**: Default output directory for processed images. If `null`, defaults to a `compressed` directory at the same level as the source path.
 - **background**: Hex color used to fill transparent areas only when converting images with transparency to formats that do not support it (e.g., PNG to JPEG). Ignored if the output format supports transparency.
 - **presets**: Define custom presets for different use cases. Each preset can specify its own `format`, `quality`, `width`, `height`, `output`, and `source`. All preset configurations follow the precedence system: CLI arguments always override preset values, which override global config values.
 
@@ -381,7 +354,7 @@ This means CLI arguments always override preset settings, preset settings overri
   "source": null,
   "output": null,
   "format": null,
-  "replace": false,
+  "replace-originals": false,
   "background": "#ffffff",
   "presets": {
     "web": { "source": null, "format": "webp", "quality": 80 },
@@ -434,7 +407,7 @@ Different command scenarios would result in:
 
 ## Debug Mode
 
-When debug mode is enabled with the `-d` or `--debug` option, the tool displays summary statistics after processing. In development mode, debug mode is always enabled.
+When debug mode is enabled with the `-d` or `--debug` option, the tool displays summary statistics after processing.
 
 **Sample Debug Output:**
 ```
@@ -476,9 +449,6 @@ A: Check file permissions and ensure the output directory is writable. Use `--de
 
 **Q: Output quality seems poor**
 A: Adjust quality with `-q` parameter (1-100). Default is 85. Use `-q 95` for higher quality.
-
-**Q: Files are not being overwritten in development mode**
-A: This is intentional. Use `-e prod` for production mode if you need to replace original files.
 
 ## Contribution
 
