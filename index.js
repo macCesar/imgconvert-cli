@@ -248,7 +248,7 @@ if (args.output) {
   outputDir = config.output;
 } else {
   const inputDir = fs.lstatSync(inputPath).isDirectory() ? inputPath : path.dirname(inputPath);
-  outputDir = path.join(inputDir, 'compressed');
+  outputDir = path.join(inputDir, 'converted');
 }
 
 // Ensure output directory exists

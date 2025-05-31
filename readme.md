@@ -53,7 +53,7 @@ It supports various formats and lets you optimize images for the web or other pu
 - **Image Resizing**: Resize images by specifying width and/or height.
 - **Replace Original Files**: Optionally replace original files with processed images using the `--replace-originals` flag.
 - **Presets**: Use predefined settings for different use cases.
-- **Custom Output Directory**: Set a custom directory for processed images, or use the default `compressed` directory.
+- **Custom Output Directory**: Set a custom directory for processed images, or use the default `converted` directory.
 - **Debug Mode**: Enable detailed logging for troubleshooting.
 
 ## How It Works
@@ -62,7 +62,7 @@ It supports various formats and lets you optimize images for the web or other pu
 - Uses `sharp` to apply compression, format conversion, resizing, and optional background color.
 - **Preserves original file extensions** when no format is specified (e.g., `image.jpg` → `image.jpg`).
 - Only changes file extension when explicitly converting formats (e.g., `image.jpg -f webp` → `image.webp`).
-- Outputs to a `compressed` subfolder by default, or replaces original files if `--replace-originals` is used.
+- Outputs to a `converted` subfolder by default, or replaces original files if `--replace-originals` is used.
 - Resizing preserves aspect ratio unless both width and height are specified.
 
 ## Installation
@@ -121,7 +121,7 @@ The available options for the `imgconvert-cli` command let users customize image
 - `--replace-originals`: (Optional) Replace original files with processed images. Default: `false`.
 - `-w, --width`: (Optional) Set output image width.
 - `-h, --height`: (Optional) Set output image height.
-- `-o, --output`: (Optional) Set a custom output directory. If not specified, a `compressed` directory is created at the same level as the source path.
+- `-o, --output`: (Optional) Set a custom output directory. If not specified, a `converted` directory is created at the same level as the source path.
 - `-p, --preset`: (Optional) Apply a preset configuration (e.g., `web`, `print`, `thumbnail`, `alloy`).
 - `-d, --debug`: (Optional) Enable debug mode for detailed information.
 - `-v, --version`: (Optional) Displays the version and exits.
@@ -340,7 +340,7 @@ This means CLI arguments always override preset settings, preset settings overri
 - **quality**: Default quality for image compression.
 - **replace-originals**: Default setting for replacing original files.
 - **source**: Global default source folder for images. If not provided as a CLI argument or in a preset, this will be used as the input folder.
-- **output**: Default output directory for processed images. If `null`, defaults to a `compressed` directory at the same level as the source path.
+- **output**: Default output directory for processed images. If `null`, defaults to a `converted` directory at the same level as the source path.
 - **background**: Hex color used to fill transparent areas only when converting images with transparency to formats that do not support it (e.g., PNG to JPEG). Ignored if the output format supports transparency.
 - **presets**: Define custom presets for different use cases. Each preset can specify its own `format`, `quality`, `width`, `height`, `output`, and `source`. All preset configurations follow the precedence system: CLI arguments always override preset values, which override global config values.
 

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🔧 Changed
 - **Simplified CLI Interface**: Removed confusing environment concept that was causing user confusion
 - **Parameter Naming**: `--replace` → `--replace-originals` for better user experience
+- **Default Output Directory**: Changed from `compressed` to `converted` for better alignment with tool name and purpose
 - **Help Message**: Updated to show only essential, clear options
 - **Configuration System**: Updated default config to use `replace-originals` instead of `replace`
 - **Preset Logic**: All preset application logic now uses the new parameter naming convention
@@ -74,6 +75,7 @@ Update your `.imgconverter.config.json` file:
 - **CLI Parsing**: Updated minimist configuration for new parameter names
 - **Preset Application**: Modified to use `replace-originals` throughout
 - **Variable Cleanup**: Removed all environment-related variables and logic
+- **Output Directory**: Changed default output folder from `compressed` to `converted`
 
 #### Precedence System Verification:
 The configuration precedence system continues to work correctly:
@@ -86,20 +88,23 @@ This applies to all parameters: `quality`, `format`, `width`, `height`, `output`
 
 ### 🎯 Benefits of Changes
 
-1. **User Experience**: 
+1. **User Experience**:
    - Simpler, more predictable CLI behavior
    - Self-explanatory parameter names
+   - More intuitive output directory naming (`converted` vs `compressed`)
    - No more confusion about when files get replaced
 
 2. **Maintainability**:
    - Reduced code complexity
    - Fewer conditional branches
    - Cleaner codebase
+   - More consistent naming throughout the application
 
 3. **Documentation**:
    - Easier to understand and maintain
    - More focused content
    - Better user onboarding
+   - Consistent terminology
 
 ### ⚡ Performance
 - No performance impact - changes are purely interface and logic simplification
