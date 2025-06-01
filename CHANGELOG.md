@@ -15,10 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Flexible Quality and Format Control**: Per-configuration quality and format settings with proper precedence: CLI > Subpreset > ConfigGroup > Global > Default
 - **Batch Processing**: Process all configurations in a single command execution
 
+#### 🔒 Immutable Titanium Standards Implementation
+- **Fixed Scale Factors**: Titanium Alloy scale factors are now immutable constants that cannot be modified by users
+- **Simplified Configuration**: Removed `scales` property from configuration files - scales are now built-in Titanium standards
+- **Error Prevention**: Prevents users from accidentally breaking Titanium compatibility by modifying scale factors
+- **Code Consistency**: All scale references now use centralized immutable constants (`ALLOY_SCALES`)
+
 #### 🏗️ New Configuration Structure
 - **Legacy Compatibility**: Maintains full backward compatibility with existing alloy preset configurations (`alloy.android`, `alloy.iphone`)
 - **Auto-Detection**: Automatically detects new multi-configuration format vs legacy format
 - **Multi-Configuration Support**: New structure supports `alloy.{configName}.{platform}` format (e.g., `alloy.cards.android`, `alloy.thumbs.iphone`)
+- **Clean Configuration**: Generated configuration files no longer include modifiable scale factors
 
 #### 📊 Improved Debug and Monitoring
 - **Enhanced Debug Output**: Debug mode now shows configuration group and platform information for each processed file
