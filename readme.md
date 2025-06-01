@@ -471,8 +471,8 @@ imgconvert -p alloy:your-config-name -q 90  # Process only your-config-name with
 The `alloy` preset is specifically designed for mobile app development with Titanium Alloy framework. It generates multiple scaled versions of images for both Android and iOS platforms.
 
 ### Key Features:
-- **Automatic scaling**: Creates multiple resolution versions based on predefined scale factors
 - **Legacy compatibility**: Maintains backward compatibility with existing alloy configurations
+- **Automatic scaling**: Creates multiple resolution versions based on predefined scale factors
 - **4x source requirement**: Source images should be 4x the target resolution for optimal results
 - **Platform-specific output**: Generates Android density folders and iOS @2x/@3x naming conventions
 - **Flexible quality/format control**: Per-configuration quality and format settings with proper precedence
