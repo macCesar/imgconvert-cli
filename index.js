@@ -5,4 +5,5 @@
  * This file serves as the main executable
  */
 
-require('./src/index.js');
+const { main } = require('./src/index.js');
+main();
