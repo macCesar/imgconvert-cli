@@ -13,6 +13,8 @@ const { logger } = require('./utils/logger');
 const { processImages } = require('./processors/image');
 const { processAlloyPreset } = require('./processors/alloy');
 const { version } = require('../package.json');
+const { getMergedPresets } = require('./config/loader');
+const { applyConfigPrecedence } = require('./cli/parser');
 
 async function main() {
   try {
@@ -40,18 +42,22 @@ async function main() {
     // Load configuration
     const config = loadConfig();
 
+    // Apply configuration precedence BEFORE validation
+    const presets = getMergedPresets(config);
+    const finalArgs = applyConfigPrecedence(args, config, presets);
+
     // Validate input
-    const validation = validateInput(args, config);
+    const validation = validateInput(finalArgs, config);
     if (!validation.valid) {
       logger.error(validation.error);
       process.exit(1);
     }
 
     // Process based on preset
-    if (args.preset === 'alloy' || (args.preset && args.preset.startsWith('alloy:'))) {
-      await processAlloyPreset(args, config);
+    if (finalArgs.preset === 'alloy' || (finalArgs.preset && finalArgs.preset.startsWith('alloy:'))) {
+      await processAlloyPreset(finalArgs, config);
     } else {
-      await processImages(args, config);
+      await processImages(finalArgs, config);
     }
 
   } catch (error) {
