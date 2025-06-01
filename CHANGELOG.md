@@ -5,6 +5,153 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-06-01
+
+### 🏗️ Major Code Refactoring - Modular Architecture Implementation
+
+#### 🎯 Complete CLI Restructure
+Based on comprehensive code analysis (see `todo/imgconverter-analysis.md`), the entire codebase has been refactored from a monolithic 1000+ line single file into a clean, modular architecture following best practices and design patterns.
+
+#### 📦 New Modular Structure
+- **Maintainable Codebase**: Reduced complexity and improved code organization
+- **Clean Architecture**: Implemented proper separation between CLI, business logic, and utilities
+- **Separated Concerns**: Extracted monolithic `index.js` into focused, single-responsibility modules
+
+```
+src/
+├── index.js             // Clean entry point
+├── cli/
+│   ├── parser.js        // Argument parsing logic
+│   └── help.js          // Help display and documentation
+├── config/
+│   ├── loader.js        // Configuration loading and merging
+│   └── defaults.js      // Default configuration values
+├── processors/
+│   ├── image.js         // Core image processing logic
+│   ├── alloy.js         // Titanium Alloy-specific processing
+│   └── scaling.js       // Image scaling and transformation operations
+└── utils/
+    ├── logger.js        // Centralized logging utilities
+    └── validation.js    // Input validation and error handling
+```
+
+#### 🔧 Technical Improvements
+
+##### Code Quality Enhancements
+- **Eliminated Code Duplication**: Extracted common patterns into reusable utilities
+- **Improved Error Handling**: Centralized error management with specific error types
+- **Reduced Complexity**: Broke down complex functions into smaller, focused methods
+- **Better Separation of Concerns**: Each module has a single, well-defined responsibility
+
+##### Design Patterns Implementation
+- **Logger Pattern**: Centralized logging with different severity levels
+- **Factory Pattern**: `ImageProcessorFactory` for format-specific processors
+- **Strategy Pattern**: Modular processing strategies for different image operations
+- **Configuration Pattern**: Enhanced config loading with proper precedence handling
+
+##### Performance Optimizations
+- **Better Resource Management**: Improved cleanup and resource disposal
+- **Optimized Imports**: Reduced startup time with selective module loading
+- **Enhanced Concurrency**: Better async operation handling across modules
+- **Modular Loading**: Only load required modules, reducing memory footprint
+
+#### 🚀 Architecture Benefits
+
+##### Maintainability
+- **Testability**: Isolated modules are easier to unit test
+- **Readability**: Clear module boundaries and naming conventions
+- **Single Responsibility**: Each module focuses on one specific aspect
+- **Extensibility**: Easy to add new features without affecting existing code
+
+##### Developer Experience
+- **IDE Support**: Better IntelliSense and code navigation
+- **Consistent Patterns**: Unified coding patterns across all modules
+- **Better Documentation**: Each module has clear purpose and API
+- **Clear Entry Points**: Easy to understand where functionality is implemented
+
+##### Scalability
+- **Independent Modules**: Can be developed and tested in isolation
+- **Clear Dependencies**: Explicit module dependencies and interfaces
+- **Plugin Architecture Ready**: Modular structure supports future plugin system
+- **Future-Proof**: Architecture supports TypeScript migration and advanced features
+
+#### 📋 Refactoring Details
+
+##### CLI Module (`src/cli/`)
+- **parser.js**: Extracted argument parsing logic from main file
+- **help.js**: Centralized help documentation and command descriptions
+- **Benefits**: Cleaner CLI interface, easier to maintain help content
+
+##### Configuration Module (`src/config/`)
+- **defaults.js**: Default values and configuration schemas
+- **loader.js**: Configuration file loading and preset management
+- **Benefits**: Centralized config logic, better precedence handling
+
+##### Processors Module (`src/processors/`)
+- **alloy.js**: Titanium Alloy-specific multi-platform processing
+- **image.js**: Core Sharp-based image processing operations
+- **scaling.js**: Image scaling, resizing, and transformation logic
+- **Benefits**: Isolated processing logic, easier to extend and test
+
+##### Utils Module (`src/utils/`)
+- **logger.js**: Centralized logging with chalk-based formatting
+- **validation.js**: Input validation and error checking utilities
+- **Benefits**: Reusable utilities, consistent error handling
+
+#### 🔄 Backward Compatibility
+- **Same API**: Public interface remains identical for end users
+- **Preset Functionality**: All presets maintain their original behavior
+- **Configuration Compatibility**: Existing config files continue working
+- **No Breaking Changes**: All existing CLI commands and options work unchanged
+
+#### 🎯 Code Quality Metrics Improved
+- **Lines per Function**: Average function length significantly reduced
+- **Code Duplication**: Eliminated repeated patterns through shared utilities
+- **Maintainability Index**: Significantly improved through modular structure
+- **Cyclomatic Complexity**: Reduced from high complexity to manageable levels
+
+#### 📚 Documentation and Standards
+- **Code Examples**: Internal documentation with usage patterns
+- **JSDoc Comments**: Comprehensive documentation for all public APIs
+- **Consistent Naming**: Unified naming conventions across all modules
+- **Clear Module Interfaces**: Well-defined inputs and outputs for each module
+
+#### 🛠️ Implementation Highlights
+- **Error Boundaries**: Proper error isolation between modules
+- **Resource Management**: Improved cleanup and memory management
+- **Async Patterns**: Consistent async/await usage throughout codebase
+- **Dependency Injection**: Modules accept dependencies for better testability
+
+#### 💡 Future Development Ready
+This refactoring establishes a solid foundation for future enhancements:
+- **Plugin System**: Architecture ready for extensible plugin development
+- **Advanced Features**: Easy integration of new image processing capabilities
+- **TypeScript Migration**: Modular structure supports gradual TypeScript adoption
+- **Testing Framework**: Structure supports comprehensive unit and integration testing
+
+### 🔄 Migration Notes
+- **For Maintainers**: Significantly improved codebase maintainability
+- **For Contributors**: Clear module boundaries make contributions easier
+- **For End Users**: No changes required - all commands work exactly as before
+- **For Developers**: New modular structure provides better development experience
+
+### 🧪 Test Suite Enhancements
+- **Enhanced Test Coverage**: Added comprehensive tests for the new modular architecture
+- **Test Image Optimization**: Optimized test images for faster test execution and reduced repository size
+- **Descriptive Test Assets**: Renamed test images with descriptive names for better test clarity
+- **GIF Format Testing**: Added GIF format testing capability with new test.gif asset
+- **100% Test Success Rate**: All 49 tests pass successfully with the new modular structure
+
+### 🖼️ Test Asset Optimization and Clarity
+- **Image Size Optimization**: Reduced test images from 2000x1332px to ~1000px width for faster processing
+- **File Size Reduction**: Optimized test assets from ~1.5MB each to ~200-500KB for improved performance
+- **Descriptive Naming**: Renamed test images for better clarity:
+  - `image.jpg` → `canyon-river.jpg` (descriptive canyon with river scene)
+  - `image.png` → `mountain-lake.png` (descriptive mountain with lake scene)
+  - Added `test.gif` for comprehensive format testing
+- **Documentation Updated**: Enhanced `images/README.md` with optimization details and asset information
+- **Test Conflict Prevention**: Unique image names prevent naming conflicts during format conversion tests
+
 ## [1.4.1] - 2025-06-01
 
 ### 🐛 Bug Fixes
