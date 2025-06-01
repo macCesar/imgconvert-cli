@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-05-31
+
+### ✨ Enhanced Alloy Preset
+
+#### 🔧 Improved Alloy Preset Handling
+- **Multiple Sources Support**: Enhanced alloy preset to properly handle multiple source directories for Android and iPhone platforms
+- **Smart Output Directory Management**: Improved output directory creation logic to prevent conflicts when using alloy preset
+- **Relative Path Support**: Updated alloy preset to use relative output paths instead of absolute paths for better flexibility
+
+#### 🚨 User Experience Improvements
+- **Width/Height Warning**: Added console warning when width or height parameters are used with alloy preset, as these are automatically ignored
+- **Documentation Enhancement**: Comprehensive documentation updates for alloy preset including:
+  - Clear explanation of automatic scaling behavior
+  - Platform-specific output structure examples
+  - Usage guidelines and best practices
+  - Clarification that width/height parameters are ignored
+
+#### 🏗️ Code Structure Improvements
+- **Enhanced Args Object**: Improved argument object structure for better preset configuration handling
+- **Default Presets Update**: Updated default preset configurations to include proper output properties
+- **Directory Creation Logic**: Enhanced directory creation to skip generic output directory creation for alloy preset, allowing platform-specific directories to be created instead
+
+#### 📝 Documentation Updates
+- **Alloy Preset Section**: Added comprehensive alloy preset documentation with:
+  - Key features explanation
+  - Scale factors for Android and iPhone
+  - Output directory structure examples
+  - Usage examples and best practices
+- **Configuration Consistency**: Updated default configuration examples to match actual code implementation
+- **Clarification Notes**: Added notes explaining relative vs absolute path usage for alloy preset
+
+### 🐛 Bug Fixes
+- **Output Directory Conflicts**: Fixed issue where generic output directory was created unnecessarily when using alloy preset
+- **Documentation Inconsistencies**: Corrected discrepancies between documentation and actual code behavior for alloy preset configuration
+
+### 🔄 Technical Details
+- **Preset Logic**: Enhanced preset application logic to better handle alloy-specific requirements
+- **Path Management**: Improved path handling for alloy preset to ensure correct directory structure creation
+- **Validation**: Added proper validation for alloy preset usage with width/height parameters
+
 ## [1.2.0] - 2025-05-31
 
 ### 🚨 BREAKING CHANGES
