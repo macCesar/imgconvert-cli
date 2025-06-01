@@ -225,6 +225,11 @@ if (!inputPath) {
   }
 }
 
+// Warning for alloy preset with width/height
+if (args.preset === 'alloy' && (args.width || args.height)) {
+  console.log(chalk.yellow('Warning: Width and height parameters are ignored when using the alloy preset. Images are scaled based on predefined factors.'));
+}
+
 // For alloy preset with multiple sources, we don't check path existence here
 // as we'll handle multiple paths in processImages
 if (inputPath && !fs.existsSync(inputPath)) {

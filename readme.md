@@ -26,6 +26,10 @@ It supports various formats and lets you optimize images for the web or other pu
   - [Options](#options)
   - [Examples](#examples)
   - [Presets](#presets)
+  - [Alloy Preset](#alloy-preset)
+    - [Key Features:](#key-features)
+    - [Scale Factors:](#scale-factors)
+    - [Usage:](#usage)
     - [Output for Alloy (Android \& iPhone)](#output-for-alloy-android--iphone)
     - [Using Preset Source Folders](#using-preset-source-folders)
   - [Configuration File](#configuration-file)
@@ -246,6 +250,27 @@ Presets are predefined configurations for common use cases:
 - **thumbnail**: Small previews (`png`, quality `60`, 150x150). Optionally defines a `source` path.
 - **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iPhone. Each platform can define its own `source` path.
 
+## Alloy Preset
+
+The `alloy` preset is specifically designed for mobile app development with Titanium Alloy framework. It generates multiple scaled versions of images for both Android and iOS platforms.
+
+### Key Features:
+- **Automatic scaling**: Creates multiple resolution versions based on predefined scale factors
+- **Platform-specific output**: Generates Android density folders and iOS @2x/@3x naming conventions
+- **Ignores width/height**: The `width` and `height` parameters are ignored as images are scaled proportionally
+- **4x source requirement**: Source images should be 4x the target resolution for optimal results
+
+### Scale Factors:
+- **Android**: res-mdpi (1x), res-hdpi (1.5x), res-xhdpi (2x), res-xxhdpi (3x), res-xxxhdpi (4x)
+- **iOS**: 1x, 2x, 3x
+
+### Usage:
+```bash
+imgconvert source-images/ -p alloy
+```
+
+> **Note**: When using the alloy preset, `width` and `height` parameters are automatically ignored since images are scaled based on predefined factors to maintain mobile platform standards.
+
 ### Output for Alloy (Android & iPhone)
 
 When using the `alloy` preset, the output base path is always fixed:
@@ -357,9 +382,9 @@ This means CLI arguments always override preset settings, preset settings overri
   "replace-originals": false,
   "background": "#ffffff",
   "presets": {
-    "web": { "source": null, "format": "webp", "quality": 80 },
-    "print": { "source": null, "format": "tiff", "quality": 100 },
-    "thumbnail": { "source": null, "format": "png", "quality": 60, "width": 150, "height": 150 },
+    "web": { "source": null, "output": null, "format": "webp", "quality": 80 },
+    "print": { "source": null, "output": null, "format": "tiff", "quality": 100 },
+    "thumbnail": { "source": null, "output": null, "format": "png", "quality": 60, "width": 150, "height": 150 },
     "alloy": {
       "android": {
         "source": null,
