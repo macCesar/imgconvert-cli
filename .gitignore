@@ -1,5 +1,6 @@
 .DS_Store
 # Dependency directories
+todo/
 node_modules/
 
 # Core components
