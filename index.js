@@ -61,7 +61,7 @@ Options:
   ${chalk.green('-h, --height')}           Set the height of the output images
   ${chalk.green('-o, --output')}           Set the output directory for processed images
   ${chalk.green('-p, --preset')}           Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy')})
-                            For alloy preset, you can specify a specific configuration: ${chalk.yellow('alloy:comics, alloy:thumbs-baby')}
+                            ${chalk.yellow('alloy')} preset is for Titanium SDK development, generates multi-resolution images for Android/iOS
   ${chalk.green('--fit')}                  Set resize strategy (${chalk.yellow('cover, contain, fill, inside, outside; default: contain')})
   ${chalk.green('--position')}             Set crop position when using fit: cover (${chalk.yellow('center, top, bottom, left, right, "top left", etc.')})
   ${chalk.green('--crop')}                 Manual crop coordinates (${chalk.yellow('format: left,top,width,height')})
@@ -72,9 +72,11 @@ Options:
   ${chalk.green('<source_path>')}          The path to the image file or directory to process (${chalk.yellow('required')})
 
 Examples:
-  ${chalk.green('imgconvert image.png --crop 100,50,300,200')}
-  ${chalk.green('imgconvert photo.jpg --fit cover -w 300 -h 200')}
-  ${chalk.green('imgconvert folder/ --fit cover --position top -w 400 -h 400')}
+  ${chalk.green('imgconvert image.jpg')}                    Compress image (preserves original format)
+  ${chalk.green('imgconvert image.jpg -f webp')}            Convert to WebP format
+  ${chalk.green('imgconvert image.jpg -w 300')}             Resize to 300px width
+  ${chalk.green('imgconvert images/ -f webp -q 80')}        Convert folder to WebP with 80% quality
+  ${chalk.green('imgconvert image.jpg -p web')}             Apply web preset (webp, quality 80)
 `));
   process.exit(0);
 };

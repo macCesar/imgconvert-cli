@@ -34,9 +34,9 @@ imgconvert photo.jpg --crop 100,50,800,600 -w 400 -h 300 -f webp
 # Generate mobile app assets (all configurations)
 imgconvert source-images -p alloy
 
-# Generate only specific mobile app assets
-imgconvert -p alloy:comics
-imgconvert -p alloy:thumbs-baby
+# Generate specific mobile app assets (user-defined configurations)
+imgconvert -p alloy:your-config-name
+imgconvert -p alloy:another-config
 ```
 
 ## 🎯 Common Use Cases
@@ -45,7 +45,7 @@ imgconvert -p alloy:thumbs-baby
 - **Perfect Thumbnails**: Use `--fit cover` with `--position` for consistent square thumbnails
 - **Hero Images**: Crop images to exact dimensions while preserving important content areas
 - **Mobile App Development**: Generate multi-resolution assets for iOS/Android with Titanium Alloy
-- **Selective Asset Updates**: Use `imgconvert -p alloy:comics` to update only specific asset categories
+- **Selective Asset Updates**: Use `imgconvert -p alloy:config-name` to update only specific user-defined asset categories
 - **Print Preparation**: Convert to high-quality TIFF format for professional printing
 - **Custom Cropping**: Extract specific regions before resizing with `--crop`
 - **Batch Processing**: Convert entire directories while preserving folder structure
@@ -288,16 +288,19 @@ Extract specific regions before resizing:
     # Generates images for ALL configurations (comics, thumbs-comics, baby, thumbs-baby)
     ```
 
-13. **Process specific alloy configurations:**
+13. **Process specific alloy configurations (user-defined):**
     ```bash
-    imgconvert -p alloy:comics
-    # Processes ONLY the comics configuration (both Android and iPhone)
+    imgconvert -p alloy:your-cards-config
+    # Processes ONLY the 'your-cards-config' configuration (both Android and iPhone)
+    # Note: 'your-cards-config' must be defined in your .imgconverter.config.json
 
-    imgconvert -p alloy:thumbs-baby
-    # Processes ONLY the thumbs-baby configuration
+    imgconvert -p alloy:your-thumbnails-config
+    # Processes ONLY the 'your-thumbnails-config' configuration
+    # Note: 'your-thumbnails-config' must be defined in your .imgconverter.config.json
 
-    imgconvert -p alloy:thumbs-comics
-    # Processes ONLY the thumbs-comics configuration
+    imgconvert -p alloy:your-icons-config
+    # Processes ONLY the 'your-icons-config' configuration
+    # Note: 'your-icons-config' must be defined in your .imgconverter.config.json
     ```
 
 14. **Override preset settings with CLI arguments:**
@@ -305,8 +308,9 @@ Extract specific regions before resizing:
     imgconvert source_folder -p alloy -f png -q 95
     # CLI arguments override preset: both Android and iPhone will use PNG at 95% quality
 
-    imgconvert -p alloy:comics -q 90
-    # Only comics configuration with 90% quality override
+    imgconvert -p alloy:your-cards-config -q 90
+    # Only 'your-cards-config' configuration with 90% quality override
+    # Note: 'your-cards-config' must be defined in your .imgconverter.config.json
     ```
 
 15. **Use preset settings with partial CLI override:**
@@ -314,8 +318,9 @@ Extract specific regions before resizing:
     imgconvert source_folder -p alloy -q 80
     # Only quality is overridden: Android uses WebP, iPhone uses PNG, both at 80% quality
 
-    imgconvert -p alloy:baby -f webp
-    # Only baby configuration, forced to WebP format for both platforms
+    imgconvert -p alloy:your-config-name -f webp
+    # Only your-config-name configuration, forced to WebP format for both platforms
+    # Note: 'your-config-name' must be defined in your .imgconverter.config.json
     ```
 
 16. **Extract and optimize specific image regions with manual cropping:**
@@ -385,7 +390,7 @@ Presets are predefined configurations for common use cases:
 - **thumbnail**: Small previews (`png`, quality `60`, 150x150). Optionally defines a `source` path.
 - **square-thumbs**: Consistent square thumbnails (`webp`, quality `80`, 300x300). Optionally defines a `source` path.
 - **hero-images**: High-quality hero images (`webp`, quality `85`, 1920x1080). Optionally defines a `source` path.
-- **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iOS. Supports both legacy single-source format and new multi-configuration format for complex workflows (e.g., cards, thumbnails, icons). Each platform can define its own `source` path. You can process all configurations with `-p alloy` or target specific ones with `-p alloy:configName` (e.g., `-p alloy:comics`, `-p alloy:thumbs-baby`).
+- **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iOS. Supports both legacy single-source format and new multi-configuration format for complex workflows (e.g., cards, thumbnails, icons). Each platform can define its own `source` path. You can process all configurations with `-p alloy` or target specific ones with `-p alloy:configName` where `configName` is your custom configuration defined in `.imgconverter.config.json`.
 
 ## Custom Presets
 
@@ -433,8 +438,9 @@ imgconvert banner.png -p email-newsletter
 imgconvert photos -p instagram-post -q 95  # Uses Instagram preset but with 95% quality
 
 # Use selective configuration with custom alloy presets
-imgconvert -p alloy:game-cards    # Process only game-cards configuration
-imgconvert -p alloy:comics -q 90  # Process only comics with custom quality
+imgconvert -p alloy:your-game-cards    # Process only your-game-cards configuration
+imgconvert -p alloy:your-config-name -q 90  # Process only your-config-name with custom quality
+# Note: These configurations must be defined in your .imgconverter.config.json
 ```
 
 ### Key Features
@@ -489,15 +495,16 @@ The alloy preset now supports targeting specific configurations, which is perfec
 # Process all configurations (default behavior)
 imgconvert -p alloy
 
-# Process only comics assets
-imgconvert -p alloy:comics
+# Process only your custom assets configuration
+imgconvert -p alloy:your-config-name
 
-# Process only thumbnail variants
-imgconvert -p alloy:thumbs-baby
-imgconvert -p alloy:thumbs-comics
+# Process only your thumbnail variants (user-defined configurations)
+imgconvert -p alloy:your-thumbs-config1
+imgconvert -p alloy:your-thumbs-config2
 
 # Perfect for adding new categories
-imgconvert -p alloy:neon  # Only process new 'neon' design category
+imgconvert -p alloy:your-new-category  # Only process your custom 'new-category' configuration
+# Note: All configuration names must be defined in your .imgconverter.config.json
 ```
 
 ### Scale Factors:
@@ -520,15 +527,16 @@ imgconvert -p alloy
 
 #### Process Specific Configuration:
 ```bash
-# Process only comics configuration
-imgconvert -p alloy:comics
+# Process only your custom configuration
+imgconvert -p alloy:your-config-name
 
-# Process only thumbnail configurations
-imgconvert -p alloy:thumbs-comics
-imgconvert -p alloy:thumbs-baby
+# Process only your custom thumbnail configurations
+imgconvert -p alloy:your-thumbs-config1
+imgconvert -p alloy:your-thumbs-config2
 
-# Process only baby configuration
-imgconvert -p alloy:baby
+# Process only your custom configuration
+imgconvert -p alloy:another-config-name
+# Note: All configuration names must be defined in your .imgconverter.config.json
 ```
 
 #### Single Configuration (Legacy Format):
