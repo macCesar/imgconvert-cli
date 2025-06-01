@@ -73,10 +73,10 @@ Options:
 
 Examples:
   ${chalk.green('imgconvert image.jpg')}                    Compress image (preserves original format)
-  ${chalk.green('imgconvert image.jpg -f webp')}            Convert to WebP format
   ${chalk.green('imgconvert image.jpg -w 300')}             Resize to 300px width
-  ${chalk.green('imgconvert images -f webp -q 80')}         Convert folder to WebP with 80% quality
+  ${chalk.green('imgconvert image.jpg -f webp')}            Convert to WebP format
   ${chalk.green('imgconvert image.jpg -p web')}             Apply web preset (webp, quality 80)
+  ${chalk.green('imgconvert images -f webp -q 80')}         Convert folder to WebP with 80% quality
 `));
   process.exit(0);
 };
