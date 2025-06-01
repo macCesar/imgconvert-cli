@@ -58,7 +58,7 @@ Perfect for social media platforms with specific size requirements:
 
 Usage:
 ```bash
-imgconvert photos/ -p instagram-post
+imgconvert photos -p instagram-post
 imgconvert banner.png -p twitter-header
 ```
 
@@ -235,10 +235,10 @@ CLI arguments always override preset values:
 
 ```bash
 # Uses WebP format but with 95% quality instead of 80%
-imgconvert images/ -p base-web -q 95
+imgconvert images -p base-web -q 95
 
 # Uses 80% quality but JPEG format instead of WebP
-imgconvert images/ -p base-web -f jpeg
+imgconvert images -p base-web -f jpeg
 ```
 
 ### Best Practices for Custom Presets
