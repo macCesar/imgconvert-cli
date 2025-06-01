@@ -388,18 +388,20 @@ This means CLI arguments always override preset settings, preset settings overri
     "alloy": {
       "android": {
         "source": null,
-        "output": "./app/assets/android/images",
+        "output": null,
         "scales": { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }
       },
       "iphone": {
         "source": null,
-        "output": "./app/assets/iphone/images",
+        "output": null,
         "scales": { "1x": 1, "2x": 2, "3x": 3 }
       }
     }
   }
 }
 ```
+
+> **Note for Alloy Preset**: The `output` value should only contain the relative subfolder path (e.g., `"cards/thumbs/baby"`), not the complete path. The base paths (`app/assets/android/images` and `app/assets/iphone/images`) are automatically handled by the tool.
 
 **Example: How Precedence Works**
 
