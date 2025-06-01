@@ -569,6 +569,8 @@ const processAlloyMultipleSources = async () => {
     savings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
   }
 
+  process.stdout.write('\r' + ' '.repeat(100) + '\r');
+
   console.log(chalk.green(`
 Processing complete! Summary:
   - Processed files: ${chalk.yellow(processedCount)}
@@ -653,6 +655,8 @@ const processImages = async () => {
   if (totalOriginalSize > 0) {
     savings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
   }
+
+  process.stdout.write('\r' + ' '.repeat(100) + '\r');
 
   console.log(chalk.green(`
 Processing complete! Summary:
