@@ -6,12 +6,19 @@
   "bin": {
     "imgconvert": "./index.js"
   },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
   "scripts": {
     "test": "mocha test/simple.test.js --timeout 300000",
     "test:verbose": "VERBOSE_TESTS=true mocha test/simple.test.js --timeout 300000 --reporter spec",
     "test:watch": "mocha test/simple.test.js --timeout 300000 --watch",
     "test:debug": "VERBOSE_TESTS=true mocha test/simple.test.js --timeout 300000 --reporter spec --inspect-brk",
-    "clean-all": "rm -rf test/temp-test app"
+    "clean": "rm -rf test/temp-test/ converted/ app/ compressed/ output/ *-preset/ .imgconverter.config.json",
+    "clean-all": "npm run clean",
+    "clean-force": "npm run clean && rm -rf node_modules/.cache/",
+    "test:clean": "npm run clean && npm test"
   },
   "keywords": [
     "cli",
@@ -32,5 +39,13 @@
   "devDependencies": {
     "chai": "^5.2.0",
     "mocha": "^11.4.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/macCesar/imgconvert-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/macCesar/imgconvert-cli/issues"
+  },
+  "homepage": "https://github.com/macCesar/imgconvert-cli#readme"
 }

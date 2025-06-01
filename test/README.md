@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![test coverage](https://img.shields.io/badge/tests-26%20passing-brightgreen)
+![test coverage](https://img.shields.io/badge/tests-30%20passing-brightgreen)
 ![test framework](https://img.shields.io/badge/framework-mocha%2Bchai-blue)
 
 </div>
@@ -26,12 +26,14 @@ This guide covers the comprehensive test suite for `imgconvert-cli`, including s
     - [2. **Format Conversion Tests**](#2-format-conversion-tests)
     - [3. **Image Resizing Tests**](#3-image-resizing-tests)
     - [4. **Quality and Compression Tests**](#4-quality-and-compression-tests)
-    - [5. **Environment Mode Tests**](#5-environment-mode-tests)
-    - [6. **Preset Functionality Tests**](#6-preset-functionality-tests)
-    - [7. **Batch Processing Tests**](#7-batch-processing-tests)
-    - [8. **Error Handling Tests**](#8-error-handling-tests)
-    - [9. **Debug Mode Tests**](#9-debug-mode-tests)
-    - [10. **Custom Output Directory Tests**](#10-custom-output-directory-tests)
+    - [5. **Preset Functionality Tests**](#5-preset-functionality-tests)
+    - [6. **Batch Processing Tests**](#6-batch-processing-tests)
+    - [7. **Advanced Resizing Options Tests**](#7-advanced-resizing-options-tests)
+    - [8. **Complete Preset Tests**](#8-complete-preset-tests)
+    - [9. **Individual Format Tests**](#9-individual-format-tests)
+    - [10. **Error Handling Tests**](#10-error-handling-tests)
+    - [11. **Debug Mode Tests**](#11-debug-mode-tests)
+    - [12. **Custom Output Directory Tests**](#12-custom-output-directory-tests)
   - [Test Environment Setup](#test-environment-setup)
     - [Automatic Setup](#automatic-setup)
     - [Manual Setup (if needed)](#manual-setup-if-needed)
@@ -53,17 +55,20 @@ This guide covers the comprehensive test suite for `imgconvert-cli`, including s
     - [Local Pre-commit Hook](#local-pre-commit-hook)
   - [Tips for Test Maintenance](#tips-for-test-maintenance)
   - [Performance Considerations](#performance-considerations)
+  - [Test Cleanup](#test-cleanup)
+    - [Automatic Cleanup](#automatic-cleanup)
+    - [Manual Cleanup](#manual-cleanup)
+    - [Force Clean Everything](#force-clean-everything)
 
 ## Test Suite Overview
 
 The imgconvert-cli test suite is a comprehensive testing framework that includes:
 
-- **26 tests** covering all CLI functionality
+- **30 tests** covering all CLI functionality
 - **Detailed command logging** with full CLI command visibility
 - **File existence verification** with directory content inspection
 - **Error handling validation** for edge cases and invalid inputs
-- **Environment mode testing** (dev vs prod)
-- **Format conversion verification** including the JPG/JPEG extension fix
+- **Format conversion verification** including complete format support
 - **Batch processing validation**
 - **Preset functionality testing**
 
@@ -144,7 +149,7 @@ test/
 
 ### 2. **Format Conversion Tests**
 - PNG to WebP conversion
-- JPG to WebP conversion  
+- JPG to WebP conversion
 - All formats conversion (`-f all`)
 - Original format preservation
 
@@ -157,29 +162,39 @@ test/
 - High vs low quality comparison
 - Custom background color for transparency
 
-### 5. **Environment Mode Tests**
-- Development mode behavior
-- Production mode behavior
-- Replace file warnings
-
-### 6. **Preset Functionality Tests**
+### 5. **Preset Functionality Tests**
 - Web preset (`-p web`)
 - Thumbnail preset (`-p thumbnail`)
+- Print preset (`-p print`)
 - Alloy preset for mobile development (`-p alloy`)
 
-### 7. **Batch Processing Tests**
+### 6. **Batch Processing Tests**
 - Directory processing with format conversion
 - Directory processing with format preservation
 
-### 8. **Error Handling Tests**
+### 7. **Advanced Resizing Options Tests**
+- Fit strategies (`cover`, `contain`, `fill`, `inside`, `outside`)
+- Position control (`top`, `bottom`, `left`, `right`, `center`, etc.)
+- Manual crop coordinates (`left,top,width,height`)
+
+### 8. **Complete Preset Tests**
+- Print preset (TIFF, quality 100)
+- All preset configurations
+
+### 9. **Individual Format Tests**
+- AVIF format conversion
+- TIFF format conversion
+- All supported formats individually
+
+### 10. **Error Handling Tests**
 - Invalid width/height parameters
 - Non-existent file handling
 - Missing source path handling
 
-### 9. **Debug Mode Tests**
+### 11. **Debug Mode Tests**
 - Debug output verification
 
-### 10. **Custom Output Directory Tests**
+### 12. **Custom Output Directory Tests**
 - Custom output path handling
 
 ## Test Environment Setup
@@ -239,7 +254,7 @@ npm run test:verbose
 ```
   Error handling tests
 
-🔧 Executing (expect error): node index.js "/path/image.jpg" -w invalid  
+🔧 Executing (expect error): node index.js "/path/image.jpg" -w invalid
 ✅ Command correctly failed with expected error
 📤 Error message: Error: The width argument must be a positive integer.
     ✔ should handle invalid width parameter "invalid" (51ms)
@@ -250,14 +265,14 @@ npm run test:verbose
 ### 1. **Missing Test Images**
 **Problem**: `⚠️ Source image not found: /path/to/image.webp`
 
-**Solution**: 
+**Solution**:
 - Ensure `images/image.jpg` and `images/image.png` exist
 - These are the only required test images
 
 ### 2. **Extension Mismatch Errors**
 **Problem**: `expected false to be true` in resizing tests
 
-**Solution**: 
+**Solution**:
 - This usually indicates the CLI is generating `.jpeg` files when tests expect `.jpg`
 - Check if the JPG/JPEG fix was properly implemented
 
@@ -297,10 +312,10 @@ describe('New Feature Tests', () => {
   it('should do something specific with clear parameters', () => {
     const inputFile = path.join(testDir, 'image.jpg');
     const outputDir = path.join(testDir, 'feature-output');
-    const command = `"${inputFile}" --new-feature value -o "${outputDir}" -e prod`;
+    const command = `"${inputFile}" --new-feature value -o "${outputDir}"`;
 
     const result = execCLI(command);
-    console.log('New feature result:', result);
+    logResult('New feature', result);
     expect(result).to.include('Expected output text');
 
     const outputFile = path.join(outputDir, 'expected-output.jpg');
@@ -311,26 +326,27 @@ describe('New Feature Tests', () => {
 
 ### Best Practices for New Tests
 1. **Descriptive test names** with specific parameters
-2. **Use production mode** (`-e prod`) for most tests
-3. **Clear output directories** for each test
-4. **Check file existence** with descriptive labels
-5. **Log command execution** for debugging
+2. **Clear output directories** for each test
+3. **Check file existence** with descriptive labels
+4. **Log command execution** for debugging
 
 ## Test Coverage
 
 Current test coverage includes:
 
-| Feature           | Coverage | Tests                       |
-| ----------------- | -------- | --------------------------- |
-| CLI Arguments     | ✅ 100%   | Version, Help, Config       |
-| Format Conversion | ✅ 100%   | All supported formats       |
-| Image Resizing    | ✅ 100%   | Width, Height, Both         |
-| Quality Settings  | ✅ 100%   | High/Low quality comparison |
-| Environment Modes | ✅ 100%   | Dev/Prod behaviors          |
-| Preset System     | ✅ 100%   | Web, Thumbnail, Alloy       |
-| Batch Processing  | ✅ 100%   | Directory processing        |
-| Error Handling    | ✅ 100%   | Invalid inputs              |
-| File Extensions   | ✅ 100%   | JPG/JPEG preservation       |
+| Feature                   | Coverage | Tests                               |
+| ------------------------- | -------- | ----------------------------------- |
+| CLI Arguments             | ✅ 100%   | Version, Help, Config               |
+| Format Conversion         | ✅ 100%   | All supported formats               |
+| Image Resizing            | ✅ 100%   | Width, Height, Both                 |
+| Advanced Resizing Options | ✅ 100%   | Fit strategies, Position, Crop      |
+| Preset Functionality      | ✅ 100%   | Web, Print, Thumbnail, Alloy        |
+| Individual Formats        | ✅ 100%   | AVIF, TIFF, WebP, PNG, JPEG, GIF    |
+| Batch Processing          | ✅ 100%   | Directory processing                |
+| Quality Settings          | ✅ 100%   | High/Low quality, Custom background |
+| Error Handling            | ✅ 100%   | Invalid parameters, Missing files   |
+| Debug Mode                | ✅ 100%   | Debug output verification           |
+| Custom Output             | ✅ 100%   | Custom directory handling           |
 
 ## CI/CD Integration
 
@@ -374,3 +390,33 @@ npm test
 - **Total test suite** typically runs in 60-120 seconds
 
 For faster development cycles, focus on specific test categories during development and run the full suite before commits.
+
+## Test Cleanup
+
+### Automatic Cleanup
+The test suite automatically cleans up after execution:
+
+- ✅ **Test directory**: `test/temp-test/` (completely removed)
+- ✅ **Config file**: `.imgconverter.config.json` (removed)
+- ✅ **Default output directories**: `converted/`, `app/`, `compressed/`, `output/`
+- ✅ **Preset directories**: `web-preset/`, `thumbnail-preset/`, `print-preset/`, `alloy-preset/`
+
+### Manual Cleanup
+If tests are interrupted or cleanup fails, you can manually clean:
+
+```bash
+# Clean all test artifacts
+npm run clean-all
+
+# Or manually remove directories
+rm -rf test/temp-test/
+rm -rf converted/ app/ compressed/ output/
+rm -rf *-preset/
+rm -f .imgconverter.config.json
+```
+
+### Force Clean Everything
+```bash
+# Nuclear option - removes ALL generated files
+npm run clean-force
+```
