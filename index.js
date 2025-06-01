@@ -17,6 +17,12 @@ if (fs.existsSync(configPath)) {
   config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 }
 
+// Titanium Alloy platform scales (immutable - these are Titanium standards)
+const ALLOY_SCALES = Object.freeze({
+  android: Object.freeze({ "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }),
+  iphone: Object.freeze({ "1x": 1, "2x": 2, "3x": 3 })
+});
+
 // Default presets
 const defaultPresets = {
   web: { source: null, output: null, quality: 80, format: 'webp' },
@@ -25,13 +31,11 @@ const defaultPresets = {
   alloy: {
     android: {
       source: null,
-      output: null,
-      scales: { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }
+      output: null
     },
     iphone: {
       source: null,
-      output: null,
-      scales: { "1x": 1, "2x": 2, "3x": 3 }
+      output: null
     }
   }
 };
@@ -542,9 +546,7 @@ const processAlloyMultipleConfigurations = async () => {
         let fileExtension = path.extname(file).toLowerCase().slice(1);
 
         if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
-          const scales = subPresetConfig.scales || (subPresetName === 'iphone'
-            ? { "1x": 1, "2x": 2, "3x": 3 }
-            : { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 });
+          const scales = ALLOY_SCALES[subPresetName];
           const outputSubfolder = subPresetConfig.output || '';
           const isIPhone = subPresetName === 'iphone';
           const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig, configGroupName);
@@ -651,9 +653,7 @@ const processAlloyMultipleSources = async () => {
       let fileExtension = path.extname(file).toLowerCase().slice(1);
 
       if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
-        const scales = subPresetConfig.scales || (subPresetName === 'iphone'
-          ? { "1x": 1, "2x": 2, "3x": 3 }
-          : { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 });
+        const scales = ALLOY_SCALES[subPresetName];
         const outputSubfolder = args.output || subPresetConfig.output || '';
         const isIPhone = subPresetName === 'iphone';
         const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig, null);
@@ -732,7 +732,7 @@ const processImages = async () => {
       if (args.preset === 'alloy') {
         const alloyPreset = presets.alloy;
         return Object.entries(alloyPreset).map(([subPresetName, subPresetConfig]) => {
-          const scales = subPresetConfig.scales;
+          const scales = ALLOY_SCALES[subPresetName];
           const outputSubfolder = args.output || subPresetConfig.output || '';
           const isIPhone = subPresetName === 'iphone';
           const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig);
