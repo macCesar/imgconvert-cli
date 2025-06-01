@@ -69,10 +69,5 @@ async function main() {
   }
 }
 
-// Export the main function for use by the entry point
-module.exports = { main };
-
-// Start the application only if this file is run directly
-if (require.main === module) {
-  main();
-}
+// Start the application
+main();

@@ -203,7 +203,7 @@ describe('imgconvert CLI Tests', function () {
   describe('Basic CLI functionality', () => {
     it('should display version information', () => {
       const result = execCLI('-v');
-      expect(result).to.include('1.4.1');
+      expect(result).to.include('1.5.0');
       expect(result).to.include('imgconvert-cli version');
     });
 
