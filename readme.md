@@ -20,13 +20,13 @@
 npm install -g imgconvert-cli
 
 # Compress images (preserves original format)
-imgconvert my-images/
+imgconvert my-images
 
 # Convert to WebP with 80% quality
-imgconvert my-images/ -f webp -q 80
+imgconvert my-images -f webp -q 80
 
 # Generate mobile app assets (all configurations)
-imgconvert source-images/ -p alloy
+imgconvert source-images -p alloy
 
 # Generate only specific mobile app assets
 imgconvert -p alloy:comics
@@ -332,12 +332,12 @@ Beyond the built-in presets, you can create your own custom presets in the `.img
 
 ```bash
 # Use your custom presets
-imgconvert photos/ -p instagram-post
+imgconvert photos -p instagram-post
 imgconvert banner.png -p email-newsletter
-imgconvert products/ -p product-catalog
+imgconvert products -p product-catalog
 
 # Override preset settings with CLI arguments
-imgconvert photos/ -p instagram-post -q 95  # Uses Instagram preset but with 95% quality
+imgconvert photos -p instagram-post -q 95  # Uses Instagram preset but with 95% quality
 
 # Use selective configuration with custom alloy presets
 imgconvert -p alloy:comics -q 85  # Process only comics with custom quality
@@ -418,7 +418,7 @@ Scale factors are **immutable constants** that follow Titanium platform standard
 #### Process All Configurations:
 ```bash
 # Legacy format (single android/iphone configuration)
-imgconvert source-images/ -p alloy
+imgconvert source-images -p alloy
 
 # Multi-configuration format (all configuration groups)
 imgconvert -p alloy
@@ -439,7 +439,7 @@ imgconvert -p alloy:baby
 
 #### Single Configuration (Legacy Format):
 ```bash
-imgconvert source-images/ -p alloy
+imgconvert source-images -p alloy
 ```
 
 #### Multi-Configuration Format:
@@ -1025,7 +1025,7 @@ npm install -g node-gyp
 **Q: Out of memory on large batches**
 A: Process in smaller batches or increase Node.js memory:
 ```bash
-node --max-old-space-size=4096 $(which imgconvert) large-folder/
+node --max-old-space-size=4096 $(which imgconvert) large-folder
 ```
 
 **Q: Images appear blurry or pixelated**
