@@ -4,7 +4,7 @@
   "description": "A CLI tool for compressing and converting images",
   "main": "src/index.js",
   "bin": {
-    "imgconvert": "./cli.js"
+    "imgconvert": "./index.js"
   },
   "engines": {
     "node": ">=14.0.0",
@@ -58,7 +58,7 @@
   },
   "homepage": "https://github.com/macCesar/imgconvert-cli#readme",
   "files": [
-    "cli.js",
+    "index.js",
     "src/**/*",
     "README.md",
     "LICENSE"

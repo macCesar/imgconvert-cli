@@ -24,7 +24,11 @@ async function processAlloyPreset(args, config) {
   // Check if we have the new multiple configurations format
   const alloyPreset = presets.alloy;
   const isLegacyFormat = alloyPreset.android && alloyPreset.iphone &&
-    typeof alloyPreset.android.source === 'string';
+    !Object.keys(alloyPreset).some(key =>
+      key !== 'android' && key !== 'iphone' &&
+      typeof alloyPreset[key] === 'object' &&
+      alloyPreset[key].android && alloyPreset[key].iphone
+    );
 
   if (!isLegacyFormat) {
     // New multi-configuration format
@@ -156,7 +160,8 @@ async function processAlloyLegacyFormat(args, alloyPreset) {
  * @returns {Promise<Object>} Processing results
  */
 async function processAlloyPlatform(subPresetName, subPresetConfig, configGroupName, args, alloyPreset) {
-  const sourceFolder = subPresetConfig.source;
+  // Use source from config, or fallback to the input path from command line
+  const sourceFolder = subPresetConfig.source || args._[0];
 
   if (!sourceFolder) {
     logger.warning(`Warning: No source folder defined for ${configGroupName ? `${configGroupName}.` : ''}${subPresetName}, skipping...`);

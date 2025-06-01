@@ -60,7 +60,9 @@ function validateInput(args, config) {
 
   // Validate crop coordinates if specified
   if (args.crop) {
-    const cropString = Array.isArray(args.crop) ? args.crop.join(',') : String(args.crop);
+    // Handle case where crop might be an array (if passed multiple times)
+    const cropValue = Array.isArray(args.crop) ? args.crop[args.crop.length - 1] : args.crop;
+    const cropString = String(cropValue);
     const coords = cropString.split(',').map(Number);
 
     if (coords.length !== 4 || coords.some(isNaN) || coords[2] <= 0 || coords[3] <= 0) {
@@ -69,15 +71,23 @@ function validateInput(args, config) {
         error: 'Error: Invalid crop coordinates. Format should be: left,top,width,height'
       };
     }
+    // Normalize to single value
+    args.crop = cropString;
   }
 
   // Validate fit strategy
   const validFitStrategies = ['cover', 'contain', 'fill', 'inside', 'outside'];
-  if (args.fit && !validFitStrategies.includes(args.fit)) {
-    return {
-      valid: false,
-      error: `Error: Invalid fit strategy "${args.fit}". Valid options: ${validFitStrategies.join(', ')}`
-    };
+  if (args.fit) {
+    // Handle case where fit might be an array (if passed multiple times)
+    const fitValue = Array.isArray(args.fit) ? args.fit[args.fit.length - 1] : args.fit;
+    if (!validFitStrategies.includes(fitValue)) {
+      return {
+        valid: false,
+        error: `Error: Invalid fit strategy "${fitValue}". Valid options: ${validFitStrategies.join(', ')}`
+      };
+    }
+    // Normalize to single value
+    args.fit = fitValue;
   }
 
   // Warning for alloy preset with width/height

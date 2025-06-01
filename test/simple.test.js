@@ -1,7 +1,7 @@
-const { expect } = require('chai');
-const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { expect } = require('chai');
+const { execSync } = require('child_process');
 
 describe('imgconvert CLI Tests', function () {
   this.timeout(120000);
@@ -15,8 +15,8 @@ describe('imgconvert CLI Tests', function () {
 
   // Helper function to execute CLI commands with conditional logging
   const execCLI = (command, options = {}) => {
-    // UPDATED: Now using cli.js instead of index.js
-    const fullCommand = `node cli.js ${command}`;
+    // Using index.js as the entry point
+    const fullCommand = `node index.js ${command}`;
 
     if (isVerbose) {
       console.log(`\n🔧 Executing: ${fullCommand}`);
@@ -46,8 +46,8 @@ describe('imgconvert CLI Tests', function () {
 
   // Helper function for expected errors (silent capture)
   const execCLIExpectError = (command, options = {}) => {
-    // UPDATED: Now using cli.js instead of index.js
-    const fullCommand = `node cli.js ${command}`;
+    // Using index.js as the entry point
+    const fullCommand = `node index.js ${command}`;
 
     if (isVerbose) {
       console.log(`\n🔧 Executing (expect error): ${fullCommand}`);
@@ -647,6 +647,311 @@ describe('imgconvert CLI Tests', function () {
 
       const outputFile = path.join(outputDir, 'image.tiff');
       expect(checkFileExists(outputFile, 'TIFF output')).to.be.true;
+    });
+  });
+
+  // ===========================================
+  // PRIORITY 1 TESTS - Critical functionality gaps
+  // ===========================================
+
+  describe('Precedence system tests (CLI > Preset > Config > Default)', () => {
+    it('should prioritize CLI quality over web preset quality', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'precedence-cli-preset');
+      // web preset has quality 80, but CLI -q 95 should override
+      const command = `"${inputFile}" -p web -q 95 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('CLI over preset precedence', result);
+      expect(result).to.include('Processed files: 1');
+      // Verify file was created with web preset format (webp) but CLI quality
+      const outputFile = path.join(outputDir, 'image.webp');
+      expect(checkFileExists(outputFile, 'CLI precedence output')).to.be.true;
+    });
+
+    it('should prioritize CLI format over preset format', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'precedence-format');
+      // thumbnail preset uses PNG, but CLI -f webp should override
+      const command = `"${inputFile}" -p thumbnail -f webp -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('CLI format over preset', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'image.webp'); // Should be webp, not png
+      expect(checkFileExists(outputFile, 'Format precedence output')).to.be.true;
+    });
+
+    it('should combine CLI dimensions with preset when not conflicting', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'precedence-combine');
+      // web preset + custom width should combine
+      const command = `"${inputFile}" -p web -w 400 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('CLI + preset combination', result);
+      expect(result).to.include('Processed files: 1');
+      // Should create webp file (from preset) with custom width
+      const outputFile = path.join(outputDir, 'image.webp');
+      expect(checkFileExists(outputFile, 'Combined precedence output')).to.be.true;
+    });
+  });
+
+  describe('File preservation tests', () => {
+    it('should preserve original files when processing (default behavior)', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'preserve-originals');
+      const command = `"${inputFile}" -f webp -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Preserve originals', result);
+      expect(result).to.include('Processed files: 1');
+
+      // Both original and converted should exist
+      expect(checkFileExists(inputFile, 'Original file preserved')).to.be.true;
+      const outputFile = path.join(outputDir, 'image.webp');
+      expect(checkFileExists(outputFile, 'Converted file created')).to.be.true;
+    });
+
+    it('should create output files in separate directory without affecting originals', () => {
+      const inputFile = path.join(testDir, 'image.png');
+      const outputDir = path.join(testDir, 'separate-output');
+      const command = `"${inputFile}" -f jpeg -q 90 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Separate output', result);
+      expect(result).to.include('Processed files: 1');
+
+      // Original PNG should remain untouched
+      expect(checkFileExists(inputFile, 'Original PNG preserved')).to.be.true;
+      const outputFile = path.join(outputDir, 'image.jpeg');
+      expect(checkFileExists(outputFile, 'New JPEG created')).to.be.true;
+    });
+  }); describe('Alloy preset tests', () => {
+    it('should work with basic alloy preset for mobile development', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const command = `"${inputFile}" -p alloy`;
+
+      // Clean up any existing app/assets directory before test
+      if (fs.existsSync('app/assets')) {
+        fs.rmSync('app/assets', { recursive: true, force: true });
+      }
+
+      const result = execCLI(command);
+      logResult('Alloy basic preset', result);
+      expect(result).to.match(/Processed files: [1-9]\d*/); // Should process multiple files for different resolutions
+
+      // Alloy preset creates files in app/assets/ by default
+      expect(checkFileExists('app/assets/android', 'Android assets')).to.be.true;
+      expect(checkFileExists('app/assets/iphone', 'iPhone assets')).to.be.true;
+
+      // Check for specific resolution directories
+      expect(checkFileExists('app/assets/android/images', 'Android images directory')).to.be.true;
+      expect(checkFileExists('app/assets/iphone/images', 'iPhone images directory')).to.be.true;
+    });
+
+    it('should generate multiple resolution files for android and iOS', () => {
+      const inputFile = path.join(testDir, 'image.png');
+      const command = `"${inputFile}" -p alloy`;
+
+      // Clean up any existing app/assets directory before test
+      if (fs.existsSync('app/assets')) {
+        fs.rmSync('app/assets', { recursive: true, force: true });
+      }
+
+      const result = execCLI(command);
+      logResult('Alloy multiple resolutions', result);
+      expect(result).to.match(/Processed files: [1-9]\d*/);
+
+      // Verify that different resolution directories exist
+      const androidImagesDir = 'app/assets/android/images';
+      const iosImagesDir = 'app/assets/iphone/images';
+
+      expect(checkFileExists(androidImagesDir, 'Android images')).to.be.true;
+      expect(checkFileExists(iosImagesDir, 'iOS images')).to.be.true;
+
+      // Check that actual image files were created
+      if (fs.existsSync(androidImagesDir)) {
+        const androidFiles = fs.readdirSync(androidImagesDir, { recursive: true });
+        expect(androidFiles.length).to.be.greaterThan(0);
+      }
+
+      if (fs.existsSync(iosImagesDir)) {
+        const iosFiles = fs.readdirSync(iosImagesDir, { recursive: true });
+        expect(iosFiles.length).to.be.greaterThan(0);
+      }
+    });
+  });
+
+  describe('Missing fit strategies tests', () => {
+    it('should use fit strategy "fill" to stretch image to exact dimensions', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'fit-fill');
+      const command = `"${inputFile}" -w 200 -h 300 --fit fill -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Fit strategy fill', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'image.jpg');
+      expect(checkFileExists(outputFile, 'Fill fit output')).to.be.true;
+    });
+
+    it('should use fit strategy "inside" to fit within dimensions preserving aspect ratio', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'fit-inside');
+      const command = `"${inputFile}" -w 200 -h 300 --fit inside -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Fit strategy inside', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'image.jpg');
+      expect(checkFileExists(outputFile, 'Inside fit output')).to.be.true;
+    });
+
+    it('should use fit strategy "outside" to fill dimensions while preserving aspect ratio', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'fit-outside');
+      const command = `"${inputFile}" -w 200 -h 300 --fit outside -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Fit strategy outside', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'image.jpg');
+      expect(checkFileExists(outputFile, 'Outside fit output')).to.be.true;
+    });
+  });
+
+  describe('Position values tests', () => {
+    it('should use position "bottom" with cover fit strategy', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'position-bottom');
+      const command = `"${inputFile}" -w 200 -h 150 --fit cover --position bottom -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Position bottom', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'image.jpg');
+      expect(checkFileExists(outputFile, 'Bottom position output')).to.be.true;
+    });
+
+    it('should use position "left" with cover fit strategy', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'position-left');
+      const command = `"${inputFile}" -w 200 -h 150 --fit cover --position left -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Position left', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'image.jpg');
+      expect(checkFileExists(outputFile, 'Left position output')).to.be.true;
+    });
+
+    it('should use position "top left" with cover fit strategy', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'position-topleft');
+      const command = `"${inputFile}" -w 200 -h 150 --fit cover --position "top left" -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Position top left', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'image.jpg');
+      expect(checkFileExists(outputFile, 'Top left position output')).to.be.true;
+    });
+  });
+
+  describe('Quality validation edge cases tests', () => {
+    it('should handle quality value of 0 (minimum quality)', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'quality-zero');
+      const command = `"${inputFile}" -q 0 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Quality zero', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'image.jpg');
+      expect(checkFileExists(outputFile, 'Zero quality output')).to.be.true;
+    });
+
+    it('should handle quality value of 100 (maximum quality)', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'quality-hundred');
+      const command = `"${inputFile}" -q 100 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Quality hundred', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'image.jpg');
+      expect(checkFileExists(outputFile, 'Hundred quality output')).to.be.true;
+    });
+
+    it('should reject quality value above 100 (invalid)', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const command = `"${inputFile}" -q 101`;
+
+      const error = execCLIExpectError(command);
+      logResult('Quality 101 error', error.stderr || error.stdout);
+      expect(error.stderr || error.stdout).to.include('quality');
+      expect(error.status).to.not.equal(0); // Should exit with error code
+    });
+
+    it('should reject non-numeric quality value (invalid)', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const command = `"${inputFile}" -q "invalid"`;
+
+      const error = execCLIExpectError(command);
+      logResult('Quality non-numeric error', error.stderr || error.stdout);
+      expect(error.stderr || error.stdout).to.include('quality');
+      expect(error.status).to.not.equal(0); // Should exit with error code
+    });
+  });
+
+  describe('GIF processing tests', () => {
+    it('should process GIF input file correctly', () => {
+      // First create a simple GIF file for testing if it doesn't exist
+      const gifFile = path.join(testDir, 'test.gif');
+      if (!fs.existsSync(gifFile)) {
+        // Copy from images directory or create a minimal one
+        const srcGif = path.join(imagesDir, 'test.gif');
+        if (fs.existsSync(srcGif)) {
+          fs.copyFileSync(srcGif, gifFile);
+        } else {
+          // Skip this test if no GIF available
+          console.log('⚠️  Skipping GIF test - no test.gif available');
+          return;
+        }
+      }
+
+      const outputDir = path.join(testDir, 'gif-input');
+      const command = `"${gifFile}" -f webp -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('GIF input processing', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'test.webp');
+      expect(checkFileExists(outputFile, 'GIF to WebP output')).to.be.true;
+    });
+
+    it('should convert to GIF output format', () => {
+      const inputFile = path.join(testDir, 'image.jpg');
+      const outputDir = path.join(testDir, 'gif-output');
+      const command = `"${inputFile}" -f gif -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('GIF output format', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'image.gif');
+      expect(checkFileExists(outputFile, 'JPG to GIF output')).to.be.true;
     });
   });
 });

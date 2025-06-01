@@ -24,10 +24,7 @@ function parseArguments(argv) {
       h: 'height',
       o: 'output',
       p: 'preset',
-      d: 'debug',
-      'fit': 'fit',
-      'crop': 'crop',
-      'position': 'position'
+      d: 'debug'
     },
     boolean: ['replace-originals', 'debug', 'help', 'version']
   });
@@ -87,6 +84,17 @@ function parseArguments(argv) {
   } else {
     args.presetName = args.preset;
     args.subPreset = null;
+  }
+
+  // Normalize array arguments that might be passed multiple times
+  if (Array.isArray(args.fit)) {
+    args.fit = args.fit[args.fit.length - 1];
+  }
+  if (Array.isArray(args.position)) {
+    args.position = args.position[args.position.length - 1];
+  }
+  if (Array.isArray(args.crop)) {
+    args.crop = args.crop[args.crop.length - 1];
   }
 
   // Store original parsed args for precedence checking
