@@ -475,10 +475,10 @@ The `alloy` preset is specifically designed for mobile app development with Tita
 - **Legacy compatibility**: Maintains backward compatibility with existing alloy configurations
 - **4x source requirement**: Source images should be 4x the target resolution for optimal results
 - **Platform-specific output**: Generates Android density folders and iOS @2x/@3x naming conventions
-- **Immutable scale factors**: Uses fixed Titanium-standard scale factors for consistency and compatibility
 - **Flexible quality/format control**: Per-configuration quality and format settings with proper precedence
-- **Independent source management**: Each configuration can have its own source directories and output paths
+- **Immutable scale factors**: Uses fixed Titanium-standard scale factors for consistency and compatibility
 - **Ignores width/height**: The `width` and `height` parameters are ignored as images are scaled proportionally
+- **Independent source management**: Each configuration can have its own source directories and output paths
 - **Multi-configuration support**: Process multiple image groups (cards, thumbnails, icons) in a single command
 - **Selective configuration processing**: Target specific configurations with `alloy:configName` syntax for efficient workflows
 
