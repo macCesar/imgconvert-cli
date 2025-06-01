@@ -15,7 +15,8 @@ describe('imgconvert CLI Tests', function () {
 
   // Helper function to execute CLI commands with conditional logging
   const execCLI = (command, options = {}) => {
-    const fullCommand = `node index.js ${command}`;
+    // UPDATED: Now using cli.js instead of index.js
+    const fullCommand = `node cli.js ${command}`;
 
     if (isVerbose) {
       console.log(`\n🔧 Executing: ${fullCommand}`);
@@ -45,7 +46,8 @@ describe('imgconvert CLI Tests', function () {
 
   // Helper function for expected errors (silent capture)
   const execCLIExpectError = (command, options = {}) => {
-    const fullCommand = `node index.js ${command}`;
+    // UPDATED: Now using cli.js instead of index.js
+    const fullCommand = `node cli.js ${command}`;
 
     if (isVerbose) {
       console.log(`\n🔧 Executing (expect error): ${fullCommand}`);
@@ -201,7 +203,7 @@ describe('imgconvert CLI Tests', function () {
   describe('Basic CLI functionality', () => {
     it('should display version information', () => {
       const result = execCLI('-v');
-      expect(result).to.include('1.3.1');
+      expect(result).to.include('1.4.1');
       expect(result).to.include('imgconvert-cli version');
     });
 
