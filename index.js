@@ -424,7 +424,7 @@ const processImageWithScaling = async (inputFile, scales, outputSubfolder, isIPh
 const processImage = async (inputFile, outputFileBase, format) => {
   let sharpInstance = sharp(inputFile);
 
-  // Conservar la extensión original para el output
+  // Preserve the original extension for the output
   let outputExtension = format;
   let sharpFormat = format;
 
@@ -433,12 +433,12 @@ const processImage = async (inputFile, outputFileBase, format) => {
     sharpFormat = outputExtension;
   }
 
-  // Solo normalizar para Sharp, no para el nombre del archivo
+  // Only normalize for Sharp, not for the file name
   if (sharpFormat === 'jpg') {
     sharpFormat = 'jpeg';
   }
 
-  // Si formato es 'all', procesar para todos los formatos soportados
+  // If format is 'all', process for all supported formats
   if (format === 'all') {
     let results = [];
     for (const fmt of supportedFormats) {
@@ -454,7 +454,7 @@ const processImage = async (inputFile, outputFileBase, format) => {
     sharpInstance = sharpInstance.resize(width, height);
   }
 
-  // Usar sharpFormat para Sharp (puede ser 'jpeg')
+  // Use sharpFormat for Sharp (may be 'jpeg')
   if (sharpFormat === 'png') {
     sharpInstance = sharpInstance.png({
       palette: true,
@@ -477,7 +477,7 @@ const processImage = async (inputFile, outputFileBase, format) => {
   } else if (sharpFormat === 'gif') {
     sharpInstance = sharpInstance.gif();
   } else {
-    // Para JPEG (incluyendo archivos JPG originales)
+    // For JPEG (including original JPG files)
     sharpInstance = sharpInstance.flatten({ background: backgroundColor }).jpeg({
       quality: quality,
     });
@@ -486,7 +486,7 @@ const processImage = async (inputFile, outputFileBase, format) => {
   try {
     const { size: originalSize } = fs.statSync(inputFile);
 
-    // Usar outputExtension para el nombre del archivo (conserva 'jpg' si era 'jpg')
+    // Use outputExtension for the file name (preserves 'jpg' if it was 'jpg')
     const tempOutputFile = path.join(os.tmpdir(), `${path.basename(outputFileBase)}.${outputExtension}`);
     await sharpInstance.toFile(tempOutputFile);
 
@@ -503,7 +503,7 @@ const processImage = async (inputFile, outputFileBase, format) => {
       savings = ((originalSize - newSize) / originalSize * 100).toFixed(2);
     }
 
-    // Para el log, usar la extensión original
+    // For the log, use the original extension
     const displayFormat = outputExtension.toUpperCase();
     process.stdout.write(chalk.green(`Processed: ${chalk.yellow(path.basename(inputFile))} to ${chalk.yellow(displayFormat)} (${savings}%)                \r`));
     return { originalSize, newSize };

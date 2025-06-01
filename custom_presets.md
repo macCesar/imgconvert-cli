@@ -249,8 +249,8 @@ Use clear, descriptive names that indicate the purpose:
 {
   "presets": {
     "mobile-app-icon": { ... },
-    "email-newsletter-header": { ... },
-    "product-catalog-thumb": { ... }
+    "product-catalog-thumb": { ... },
+    "email-newsletter-header": { ... }
   }
 }
 ```
@@ -296,8 +296,8 @@ Here's a comprehensive example showing multiple custom presets for a web develop
   "source": null,
   "output": null,
   "format": null,
-  "replace-originals": false,
   "background": "#ffffff",
+  "replace-originals": false,
   "presets": {
     "web": { "format": "webp", "quality": 80 },
     "print": { "format": "tiff", "quality": 100 },

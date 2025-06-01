@@ -93,7 +93,7 @@ Typical compression results:
 ## Installation
 
 ### Prerequisites
-- Node.js 14+ 
+- Node.js 14+
 - NPM or Yarn
 
 ### Install
@@ -213,10 +213,10 @@ The available options for the `imgconvert-cli` command let users customize image
     ```bash
     imgconvert -p alloy:comics
     # Processes ONLY the comics configuration (both Android and iPhone)
-    
+
     imgconvert -p alloy:thumbs-baby
     # Processes ONLY the thumbs-baby configuration
-    
+
     imgconvert -p alloy:thumbs-comics
     # Processes ONLY the thumbs-comics configuration
     ```
@@ -225,7 +225,7 @@ The available options for the `imgconvert-cli` command let users customize image
     ```bash
     imgconvert source_folder -p alloy -f png -q 95
     # CLI arguments override preset: both Android and iPhone will use PNG at 95% quality
-    
+
     imgconvert -p alloy:comics -q 90
     # Only comics configuration with 90% quality override
     ```
@@ -234,7 +234,7 @@ The available options for the `imgconvert-cli` command let users customize image
     ```bash
     imgconvert source_folder -p alloy -q 80
     # Only quality is overridden: Android uses WebP, iPhone uses PNG, both at 80% quality
-    
+
     imgconvert -p alloy:baby -f webp
     # Only baby configuration, forced to WebP format for both platforms
     ```
@@ -270,18 +270,18 @@ When no format is specified with `-f`, the original file extension is preserved:
 
 | Input       | Command                | Output      |
 | ----------- | ---------------------- | ----------- |
-| `photo.jpg` | `imgconvert photo.jpg` | `photo.jpg` |
 | `logo.png`  | `imgconvert logo.png`  | `logo.png`  |
 | `icon.webp` | `imgconvert icon.webp` | `icon.webp` |
+| `photo.jpg` | `imgconvert photo.jpg` | `photo.jpg` |
 
 ### **Format Conversion Changes Extensions**
 When using `-f` to specify a format, the extension changes accordingly:
 
 | Input       | Command                        | Output       |
 | ----------- | ------------------------------ | ------------ |
-| `photo.jpg` | `imgconvert photo.jpg -f webp` | `photo.webp` |
 | `logo.png`  | `imgconvert logo.png -f jpeg`  | `logo.jpeg`  |
 | `icon.webp` | `imgconvert icon.webp -f png`  | `icon.png`   |
+| `photo.jpg` | `imgconvert photo.jpg -f webp` | `photo.webp` |
 
 > **💡 Tip:** This behavior ensures consistency and user expectations while maintaining technical compatibility with the Sharp image processing library.
 
@@ -314,8 +314,8 @@ Beyond the built-in presets, you can create your own custom presets in the `.img
       "width": 600,
       "quality": 70,
       "format": "jpeg",
-      "source": "content/images",
-      "output": "email/assets"
+      "output": "email/assets",
+      "source": "content/images"
     },
     "product-catalog": {
       "width": 800,
@@ -333,24 +333,24 @@ Beyond the built-in presets, you can create your own custom presets in the `.img
 ```bash
 # Use your custom presets
 imgconvert photos -p instagram-post
-imgconvert banner.png -p email-newsletter
 imgconvert products -p product-catalog
+imgconvert banner.png -p email-newsletter
 
 # Override preset settings with CLI arguments
 imgconvert photos -p instagram-post -q 95  # Uses Instagram preset but with 95% quality
 
 # Use selective configuration with custom alloy presets
-imgconvert -p alloy:comics -q 85  # Process only comics with custom quality
 imgconvert -p alloy:game-cards    # Process only game-cards configuration
+imgconvert -p alloy:comics -q 85  # Process only comics with custom quality
 ```
 
 ### Key Features
 
-- **Reusable configurations** for consistent processing across projects
 - **Source and output paths** can be predefined in presets
-- **Full parameter support**: quality, format, width, height, background, source, output, replace-originals
-- **CLI override capability**: Command line arguments always take precedence over preset values
+- **Reusable configurations** for consistent processing across projects
 - **Workflow optimization**: Perfect for batch processing with consistent requirements
+- **CLI override capability**: Command line arguments always take precedence over preset values
+- **Full parameter support**: quality, format, width, height, background, source, output, replace-originals
 
 📖 **[Complete Custom Presets Guide](custom_presets.md)** - See advanced examples, best practices, and complex workflows including social media, e-commerce, email marketing, and development environment presets.
 
@@ -371,24 +371,24 @@ imgconvert -p alloy:game-cards    # Process only game-cards configuration
 The `alloy` preset is specifically designed for mobile app development with Titanium Alloy framework. It generates multiple scaled versions of images for both Android and iOS platforms.
 
 ### Key Features:
-- **Immutable scale factors**: Uses fixed Titanium-standard scale factors for consistency and compatibility
 - **Automatic scaling**: Creates multiple resolution versions based on predefined scale factors
-- **Platform-specific output**: Generates Android density folders and iOS @2x/@3x naming conventions
-- **Multi-configuration support**: Process multiple image groups (cards, thumbnails, icons) in a single command
-- **Independent source management**: Each configuration can have its own source directories and output paths
-- **Flexible quality/format control**: Per-configuration quality and format settings with proper precedence
-- **Selective configuration processing**: Target specific configurations with `alloy:configName` syntax for efficient workflows
-- **Ignores width/height**: The `width` and `height` parameters are ignored as images are scaled proportionally
-- **4x source requirement**: Source images should be 4x the target resolution for optimal results
 - **Legacy compatibility**: Maintains backward compatibility with existing alloy configurations
+- **4x source requirement**: Source images should be 4x the target resolution for optimal results
+- **Platform-specific output**: Generates Android density folders and iOS @2x/@3x naming conventions
+- **Immutable scale factors**: Uses fixed Titanium-standard scale factors for consistency and compatibility
+- **Flexible quality/format control**: Per-configuration quality and format settings with proper precedence
+- **Independent source management**: Each configuration can have its own source directories and output paths
+- **Ignores width/height**: The `width` and `height` parameters are ignored as images are scaled proportionally
+- **Multi-configuration support**: Process multiple image groups (cards, thumbnails, icons) in a single command
+- **Selective configuration processing**: Target specific configurations with `alloy:configName` syntax for efficient workflows
 
 ### Selective Configuration Processing:
 The alloy preset now supports targeting specific configurations, which is perfect for:
 
-- **Incremental Updates**: When adding new design categories (like 'neon'), process only the new assets without regenerating everything
-- **Development Workflow**: Test specific configurations quickly without waiting for all assets to be processed
-- **CI/CD Optimization**: Update only the asset categories that have changed in your build pipeline
 - **Resource Efficiency**: Save time and processing power by targeting exactly what you need
+- **CI/CD Optimization**: Update only the asset categories that have changed in your build pipeline
+- **Development Workflow**: Test specific configurations quickly without waiting for all assets to be processed
+- **Incremental Updates**: When adding new design categories (like 'neon'), process only the new assets without regenerating everything
 
 **Examples:**
 ```bash
@@ -399,8 +399,8 @@ imgconvert -p alloy
 imgconvert -p alloy:comics
 
 # Process only thumbnail variants
-imgconvert -p alloy:thumbs-comics
 imgconvert -p alloy:thumbs-baby
+imgconvert -p alloy:thumbs-comics
 
 # Perfect for adding new categories
 imgconvert -p alloy:neon  # Only process new 'neon' design category
@@ -408,8 +408,8 @@ imgconvert -p alloy:neon  # Only process new 'neon' design category
 
 ### Scale Factors:
 Scale factors are **immutable constants** that follow Titanium platform standards and cannot be modified:
-- **Android**: res-mdpi (1x), res-hdpi (1.5x), res-xhdpi (2x), res-xxhdpi (3x), res-xxxhdpi (4x)
 - **iOS**: 1x, 2x, 3x
+- **Android**: res-mdpi (1x), res-hdpi (1.5x), res-xhdpi (2x), res-xxhdpi (3x), res-xxxhdpi (4x)
 
 > **🔒 Note**: Scale factors are fixed to ensure Titanium compatibility and cannot be customized. This prevents configuration errors and maintains consistency with Titanium SDK requirements.
 
@@ -433,7 +433,7 @@ imgconvert -p alloy:comics
 imgconvert -p alloy:thumbs-comics
 imgconvert -p alloy:thumbs-baby
 
-# Process only baby configuration  
+# Process only baby configuration
 imgconvert -p alloy:baby
 ```
 
@@ -501,11 +501,11 @@ Each platform (android/iphone) has its own source directory:
 "presets": {
   "alloy": {
     "android": {
-      "source": "./images/alloy/android",
+      "source": "android-source-folder",
       "output": "thumbs/baby"
     },
     "iphone": {
-      "source": "./images/alloy/iphone",
+      "source": "iphone-source-folder",
       "output": "thumbs/baby"
     }
   }
@@ -522,44 +522,44 @@ Multiple configuration groups with independent source/output management:
   "alloy": {
     "cards": {
       "android": {
-        "source": "originals",
-        "output": "cards/baby",
         "quality": 90,
-        "format": "webp"
+        "format": "webp",
+        "source": "originals",
+        "output": "cards/baby"
       },
       "iphone": {
-        "source": "originals",
-        "output": "cards/baby",
         "quality": 90,
-        "format": "webp"
+        "format": "webp",
+        "source": "originals",
+        "output": "cards/baby"
       }
     },
     "thumbs": {
       "android": {
-        "source": "thumbs",
-        "output": "thumbs/baby",
         "quality": 80,
-        "format": "webp"
+        "format": "webp",
+        "output": "thumbs/baby",
+        "source": "original-thumbs"
       },
       "iphone": {
-        "source": "thumbs",
-        "output": "thumbs/baby",
         "quality": 80,
-        "format": "webp"
+        "format": "webp",
+        "output": "thumbs/baby",
+        "source": "original-thumbs"
       }
     },
     "icons": {
       "android": {
-        "source": "icons-4x",
-        "output": "icons",
         "quality": 95,
-        "format": "png"
+        "format": "png",
+        "output": "icons",
+        "source": "icons-4x"
       },
       "iphone": {
-        "source": "icons-4x",
-        "output": "icons",
         "quality": 95,
-        "format": "png"
+        "format": "png",
+        "output": "icons",
+        "source": "icons-4x"
       }
     }
   }
@@ -568,9 +568,9 @@ Multiple configuration groups with independent source/output management:
 
 **Benefits of Multi-Configuration Format:**
 - **Batch Processing**: Process all image groups in one command
-- **Independent Settings**: Each group can have different quality, format, source, and output
-- **Workflow Optimization**: Perfect for game development with different asset types
 - **Smart Detection**: Tool automatically detects and uses the appropriate format
+- **Workflow Optimization**: Perfect for game development with different asset types
+- **Independent Settings**: Each group can have different quality, format, source, and output
 
 Then you can simply run:
 
@@ -579,10 +579,10 @@ imgconvert -p alloy
 ```
 
 The tool will automatically:
-1. Detect if you're using legacy or multi-configuration format
-2. Process each configuration group sequentially
-3. Show progress for each configuration and platform
-4. Provide detailed debug information when using `-d` flag
+1. Process each configuration group sequentially
+2. Show progress for each configuration and platform
+3. Provide detailed debug information when using `-d` flag
+4. Detect if you're using legacy or multi-configuration format
 
 **Multi-Configuration Debug Output Example:**
 ```
@@ -591,8 +591,8 @@ Processing configuration: cards
   Processing iphone from: originals
 
 Processing configuration: thumbs
-  Processing android from: thumbs
-  Processing iphone from: thumbs
+  Processing android from: original-thumbs
+  Processing iphone from: original-thumbs
 
 Processed files:
  - app/assets/android/images/res-mdpi/cards/baby/card1.webp (config: cards, platform: android, scale: res-mdpi)
@@ -613,7 +613,7 @@ my-game/
 │   ├── card1.png
 │   ├── card2.png
 │   └── card3.png
-├── thumbs/             # 4x resolution thumbnail images
+├── original-thumbs/    # 4x resolution thumbnail images
 │   ├── card1.png
 │   ├── card2.png
 │   └── card3.png
@@ -632,44 +632,44 @@ With this multi-configuration setup in your `.imgconverter.config.json`:
     "alloy": {
       "cards": {
         "android": {
-          "source": "originals",
-          "output": "cards/baby",
           "quality": 90,
-          "format": "webp"
+          "format": "webp",
+          "source": "originals",
+          "output": "cards/baby"
         },
         "iphone": {
-          "source": "originals",
-          "output": "cards/baby",
           "quality": 90,
-          "format": "webp"
+          "format": "webp",
+          "source": "originals",
+          "output": "cards/baby"
         }
       },
       "thumbs": {
         "android": {
-          "source": "thumbs",
-          "output": "thumbs/baby",
           "quality": 80,
-          "format": "webp"
+          "format": "webp",
+          "output": "thumbs/baby",
+          "source": "original-thumbs"
         },
         "iphone": {
-          "source": "thumbs",
-          "output": "thumbs/baby",
           "quality": 80,
-          "format": "webp"
+          "format": "webp",
+          "output": "thumbs/baby",
+          "source": "original-thumbs"
         }
       },
       "icons": {
         "android": {
-          "source": "icons-4x",
-          "output": "icons",
           "quality": 95,
-          "format": "png"
+          "format": "png",
+          "output": "icons",
+          "source": "icons-4x"
         },
         "iphone": {
-          "source": "icons-4x",
-          "output": "icons",
           "quality": 95,
-          "format": "png"
+          "format": "png",
+          "output": "icons",
+          "source": "icons-4x",
         }
       }
     }
@@ -712,23 +712,26 @@ app/
     │           └── icons/star.png (4x)
     └── iphone/
         └── images/
-            ├── cards/baby/card1.webp (1x)
-            ├── cards/baby/card1@2x.webp (2x)
-            ├── cards/baby/card1@3x.webp (3x)
-            ├── thumbs/baby/card1.webp (1x)
-            ├── thumbs/baby/card1@2x.webp (2x)
-            ├── thumbs/baby/card1@3x.webp (3x)
-            ├── icons/star.png (1x)
-            ├── icons/star@2x.png (2x)
-            └── icons/star@3x.png (3x)
+            ├── cards/baby/
+            │   ├── card1.webp (1x)
+            │   ├── card1@2x.webp (2x)
+            │   └── card1@3x.webp (3x)
+            ├── thumbs/baby/
+            │   ├── card1.webp (1x)
+            │   ├── card1@2x.webp (2x)
+            │   └── card1@3x.webp (3x)
+            └── icons/
+                ├── star.png (1x)
+                ├── star@2x.png (2x)
+                └── star@3x.png (3x)
 ```
 
 **Advantages:**
+- ✅ Organized output structure
+- ✅ Perfect for CI/CD pipelines
 - ✅ Process all asset types in one command
 - ✅ Different quality settings for different asset types
 - ✅ Different formats (WebP for cards/thumbs, PNG for icons)
-- ✅ Organized output structure
-- ✅ Perfect for CI/CD pipelines
 
 ## Best Practices for Alloy Selective Processing
 
@@ -750,8 +753,8 @@ imgconvert -p alloy:new-category
 **3. Quality Testing:**
 ```bash
 # Test different quality settings for specific configurations
-imgconvert -p alloy:thumbs-comics -q 60  # Lower quality for thumbnails
 imgconvert -p alloy:comics -q 95          # Higher quality for main assets
+imgconvert -p alloy:thumbs-comics -q 60   # Lower quality for thumbnails
 ```
 
 **4. CI/CD Integration:**
@@ -765,20 +768,27 @@ fi
 ### 🚀 Performance Tips
 
 - **Use selective processing** during development to save time
-- **Process all configurations** (`-p alloy`) only for final builds
 - **Combine with debug mode** (`-d`) to monitor processing details
+- **Process all configurations** (`-p alloy`) only for final builds
 - **Leverage quality overrides** for different use cases without changing config files
 
 ### ⚠️ Common Gotchas
 
-- Always verify configuration names exist before running automated scripts
 - Remember that CLI arguments override preset settings
 - Use consistent naming conventions for your configurations
 - Test with debug mode first when setting up new configurations
+- Always verify configuration names exist before running automated scripts
 
 ## Configuration File
 
-The configuration file `.imgconverter.config.json` allows you to define global default parameters and custom presets for image processing. This file is automatically created in the current working directory when you run `imgconvert config`.
+The configuration file `.imgconverter.config.json` allows you to define global default parameters and custom presets for image processing.
+
+**Quick Start:**
+You can generate a default configuration file at any time by running:
+
+```bash
+imgconvert config
+```
 
 ### Configuration Precedence
 
@@ -814,8 +824,9 @@ This means CLI arguments always override preset settings, preset settings overri
   "source": null,
   "output": null,
   "format": null,
-  "replace-originals": false,
   "background": "#ffffff",
+  "replace-originals": false,
+
   "presets": {
     "web": { "source": null, "output": null, "format": "webp", "quality": 80 },
     "print": { "source": null, "output": null, "format": "tiff", "quality": 100 },
@@ -845,8 +856,9 @@ This means CLI arguments always override preset settings, preset settings overri
   "source": null,
   "output": null,
   "format": null,
-  "replace-originals": false,
   "background": "#ffffff",
+  "replace-originals": false,
+
   "presets": {
     "web": { "source": null, "output": null, "format": "webp", "quality": 80 },
     "print": { "source": null, "output": null, "format": "tiff", "quality": 100 },
@@ -854,30 +866,30 @@ This means CLI arguments always override preset settings, preset settings overri
     "alloy": {
       "cards": {
         "android": {
-          "source": "originals",
-          "output": "cards/baby",
           "quality": 90,
-          "format": "webp"
+          "format": "webp",
+          "source": "originals",
+          "output": "cards/baby"
         },
         "iphone": {
-          "source": "originals",
-          "output": "cards/baby",
           "quality": 90,
-          "format": "webp"
+          "format": "webp",
+          "source": "originals",
+          "output": "cards/baby"
         }
       },
       "thumbs": {
         "android": {
-          "source": "thumbs",
-          "output": "thumbs/baby",
           "quality": 80,
-          "format": "webp"
+          "format": "webp",
+          "output": "thumbs/baby",
+          "source": "original-thumbs"
         },
         "iphone": {
-          "source": "thumbs",
-          "output": "thumbs/baby",
           "quality": 80,
-          "format": "webp"
+          "format": "webp",
+          "output": "thumbs/baby",
+          "source": "original-thumbs"
         }
       }
     }
@@ -894,6 +906,7 @@ Given this configuration file:
 {
   "quality": 75,
   "format": "jpeg",
+
   "presets": {
     "alloy": {
       "cards": {
@@ -1039,9 +1052,9 @@ A: Verify your configuration file format and ensure output paths don't include l
 We welcome contributions! Here's how you can help improve imgconvert-cli:
 
 ### Quick Contributions
-- 🐛 Report bugs or issues
 - 💡 Suggest new features
 - 📖 Improve documentation
+- 🐛 Report bugs or issues
 - ⭐ Star the repository if you find it useful
 
 ### Development Setup
@@ -1091,45 +1104,87 @@ We welcome contributions! Here's how you can help improve imgconvert-cli:
 
 9. **Open a Pull Request**
    - Go to the original repository on GitHub
-   - Click "New Pull Request"
+   - Click "New Pull Request" or "Compare & pull request"
+   - **Select the correct branches**: `base: main` ← `compare: your-feature-branch`
    - Provide a clear description of your changes
+   - **Reference issues**: Use "Fixes #123" or "Closes #456" if applicable
+   - **Add reviewers** if you know who should review your code
+   - Click "Create Pull Request"
+
+10. **After Creating the PR**
+    - Monitor for feedback and requested changes
+    - Make additional commits to the same branch if changes are needed
+    - **Keep your branch updated** with the main branch if needed:
+      ```bash
+      git checkout main
+      git pull upstream main
+      git checkout feature/amazing-feature
+      git merge main
+      ```
+
+
+### PR Best Practices
+
+- **Title**: Use a clear, descriptive title (e.g., "Add WebP optimization for mobile preset")
+- **Description**: Explain what you changed and why
+- **Breaking Changes**: Clearly mark any breaking changes
+- **Screenshots**: Include before/after images for UI changes
+- **Testing**: Mention what tests you ran
+
+
+### Example PR Description Template:
+```
+## What does this PR do?
+Brief description of the changes
+
+## Why is this needed?
+Explain the problem this solves
+
+## How to test?
+Steps to verify the changes work
+
+## Checklist:
+- [ ] Tests pass
+- [ ] Documentation updated
+- [ ] No breaking changes (or clearly documented)
+```
 
 ### Development Guidelines
 
+- **Commits**: Use clear, descriptive commit messages
+- **Issues**: Reference relevant issues in your PR description
 - **Code Style**: Follow the existing code style and use ESLint
 - **Tests**: Add tests for new features and ensure all tests pass
 - **Documentation**: Update README.md if you change functionality
-- **Commits**: Use clear, descriptive commit messages
-- **Issues**: Reference relevant issues in your PR description
 
 ### Areas for Contribution
 
-- 🚀 **Performance optimizations** for large batch processing
-- 🎨 **New presets** for specific use cases (social media, print, etc.)
+- 📚 **Documentation** examples and tutorials
+- 🧪 **Testing improvements** and edge case coverage
 - 🔧 **CLI improvements** and user experience enhancements
 - 📱 **Additional mobile frameworks** support beyond Titanium
-- 🧪 **Testing improvements** and edge case coverage
-- 📚 **Documentation** examples and tutorials
+- 🚀 **Performance optimizations** for large batch processing
+- 🎨 **New presets** for specific use cases (social media, print, etc.)
 
 ## Roadmap / Future Features
 
 ### Near Term (v2.x)
-- [ ] **CLI wizard** for preset configuration setup
 - [ ] **Progress bars** for large batch operations
+- [ ] **CLI wizard** for preset configuration setup
 - [ ] **Parallel processing** for faster batch conversion
 - [ ] **Image optimization analysis** with recommendations
 
 ### Medium Term (v3.x)
-- [ ] **Plugin system** for custom transformations
-- [ ] **Cloud storage integration** (AWS S3, Google Cloud)
 - [ ] **Web UI** for visual configuration
+- [ ] **Plugin system** for custom transformations
 - [ ] **Docker support** for containerized workflows
+- [ ] **Cloud storage integration** (AWS S3, Google Cloud)
 
 ### Long Term (v4.x+)
-- [ ] **AI-powered optimization** suggestions
-- [ ] **Integration** with popular build tools (Webpack, Vite, etc.)
-- [ ] **Advanced filtering** and conditional processing
 - [ ] **Batch undo/rollback** functionality
+- [ ] **AI-powered optimization** suggestions
+- [ ] **Advanced filtering** and conditional processing
+- [ ] **Integration** with popular build tools (Webpack, Vite, etc.)
 
 > 💡 **Have an idea?** Open an issue to discuss new features or improvements!
 
