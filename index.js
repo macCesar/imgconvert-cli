@@ -141,8 +141,9 @@ if (args._[0] === 'config') {
     output: null,
     format: null,
     background: '#ffffff',
+    'replace-originals': false,
+
     presets: defaultPresets,
-    'replace-originals': false
   };
 
   fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf-8');
