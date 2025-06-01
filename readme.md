@@ -25,14 +25,19 @@ imgconvert my-images/
 # Convert to WebP with 80% quality
 imgconvert my-images/ -f webp -q 80
 
-# Generate mobile app assets
+# Generate mobile app assets (all configurations)
 imgconvert source-images/ -p alloy
+
+# Generate only specific mobile app assets
+imgconvert -p alloy:comics
+imgconvert -p alloy:thumbs-baby
 ```
 
 ## 🎯 Common Use Cases
 
 - **Web Optimization**: Batch convert images to WebP for faster loading times
 - **Mobile App Development**: Generate multi-resolution assets for iOS/Android with Titanium Alloy
+- **Selective Asset Updates**: Use `imgconvert -p alloy:comics` to update only specific asset categories
 - **Print Preparation**: Convert to high-quality TIFF format for professional printing
 - **Thumbnail Generation**: Create consistent preview images with custom dimensions
 - **Batch Processing**: Convert entire directories while preserving folder structure
@@ -128,7 +133,7 @@ The available options for the `imgconvert-cli` command let users customize image
 - `-w, --width`: (Optional) Set output image width.
 - `-h, --height`: (Optional) Set output image height.
 - `-o, --output`: (Optional) Set a custom output directory. If not specified, a `converted` directory is created at the same level as the source path.
-- `-p, --preset`: (Optional) Apply a preset configuration (e.g., `web`, `print`, `thumbnail`, `alloy`).
+- `-p, --preset`: (Optional) Apply a preset configuration (e.g., `web`, `print`, `thumbnail`, `alloy`). For alloy preset, you can specify a specific configuration using the syntax `alloy:configName` (e.g., `alloy:comics`, `alloy:thumbs-baby`).
 - `-d, --debug`: (Optional) Enable debug mode for detailed information.
 - `-v, --version`: (Optional) Displays the version and exits.
 - `-H, --help`: (Optional) Show the help message.
@@ -201,19 +206,37 @@ The available options for the `imgconvert-cli` command let users customize image
 11. **Use alloy preset with platform-specific formats:**
     ```bash
     imgconvert source_folder -p alloy
-    # Generates images according to subpreset format configuration
+    # Generates images for ALL configurations (comics, thumbs-comics, baby, thumbs-baby)
     ```
 
-12. **Override preset settings with CLI arguments:**
+12. **Process specific alloy configurations:**
+    ```bash
+    imgconvert -p alloy:comics
+    # Processes ONLY the comics configuration (both Android and iPhone)
+    
+    imgconvert -p alloy:thumbs-baby
+    # Processes ONLY the thumbs-baby configuration
+    
+    imgconvert -p alloy:thumbs-comics
+    # Processes ONLY the thumbs-comics configuration
+    ```
+
+13. **Override preset settings with CLI arguments:**
     ```bash
     imgconvert source_folder -p alloy -f png -q 95
     # CLI arguments override preset: both Android and iPhone will use PNG at 95% quality
+    
+    imgconvert -p alloy:comics -q 90
+    # Only comics configuration with 90% quality override
     ```
 
-13. **Use preset settings with partial CLI override:**
+14. **Use preset settings with partial CLI override:**
     ```bash
     imgconvert source_folder -p alloy -q 80
     # Only quality is overridden: Android uses WebP, iPhone uses PNG, both at 80% quality
+    
+    imgconvert -p alloy:baby -f webp
+    # Only baby configuration, forced to WebP format for both platforms
     ```
 
 ### Utility Operations
@@ -269,7 +292,7 @@ Presets are predefined configurations for common use cases:
 - **web**: Optimized for the web (`webp`, quality `80`). Optionally defines a `source` path.
 - **print**: High-quality output (`tiff`, quality `100`). Optionally defines a `source` path.
 - **thumbnail**: Small previews (`png`, quality `60`, 150x150). Optionally defines a `source` path.
-- **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iPhone. Supports both legacy single-source format and new multi-configuration format for complex workflows (e.g., cards, thumbnails, icons). Each platform can define its own `source` path.
+- **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iPhone. Supports both legacy single-source format and new multi-configuration format for complex workflows (e.g., cards, thumbnails, icons). Each platform can define its own `source` path. You can process all configurations with `-p alloy` or target specific ones with `-p alloy:configName` (e.g., `-p alloy:comics`, `-p alloy:thumbs-baby`).
 
 ## Custom Presets
 
@@ -315,6 +338,10 @@ imgconvert products/ -p product-catalog
 
 # Override preset settings with CLI arguments
 imgconvert photos/ -p instagram-post -q 95  # Uses Instagram preset but with 95% quality
+
+# Use selective configuration with custom alloy presets
+imgconvert -p alloy:comics -q 85  # Process only comics with custom quality
+imgconvert -p alloy:game-cards    # Process only game-cards configuration
 ```
 
 ### Key Features
@@ -350,9 +377,34 @@ The `alloy` preset is specifically designed for mobile app development with Tita
 - **Multi-configuration support**: Process multiple image groups (cards, thumbnails, icons) in a single command
 - **Independent source management**: Each configuration can have its own source directories and output paths
 - **Flexible quality/format control**: Per-configuration quality and format settings with proper precedence
+- **Selective configuration processing**: Target specific configurations with `alloy:configName` syntax for efficient workflows
 - **Ignores width/height**: The `width` and `height` parameters are ignored as images are scaled proportionally
 - **4x source requirement**: Source images should be 4x the target resolution for optimal results
 - **Legacy compatibility**: Maintains backward compatibility with existing alloy configurations
+
+### Selective Configuration Processing:
+The alloy preset now supports targeting specific configurations, which is perfect for:
+
+- **Incremental Updates**: When adding new design categories (like 'neon'), process only the new assets without regenerating everything
+- **Development Workflow**: Test specific configurations quickly without waiting for all assets to be processed
+- **CI/CD Optimization**: Update only the asset categories that have changed in your build pipeline
+- **Resource Efficiency**: Save time and processing power by targeting exactly what you need
+
+**Examples:**
+```bash
+# Process all configurations (default behavior)
+imgconvert -p alloy
+
+# Process only comics assets
+imgconvert -p alloy:comics
+
+# Process only thumbnail variants
+imgconvert -p alloy:thumbs-comics
+imgconvert -p alloy:thumbs-baby
+
+# Perfect for adding new categories
+imgconvert -p alloy:neon  # Only process new 'neon' design category
+```
 
 ### Scale Factors:
 Scale factors are **immutable constants** that follow Titanium platform standards and cannot be modified:
@@ -363,6 +415,28 @@ Scale factors are **immutable constants** that follow Titanium platform standard
 
 ### Usage:
 
+#### Process All Configurations:
+```bash
+# Legacy format (single android/iphone configuration)
+imgconvert source-images/ -p alloy
+
+# Multi-configuration format (all configuration groups)
+imgconvert -p alloy
+```
+
+#### Process Specific Configuration:
+```bash
+# Process only comics configuration
+imgconvert -p alloy:comics
+
+# Process only thumbnail configurations
+imgconvert -p alloy:thumbs-comics
+imgconvert -p alloy:thumbs-baby
+
+# Process only baby configuration  
+imgconvert -p alloy:baby
+```
+
 #### Single Configuration (Legacy Format):
 ```bash
 imgconvert source-images/ -p alloy
@@ -372,7 +446,7 @@ imgconvert source-images/ -p alloy
 ```bash
 imgconvert -p alloy
 ```
-> **Note**: With multi-configuration format, all configuration groups are processed automatically from their respective source directories.
+> **Note**: With multi-configuration format, all configuration groups are processed automatically from their respective source directories when using `-p alloy`, or you can target specific configurations using `-p alloy:configName`.
 
 > **Note**: When using the alloy preset, `width` and `height` parameters are automatically ignored since images are scaled based on predefined factors to maintain mobile platform standards.
 
@@ -655,6 +729,52 @@ app/
 - ✅ Different formats (WebP for cards/thumbs, PNG for icons)
 - ✅ Organized output structure
 - ✅ Perfect for CI/CD pipelines
+
+## Best Practices for Alloy Selective Processing
+
+### 🎯 Efficient Workflow Strategies
+
+**1. Development Phase:**
+```bash
+# Test only what you're working on
+imgconvert -p alloy:comics -d    # Enable debug mode to see detailed processing
+```
+
+**2. Adding New Asset Categories:**
+```bash
+# First, add your new configuration to .imgconverter.config.json
+# Then process only the new category
+imgconvert -p alloy:new-category
+```
+
+**3. Quality Testing:**
+```bash
+# Test different quality settings for specific configurations
+imgconvert -p alloy:thumbs-comics -q 60  # Lower quality for thumbnails
+imgconvert -p alloy:comics -q 95          # Higher quality for main assets
+```
+
+**4. CI/CD Integration:**
+```bash
+# Process only changed asset categories in your build pipeline
+if [[ "$CHANGED_ASSETS" == *"comics"* ]]; then
+  imgconvert -p alloy:comics
+fi
+```
+
+### 🚀 Performance Tips
+
+- **Use selective processing** during development to save time
+- **Process all configurations** (`-p alloy`) only for final builds
+- **Combine with debug mode** (`-d`) to monitor processing details
+- **Leverage quality overrides** for different use cases without changing config files
+
+### ⚠️ Common Gotchas
+
+- Always verify configuration names exist before running automated scripts
+- Remember that CLI arguments override preset settings
+- Use consistent naming conventions for your configurations
+- Test with debug mode first when setting up new configurations
 
 ## Configuration File
 

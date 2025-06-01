@@ -62,6 +62,7 @@ Options:
   ${chalk.green('--replace-originals')}    Replace original files instead of creating copies (default: false)
   ${chalk.green('-o, --output')}           Set the output directory for processed images
   ${chalk.green('-p, --preset')}           Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy')})
+                            For alloy preset, you can specify a specific configuration: ${chalk.yellow('alloy:comics, alloy:thumbs-baby')}
   ${chalk.green('-d, --debug')}            Enable debug mode to show detailed information
 
 ${chalk.green('<source_path>')}            The path to the image file or directory to process (${chalk.yellow('required')})
@@ -149,9 +150,19 @@ if (args._[0] === 'config') {
   process.exit(0);
 }
 
+// Parse preset and subpreset (e.g., "alloy:comics")
+let presetName = args.preset;
+let subPreset = null;
+
+if (args.preset && args.preset.includes(':')) {
+  const parts = args.preset.split(':');
+  presetName = parts[0];
+  subPreset = parts[1];
+}
+
 // Apply preset if specified
-if (args.preset && presets[args.preset]) {
-  const presetConfig = presets[args.preset];
+if (presetName && presets[presetName]) {
+  const presetConfig = presets[presetName];
 
   // Apply correct precedence: CLI > Preset > Config > Default
   // Only apply preset/config values if user didn't specify them via CLI
@@ -215,10 +226,11 @@ if (!inputPath) {
   if (args.presetSource) {
     inputPath = args.presetSource;
     console.log(chalk.blue(`Using source folder from preset or global config: ${chalk.yellow(inputPath)}`));
-  } else if (args.preset === 'alloy') {
+  } else if (presetName === 'alloy') {
     // For alloy preset, we'll handle multiple sources in processImages
     // Just set a flag to indicate we're using alloy preset
     args.useAlloyMultipleSources = true;
+    args.alloySubPreset = subPreset; // Store the specific subpreset if provided
   } else if (config.source) {
     inputPath = config.source;
     console.log(chalk.blue(`Using global source folder from config: ${chalk.yellow(inputPath)}`));
@@ -230,7 +242,7 @@ if (!inputPath) {
 }
 
 // Warning for alloy preset with width/height
-if (args.preset === 'alloy' && (args.width || args.height)) {
+if (presetName === 'alloy' && (args.width || args.height)) {
   console.log(chalk.yellow('Warning: Width and height parameters are ignored when using the alloy preset. Images are scaled based on predefined factors.'));
 }
 
@@ -258,7 +270,7 @@ if (args.output) {
 
 // Ensure output directory exists (only if we have a single output directory)
 // Skip creation for alloy preset as each platform creates its own specific directories
-if (outputDir && !fs.existsSync(outputDir) && args.preset !== 'alloy') {
+if (outputDir && !fs.existsSync(outputDir) && presetName !== 'alloy') {
   fs.mkdirSync(outputDir, { recursive: true });
 }
 
@@ -503,7 +515,7 @@ const processImage = async (inputFile, outputFileBase, format) => {
 };
 
 // Function to process images for alloy preset with multiple configurations
-const processAlloyMultipleConfigurations = async () => {
+const processAlloyMultipleConfigurations = async (specificSubPreset = null) => {
   let totalNewSize = 0;
   let processedCount = 0;
   let totalOriginalSize = 0;
@@ -512,7 +524,21 @@ const processAlloyMultipleConfigurations = async () => {
   const alloyPreset = presets.alloy;
 
   // Get all configuration groups (cards, thumbs, etc.)
-  const configGroups = Object.keys(alloyPreset);
+  let configGroups = Object.keys(alloyPreset);
+
+  // If a specific subpreset is requested, filter to only that one
+  if (specificSubPreset) {
+    if (alloyPreset[specificSubPreset]) {
+      configGroups = [specificSubPreset];
+      console.log(chalk.blue(`Processing only configuration: ${chalk.yellow(specificSubPreset)}`));
+    } else {
+      console.error(chalk.red(`Error: Configuration "${specificSubPreset}" not found in alloy preset.`));
+      console.log(chalk.yellow(`Available configurations: ${Object.keys(alloyPreset).join(', ')}`));
+      process.exit(1);
+    }
+  } else {
+    console.log(chalk.blue(`Processing all alloy configurations: ${chalk.yellow(configGroups.join(', '))}`));
+  }
 
   for (const configGroupName of configGroups) {
     const configGroup = alloyPreset[configGroupName];
@@ -616,7 +642,7 @@ const processAlloyMultipleSources = async () => {
 
   if (!isLegacyFormat) {
     // This is the new multi-configuration format
-    return await processAlloyMultipleConfigurations();
+    return await processAlloyMultipleConfigurations(args.alloySubPreset);
   }
 
   // Legacy format - original implementation
@@ -711,7 +737,7 @@ Processing complete! Summary:
 // Process images
 const processImages = async () => {
   // Special handling for alloy preset with multiple sources
-  if (args.preset === 'alloy' && args.useAlloyMultipleSources) {
+  if (presetName === 'alloy' && args.useAlloyMultipleSources) {
     return await processAlloyMultipleSources();
   }
 
@@ -729,7 +755,7 @@ const processImages = async () => {
     let fileExtension = path.extname(file).toLowerCase().slice(1);
 
     if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
-      if (args.preset === 'alloy') {
+      if (presetName === 'alloy') {
         const alloyPreset = presets.alloy;
         return Object.entries(alloyPreset).map(([subPresetName, subPresetConfig]) => {
           const scales = ALLOY_SCALES[subPresetName];

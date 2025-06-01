@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2025-05-31
+
+### ✨ Enhanced Alloy Preset - Selective Configuration Processing
+
+#### 🎯 Specific Configuration Targeting
+- **Selective Processing**: Added ability to process specific configurations within the alloy preset using the syntax `alloy:configName`
+- **Improved Efficiency**: No longer need to regenerate ALL configurations when only specific ones are needed
+- **Smart Filtering**: When using `alloy:comics` or `alloy:thumbs-baby`, only that specific configuration is processed
+
+#### 🚀 New Syntax Support
+- **Configuration Targeting**: Use `imgconvert -p alloy:comics` to process only the comics configuration
+- **Multiple Options**: Support for any configuration name defined in the alloy preset (e.g., `alloy:thumbs-comics`, `alloy:baby`, `alloy:thumbs-baby`)
+- **Backward Compatibility**: Using just `imgconvert -p alloy` still processes all configurations as before
+
+#### 🛠️ Enhanced Error Handling
+- **Configuration Validation**: Clear error messages when specifying a non-existent configuration
+- **Available Options Display**: Shows all available configurations when an invalid one is specified
+- **User-Friendly Feedback**: Helpful error messages guide users to correct syntax
+
+#### 📊 Improved User Experience
+- **Clear Processing Indication**: Console output clearly shows whether processing all configurations or just a specific one
+- **Targeted Output**: When processing a specific configuration, the summary focuses only on that configuration's results
+- **Help Documentation**: Updated help message to show the new syntax with examples
+
+#### 💡 Use Cases
+- **Incremental Updates**: Perfect for when adding new design categories (like 'neon') and only wanting to process the new assets
+- **Development Workflow**: Developers can test specific configurations without waiting for all assets to be regenerated
+- **Selective Builds**: Ideal for CI/CD pipelines that only need to update specific asset categories
+
+#### 🔧 Technical Implementation
+- **Parser Enhancement**: Enhanced argument parser to detect `preset:subpreset` syntax
+- **Configuration Filtering**: Smart filtering logic that processes only the specified configuration group
+- **Validation Logic**: Robust validation ensures specified configurations exist before processing
+- **Precedence Maintenance**: Maintains all existing precedence rules (CLI > Preset > Config > Default)
+
+#### 📝 Examples
+```bash
+# Process all alloy configurations (existing behavior)
+imgconvert -p alloy
+
+# Process only comics configuration
+imgconvert -p alloy:comics
+
+# Process only baby thumbnails
+imgconvert -p alloy:thumbs-baby
+
+# Process only thumbnail comics
+imgconvert -p alloy:thumbs-comics
+```
+
+### 🔄 No Breaking Changes
+- **Full Compatibility**: Existing alloy preset usage remains unchanged
+- **Legacy Support**: All existing configuration files continue to work without modification
+- **Additive Feature**: This is a pure enhancement that adds functionality without removing or changing existing behavior
+
 ## [1.3.0] - 2025-05-31
 
 ### ✨ Major Alloy Preset Enhancement
