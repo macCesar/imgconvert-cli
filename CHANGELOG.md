@@ -5,6 +5,105 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2025-06-01
+
+### 🐛 Bug Fixes
+
+#### Fixed Multiple Image Processing with Format Flag
+- **Issue**: When using format conversion flags (`-f jpg`, `-f webp`, etc.), only one image was processed from multiple input files due to temporary file naming conflicts
+- **Root Cause**: Multiple images being processed to the same format created conflicting temporary file names (e.g., both `image.png` and `image.jpg` trying to create `/tmp/image.jpg`)
+- **Solution**: Implemented unique temporary file naming using random IDs to prevent conflicts during batch processing
+- **Technical Details**:
+  - Added `Math.random().toString(36).substring(2, 15)` for unique temp file generation
+  - Enhanced directory existence checks before file operations
+  - Improved error handling for concurrent file processing
+
+#### Improved Error Messages
+- **Enhanced**: Better error reporting when multiple files fail during format conversion
+- **Added**: Clear indication of which specific files failed processing
+- **Fixed**: Proper cleanup of temporary files after processing errors
+
+### 📚 Documentation Updates
+- **Enhanced**: Added practical manual cropping examples to README Quick Start section
+- **Added**: Real-world use cases for crop functionality in documentation
+- **Improved**: Better examples showing the crop-first, resize-second workflow
+
+### ✅ Testing
+- **Verified**: `imgconvert images -f jpg` now processes all images in directory
+- **Confirmed**: `imgconvert images -f webp` handles multiple files correctly
+- **Tested**: Batch processing maintains file quality and naming consistency
+
+
+## [1.4.0] - 2025-06-01
+
+### ✨ Advanced Resize and Crop Control - Sharp Integration
+
+#### 🎯 New Sharp-powered Options
+- **Fit Strategies (`--fit`)**: Added comprehensive resize control with Sharp's fit strategies
+  - `cover`: Crop to fill exact dimensions (maintains aspect ratio, crops excess)
+  - `contain`: Fit inside dimensions preserving aspect ratio (default behavior)
+  - `fill`: Stretch to fill exact dimensions (may distort image)
+  - `inside`: Scale down to fit within bounds (never enlarges)
+  - `outside`: Scale to cover at least the dimensions (may exceed bounds)
+
+#### 🎨 Smart Crop Positioning (`--position`)
+- **Intelligent Positioning**: Control which part of the image to keep when using `fit: cover`
+- **Position Options**: `center` (default), `top`, `bottom`, `left`, `right`
+- **Corner Positioning**: `"top left"`, `"top right"`, `"bottom left"`, `"bottom right"`
+- **Perfect for Portraits**: Keep faces visible with `--position top`
+- **Flexible Composition**: Ideal for hero images and product photography
+
+#### ✂️ Manual Cropping (`--crop`)
+- **Precise Control**: Extract specific regions using coordinates `left,top,width,height`
+- **Crop-First Workflow**: Manual cropping applied before resizing for maximum control
+- **Format**: `--crop 100,50,300,200` for pixel-perfect extractions
+- **Use Cases**: Remove unwanted areas, focus on subjects, prepare for specific compositions
+
+#### 🔧 Technical Implementation
+- **Sharp Integration**: Native Sharp fit and gravity mappings for optimal performance
+- **Precedence System**: CLI > Preset > Config > Default maintains existing behavior
+- **Robust Validation**: Comprehensive error handling for crop coordinates and invalid values
+- **Configuration Support**: All new options available in config files and presets
+- **Minimist Compatibility**: Proper array handling for crop coordinates
+
+#### 📊 Enhanced Presets
+- **Updated Defaults**: Web and thumbnail presets now include smart fit strategies
+- **Backward Compatibility**: Existing presets continue working without modification
+- **New Preset Options**: Custom presets can now leverage all resize and crop capabilities
+
+#### 💡 Practical Applications
+- **E-commerce**: Consistent product thumbnails with `--fit cover --position center`
+- **Profile Pictures**: Smart avatar cropping with `--fit cover --position top`
+- **Hero Images**: Responsive banners with manual crop and cover fit
+- **Social Media**: Perfect square posts from landscape images
+- **Print Preparation**: Maintain aspect ratios with `--fit contain`
+
+#### 📝 Examples
+```bash
+# Hero image with manual crop and smart resize
+imgconvert hero.jpg --crop 0,100,1920,800 --fit cover -w 1200 -h 600 -f webp
+
+# Profile pictures keeping faces visible
+imgconvert portraits/ --fit cover --position top -w 200 -h 200 -f png
+
+# Product thumbnails with consistent dimensions
+imgconvert products/ --fit cover --position center -w 400 -h 400 -f webp -q 85
+
+# Social media content from landscape images
+imgconvert image.jpg --fit cover --position center -w 1080 -h 1080 -f jpeg
+```
+
+#### 🚀 User Experience Improvements
+- **Enhanced Help**: Updated help message with comprehensive examples and usage patterns
+- **Clear Documentation**: Detailed explanation of each fit strategy and position option
+- **Workflow Guidance**: Best practices for different use cases and image types
+
+### 🔄 Backward Compatibility
+- **No Breaking Changes**: All existing functionality preserved and working
+- **Default Behavior**: `--fit contain` maintains current resize behavior when not specified
+- **Configuration Migration**: Existing config files work without modification
+- **Preset Compatibility**: All existing presets continue functioning as before
+
 ## [1.3.1] - 2025-05-31
 
 ### ✨ Enhanced Alloy Preset - Selective Configuration Processing

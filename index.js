@@ -25,9 +25,9 @@ const ALLOY_SCALES = Object.freeze({
 
 // Default presets
 const defaultPresets = {
-  web: { source: null, output: null, quality: 80, format: 'webp' },
-  print: { source: null, output: null, quality: 100, format: 'tiff' },
-  thumbnail: { source: null, output: null, width: 150, height: 150, quality: 60, format: 'png' },
+  print: { source: null, output: null, quality: 100, format: 'tiff', fit: 'contain' },
+  web: { source: null, output: null, quality: 80, format: 'webp', fit: 'cover', position: 'center' },
+  thumbnail: { source: null, output: null, width: 150, height: 150, quality: 60, format: 'png', fit: 'cover', position: 'center' },
   alloy: {
     android: {
       source: null,
@@ -47,7 +47,7 @@ const presets = { ...defaultPresets, ...(config.presets || {}) };
 const displayHelp = () => {
   console.log(chalk.blue(`
 Usage:
-  ${chalk.green('imgconvert <source_path> [-f <format|all>] [-q <quality>] [-b <background_color>] [--replace-originals] [-w <width>] [-h <height>] [-o <output_directory>] [-p <preset>] [-d]')}
+  ${chalk.green('imgconvert <source_path> [-f <format|all>] [-q <quality>] [-b <background_color>] [--replace-originals] [-w <width>] [-h <height>] [-o <output_directory>] [-p <preset>] [--fit <strategy>] [--position <position>] [--crop <coordinates>] [-d]')}
 
   ${chalk.green('imgconvert config')}  Create a default configuration file
 
@@ -59,13 +59,22 @@ Options:
   ${chalk.green('-b, --background')}       Set the background color for PNG images (${chalk.yellow('default: #ffffff')})
   ${chalk.green('-w, --width')}            Set the width of the output images
   ${chalk.green('-h, --height')}           Set the height of the output images
-  ${chalk.green('--replace-originals')}    Replace original files instead of creating copies (default: false)
   ${chalk.green('-o, --output')}           Set the output directory for processed images
   ${chalk.green('-p, --preset')}           Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy')})
                             For alloy preset, you can specify a specific configuration: ${chalk.yellow('alloy:comics, alloy:thumbs-baby')}
+  ${chalk.green('--fit')}                  Set resize strategy (${chalk.yellow('cover, contain, fill, inside, outside; default: contain')})
+  ${chalk.green('--position')}             Set crop position when using fit: cover (${chalk.yellow('center, top, bottom, left, right, "top left", etc.')})
+  ${chalk.green('--crop')}                 Manual crop coordinates (${chalk.yellow('format: left,top,width,height')})
+  ${chalk.green('--replace-originals')}    Replace original files instead of creating copies (default: false)
+
   ${chalk.green('-d, --debug')}            Enable debug mode to show detailed information
 
-${chalk.green('<source_path>')}            The path to the image file or directory to process (${chalk.yellow('required')})
+  ${chalk.green('<source_path>')}          The path to the image file or directory to process (${chalk.yellow('required')})
+
+Examples:
+  ${chalk.green('imgconvert image.png --crop 100,50,300,200')}
+  ${chalk.green('imgconvert photo.jpg --fit cover -w 300 -h 200')}
+  ${chalk.green('imgconvert folder/ --fit cover --position top -w 400 -h 400')}
 `));
   process.exit(0);
 };
@@ -82,7 +91,10 @@ const userArgs = minimist(process.argv.slice(2), {
     h: 'height',
     o: 'output',
     p: 'preset',
-    d: 'debug'
+    d: 'debug',
+    'fit': 'fit',
+    'crop': 'crop',
+    'position': 'position'
   },
   boolean: ['replace-originals', 'debug']
 });
@@ -100,6 +112,11 @@ const args = {
   format: userArgs.format || null,
   quality: userArgs.quality || null,
   background: userArgs.background || null,
+
+  fit: userArgs.fit || null,
+  crop: userArgs.crop || null,
+  position: userArgs.position || null,
+
   'replace-originals': userArgs['replace-originals'] || false,
 };
 
@@ -140,7 +157,12 @@ if (args._[0] === 'config') {
     source: null,
     output: null,
     format: null,
+
+    crop: null,
+    fit: 'contain',
+    position: 'center',
     background: '#ffffff',
+
     'replace-originals': false,
 
     presets: defaultPresets,
@@ -188,6 +210,15 @@ if (presetName && presets[presetName]) {
   if (!userArgs.background) {
     args.background = presetConfig.background || config.background || '#ffffff';
   }
+  if (!userArgs.crop) {
+    args.crop = presetConfig.crop || config.crop || null;
+  }
+  if (!userArgs.fit) {
+    args.fit = presetConfig.fit || config.fit || 'contain';
+  }
+  if (!userArgs.position) {
+    args.position = presetConfig.position || config.position || 'center';
+  }
 
   // If the preset has source, use it, else use global config.source
   if (presetConfig.source) {
@@ -217,6 +248,15 @@ if (presetName && presets[presetName]) {
   }
   if (!userArgs.background) {
     args.background = config.background || '#ffffff';
+  }
+  if (!userArgs.crop) {
+    args.crop = config.crop || null;
+  }
+  if (!userArgs.fit) {
+    args.fit = config.fit || 'contain';
+  }
+  if (!userArgs.position) {
+    args.position = config.position || 'center';
   }
 }
 
@@ -451,8 +491,29 @@ const processImage = async (inputFile, outputFileBase, format) => {
     return { originalSize: totalOriginal / results.length, newSize: totalNew };
   }
 
+  // Handle crop first (if specified)
+  if (args.crop) {
+    // Ensure crop is a string (minimist might parse it as array)
+    const cropString = Array.isArray(args.crop) ? args.crop.join(',') : String(args.crop);
+    const [left, top, cropWidth, cropHeight] = cropString.split(',').map(Number);
+    if (left >= 0 && top >= 0 && cropWidth > 0 && cropHeight > 0) {
+      sharpInstance = sharpInstance.extract({ left, top, width: cropWidth, height: cropHeight });
+    } else {
+      console.log(chalk.yellow(`Warning: Invalid crop coordinates "${cropString}", skipping crop.`));
+    }
+  }
+
+  // Handle resize with fit and position options
   if (width || height) {
-    sharpInstance = sharpInstance.resize(width, height);
+    const resizeOptions = {
+      width: width,
+      height: height,
+      withoutEnlargement: true,
+      fit: sharp.fit[args.fit] || sharp.fit.contain,
+      position: sharp.gravity[args.position] || sharp.gravity.center
+    };
+
+    sharpInstance = sharpInstance.resize(resizeOptions);
   }
 
   // Use sharpFormat for Sharp (may be 'jpeg')
@@ -487,13 +548,19 @@ const processImage = async (inputFile, outputFileBase, format) => {
   try {
     const { size: originalSize } = fs.statSync(inputFile);
 
-    // Use outputExtension for the file name (preserves 'jpg' if it was 'jpg')
-    const tempOutputFile = path.join(os.tmpdir(), `${path.basename(outputFileBase)}.${outputExtension}`);
+    // Create unique temporary file name to avoid conflicts when processing multiple files to same format
+    const uniqueId = Math.random().toString(36).substring(2, 15);
+    const tempOutputFile = path.join(os.tmpdir(), `${path.basename(outputFileBase)}_${uniqueId}.${outputExtension}`);
     await sharpInstance.toFile(tempOutputFile);
 
     const finalOutputFile = replaceOriginal
       ? `${outputFileBase}.${outputExtension}`
       : path.join(outputDir, `${path.basename(outputFileBase)}.${outputExtension}`);
+
+    // Ensure the output directory exists
+    if (!fs.existsSync(path.dirname(finalOutputFile))) {
+      fs.mkdirSync(path.dirname(finalOutputFile), { recursive: true });
+    }
 
     fs.renameSync(tempOutputFile, finalOutputFile);
 

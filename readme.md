@@ -6,12 +6,12 @@
   ![Node.js Version](https://img.shields.io/node/v/imgconvert-cli)
   ![downloads](https://img.shields.io/npm/dm/imgconvert-cli)
   ![license](https://img.shields.io/npm/l/imgconvert-cli)
-  ![test coverage](https://img.shields.io/badge/tests-26%20passing-brightgreen)
+  ![test coverage](https://img.shields.io/badge/tests-30%20passing-brightgreen)
   ![GitHub Stars](https://img.shields.io/github/stars/macCesar/imgconvert-cli)
 
 </div>
 
-`imgconvert-cli` is a powerful command-line tool for compressing, converting, and resizing images using the `sharp` library. It supports various formats and lets you optimize images for the web or other purposes, with customizable quality, background color, and multi-format conversion.
+`imgconvert-cli` is a powerful command-line tool for compressing, converting, and resizing images using the `sharp` library. It supports various formats and lets you optimize images for the web or other purposes, with customizable quality, background color, advanced resizing strategies, and multi-format conversion.
 
 ## 🚀 Quick Start
 
@@ -25,6 +25,12 @@ imgconvert my-images
 # Convert to WebP with 80% quality
 imgconvert my-images -f webp -q 80
 
+# Advanced resizing with cover strategy (crops to fill dimensions)
+imgconvert photo.jpg --fit cover --position center -w 400 -h 400 -f webp
+
+# Manual cropping: extract specific region then resize
+imgconvert photo.jpg --crop 100,50,800,600 -w 400 -h 300 -f webp
+
 # Generate mobile app assets (all configurations)
 imgconvert source-images -p alloy
 
@@ -36,10 +42,12 @@ imgconvert -p alloy:thumbs-baby
 ## 🎯 Common Use Cases
 
 - **Web Optimization**: Batch convert images to WebP for faster loading times
+- **Perfect Thumbnails**: Use `--fit cover` with `--position` for consistent square thumbnails
+- **Hero Images**: Crop images to exact dimensions while preserving important content areas
 - **Mobile App Development**: Generate multi-resolution assets for iOS/Android with Titanium Alloy
 - **Selective Asset Updates**: Use `imgconvert -p alloy:comics` to update only specific asset categories
 - **Print Preparation**: Convert to high-quality TIFF format for professional printing
-- **Thumbnail Generation**: Create consistent preview images with custom dimensions
+- **Custom Cropping**: Extract specific regions before resizing with `--crop`
 - **Batch Processing**: Convert entire directories while preserving folder structure
 
 ## 📊 Performance
@@ -49,6 +57,13 @@ Typical compression results:
 - **PNG → WebP**: 40-60% size reduction
 - **Batch processing**: ~50-100 images/second
 - **Memory efficient**: Processes large batches without memory issues
+
+## 📊 Project Stats
+
+- **Platforms**: macOS, Linux, Windows
+- **Dependencies**: 3 (sharp, minimist, chalk)
+- **Test Coverage**: 30 comprehensive tests
+- **Bundle Size**: ~45KB (excluding Sharp)
 
 ## Table of Contents
 - [Features](#features)
@@ -70,6 +85,9 @@ Typical compression results:
 
 - **Image Compression**: Compress images to reduce file size while maintaining quality
 - **Format Conversion**: Convert images between JPEG, PNG, WebP, AVIF, TIFF, and GIF
+- **Advanced Resizing Strategies**: Control how images fit target dimensions with multiple strategies (cover, contain, fill, inside, outside)
+- **Smart Positioning**: Choose which part of the image to preserve when cropping (center, top, bottom, left, right, corners)
+- **Manual Cropping**: Extract specific regions before resizing with precise coordinate control
 - **File and Batch Processing**: Process a single image file or all images in a directory
 - **Smart Extension Handling**: Preserves original file extensions when no format conversion is specified
 - **Customizable Quality**: Adjust output image quality from 1-100
@@ -126,17 +144,64 @@ imgconvert <source_path>
 
 The available options for the `imgconvert-cli` command let users customize image conversions easily.
 
-- `-f, --format`: (Optional) The desired output format. Supported formats: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, or `all`. If not specified, **the original format and extension of each file is retained**.
-- `-q, --quality`: (Optional) Output image quality (1-100). Default: 85.
-- `-b, --background`: (Optional) Hex color for filling transparent areas when converting to formats that do not support transparency (e.g., PNG to JPEG). Ignored if the output format supports transparency. Default: `#ffffff`.
-- `--replace-originals`: (Optional) Replace original files with processed images. Default: `false`.
-- `-w, --width`: (Optional) Set output image width.
-- `-h, --height`: (Optional) Set output image height.
-- `-o, --output`: (Optional) Set a custom output directory. If not specified, a `converted` directory is created at the same level as the source path.
-- `-p, --preset`: (Optional) Apply a preset configuration (e.g., `web`, `print`, `thumbnail`, `alloy`). For alloy preset, you can specify a specific configuration using the syntax `alloy:configName` (e.g., `alloy:comics`, `alloy:thumbs-baby`).
-- `-d, --debug`: (Optional) Enable debug mode for detailed information.
-- `-v, --version`: (Optional) Displays the version and exits.
-- `-H, --help`: (Optional) Show the help message.
+| Option                | Alias | Description                                                        | Default         |
+| --------------------- | ----- | ------------------------------------------------------------------ | --------------- |
+| `--format`            | `-f`  | Output format: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, `all` | Original format |
+| `--quality`           | `-q`  | Quality (1-100)                                                    | 85              |
+| `--background`        | `-b`  | Background color for PNG images                                    | `#ffffff`       |
+| `--width`             | `-w`  | Output width in pixels                                             | -               |
+| `--height`            | `-h`  | Output height in pixels                                            | -               |
+| `--output`            | `-o`  | Output directory                                                   | Same as source  |
+| `--preset`            | `-p`  | Apply preset: `web`, `print`, `thumbnail`, `alloy`                 | -               |
+| `--fit`               | -     | Resize strategy: `cover`, `contain`, `fill`, `inside`, `outside`   | `contain`       |
+| `--position`          | -     | Crop position: `center`, `top`, `bottom`, `left`, `right`, corners | `center`        |
+| `--crop`              | -     | Manual crop coordinates: `left,top,width,height`                   | -               |
+| `--replace-originals` | -     | Replace original files                                             | `false`         |
+| `--debug`             | `-d`  | Enable debug mode                                                  | `false`         |
+| `--version`           | `-v`  | Show version                                                       | -               |
+| `--help`              | `-H`  | Show help message                                                  | -               |
+
+## Advanced Resize and Crop Control
+
+The Sharp library integration provides powerful image manipulation capabilities with precise control over how images are resized and cropped.
+
+**Processing Workflow**: Manual Crop → Resize → Format Conversion
+
+### Fit Strategies (`--fit`)
+
+Controls how images are resized when both width and height are specified:
+
+| Strategy  | Behavior                           | Use Case                | Aspect Ratio |
+| --------- | ---------------------------------- | ----------------------- | ------------ |
+| `contain` | Shrink to fit, letterbox if needed | Preserve entire image   | Preserved    |
+| `cover`   | Crop to fill dimensions exactly    | Hero images, thumbnails | Preserved    |
+| `fill`    | Stretch to exact dimensions        | Icons, backgrounds      | Ignored      |
+| `inside`  | Only shrink, never enlarge         | High-res source images  | Preserved    |
+| `outside` | Only enlarge, never shrink         | Upscaling small images  | Preserved    |
+
+### Position Control (`--position`)
+
+When using `--fit cover`, controls which part of the image to preserve:
+
+| Position       | Description                  | Best For                 |
+| -------------- | ---------------------------- | ------------------------ |
+| `center`       | Focus on center (default)    | General purpose          |
+| `top`          | Focus on top edge            | Portraits, faces         |
+| `bottom`       | Focus on bottom edge         | Architecture             |
+| `left`         | Focus on left edge           | Portraits (left-facing)  |
+| `right`        | Focus on right edge          | Portraits (right-facing) |
+| `top left`     | Focus on top-left corner     | Documents, logos         |
+| `top right`    | Focus on top-right corner    | UI screenshots           |
+| `bottom left`  | Focus on bottom-left corner  | Signatures               |
+| `bottom right` | Focus on bottom-right corner | Watermarks               |
+
+### Manual Cropping (`--crop`)
+
+Extract specific regions before resizing:
+
+- **Format**: `left,top,width,height` (all in pixels)
+- **Example**: `--crop 100,50,800,600` crops 800x600 region starting at (100,50)
+- **Workflow**: Cropping is applied first, then resizing with fit/position options
 
 ## Examples
 
@@ -159,57 +224,71 @@ The available options for the `imgconvert-cli` command let users customize image
    imgconvert image.png -f jpeg          # → image.jpeg
    ```
 
-### Batch Processing
+### Advanced Resizing and Cropping
 
-4. **Batch conversion with format change:**
+4. **Smart resizing strategies:**
    ```bash
-   imgconvert source_folder -f webp      # All images → .webp
+   # Cover strategy: crop to fill exact dimensions
+   imgconvert photo.jpg --fit cover -w 400 -h 400
+
+   # Contain strategy: fit inside dimensions (default)
+   imgconvert photo.jpg --fit contain -w 400 -h 400
+
+   # Fill strategy: stretch to exact dimensions
+   imgconvert photo.jpg --fit fill -w 400 -h 400
    ```
 
-5. **Convert a single image to JPEG with high quality and custom background:**
+5. **Control cropping position with cover strategy:**
    ```bash
-   imgconvert image.png -f jpeg -q 95 -b "#ff0000"
+   # Keep the top part when cropping
+   imgconvert portrait.jpg --fit cover --position top -w 300 -h 300
+
+   # Keep the center (default)
+   imgconvert photo.jpg --fit cover --position center -w 300 -h 300
+
+   # Keep specific corners
+   imgconvert image.jpg --fit cover --position "top left" -w 400 -h 400
    ```
 
-### Resizing
-
-6. **Resize without format change:**
+6. **Manual cropping before resizing:**
    ```bash
-   imgconvert image.jpg -w 800           # → image.jpg (resized)
-   imgconvert image.jpg -h 600           # → image.jpg (resized)
+   # Crop specific region then resize
+   imgconvert image.png --crop 100,50,300,200 -w 200 -h 150
+
+   # Crop and convert format
+   imgconvert photo.jpg --crop 0,0,500,500 --fit cover -w 300 -h 300 -f webp
    ```
 
-7. **Resize all images in a directory to a specific width and height:**
-   ```bash
-   imgconvert source_folder -w 800 -h 600
-   ```
+### Real-World Examples
 
-### Advanced Operations
-
-8. **Convert all images in a directory to all formats:**
-   ```bash
-   imgconvert source_folder -f all
-   ```
-
-9. **Replace original files with processed images:**
+10. **Perfect for web development:**
     ```bash
-    imgconvert source_folder --replace-originals
+    # Social media thumbnails
+    imgconvert profiles/ --fit cover --position top -w 150 -h 150 -f webp
+
+    # Product images with consistent dimensions
+    imgconvert products/ --fit contain -w 800 -h 600 -f webp -q 90
+
+    # Hero banners
+    imgconvert heroes/ --fit cover --position center -w 1920 -h 800 -f webp
     ```
 
-10. **Use a preset configuration:**
+11. **Mobile app assets:**
     ```bash
-    imgconvert source_folder -p web
+    # Square app icons
+    imgconvert icons/ --fit cover --position center -w 512 -h 512 -f png
+
+    # Profile pictures
+    imgconvert avatars/ --fit cover --position top -w 200 -h 200 -f webp
     ```
 
-### Alloy Preset Examples
-
-11. **Use alloy preset with platform-specific formats:**
+12. **Use alloy preset with platform-specific formats:**
     ```bash
     imgconvert source_folder -p alloy
     # Generates images for ALL configurations (comics, thumbs-comics, baby, thumbs-baby)
     ```
 
-12. **Process specific alloy configurations:**
+13. **Process specific alloy configurations:**
     ```bash
     imgconvert -p alloy:comics
     # Processes ONLY the comics configuration (both Android and iPhone)
@@ -221,7 +300,7 @@ The available options for the `imgconvert-cli` command let users customize image
     # Processes ONLY the thumbs-comics configuration
     ```
 
-13. **Override preset settings with CLI arguments:**
+14. **Override preset settings with CLI arguments:**
     ```bash
     imgconvert source_folder -p alloy -f png -q 95
     # CLI arguments override preset: both Android and iPhone will use PNG at 95% quality
@@ -230,7 +309,7 @@ The available options for the `imgconvert-cli` command let users customize image
     # Only comics configuration with 90% quality override
     ```
 
-14. **Use preset settings with partial CLI override:**
+15. **Use preset settings with partial CLI override:**
     ```bash
     imgconvert source_folder -p alloy -q 80
     # Only quality is overridden: Android uses WebP, iPhone uses PNG, both at 80% quality
@@ -239,24 +318,36 @@ The available options for the `imgconvert-cli` command let users customize image
     # Only baby configuration, forced to WebP format for both platforms
     ```
 
+16. **Extract and optimize specific image regions with manual cropping:**
+    ```bash
+    # Extract a product from a larger photo and create web-optimized thumbnails
+    imgconvert product-photo.jpg --crop 200,150,600,800 -w 300 -h 400 -f webp -q 85
+
+    # Create hero image by cropping center portion from high-res photo
+    imgconvert landscape.jpg --crop 500,100,1920,800 --fit cover -w 1200 -h 500 -f webp
+
+    # Extract faces from group photos for profile pictures
+    imgconvert group-photo.jpg --crop 350,200,500,500 --fit cover -w 150 -h 150 -f webp
+    ```
+
 ### Utility Operations
 
-14. **Specify a custom output directory:**
+18. **Specify a custom output directory:**
     ```bash
     imgconvert source_folder -o custom_output_directory
     ```
 
-15. **Enable debug mode:**
+19. **Enable debug mode:**
     ```bash
     imgconvert source_folder -d
     ```
 
-16. **Check the version of the module:**
+20. **Check the version of the module:**
     ```bash
     imgconvert --version
     ```
 
-17. **Show help message:**
+21. **Show help message:**
     ```bash
     imgconvert --help
     ```
@@ -292,7 +383,9 @@ Presets are predefined configurations for common use cases:
 - **web**: Optimized for the web (`webp`, quality `80`). Optionally defines a `source` path.
 - **print**: High-quality output (`tiff`, quality `100`). Optionally defines a `source` path.
 - **thumbnail**: Small previews (`png`, quality `60`, 150x150). Optionally defines a `source` path.
-- **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iPhone. Supports both legacy single-source format and new multi-configuration format for complex workflows (e.g., cards, thumbnails, icons). Each platform can define its own `source` path. You can process all configurations with `-p alloy` or target specific ones with `-p alloy:configName` (e.g., `-p alloy:comics`, `-p alloy:thumbs-baby`).
+- **square-thumbs**: Consistent square thumbnails (`webp`, quality `80`, 300x300). Optionally defines a `source` path.
+- **hero-images**: High-quality hero images (`webp`, quality `85`, 1920x1080). Optionally defines a `source` path.
+- **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iOS. Supports both legacy single-source format and new multi-configuration format for complex workflows (e.g., cards, thumbnails, icons). Each platform can define its own `source` path. You can process all configurations with `-p alloy` or target specific ones with `-p alloy:configName` (e.g., `-p alloy:comics`, `-p alloy:thumbs-baby`).
 
 ## Custom Presets
 
@@ -341,7 +434,7 @@ imgconvert photos -p instagram-post -q 95  # Uses Instagram preset but with 95% 
 
 # Use selective configuration with custom alloy presets
 imgconvert -p alloy:game-cards    # Process only game-cards configuration
-imgconvert -p alloy:comics -q 85  # Process only comics with custom quality
+imgconvert -p alloy:comics -q 90  # Process only comics with custom quality
 ```
 
 ### Key Features
@@ -356,15 +449,16 @@ imgconvert -p alloy:comics -q 85  # Process only comics with custom quality
 
 ## Why Choose imgconvert-cli?
 
-| Feature                | imgconvert-cli | ImageMagick | Sharp CLI |
-| ---------------------- | -------------- | ----------- | --------- |
-| Easy Setup             | ✅              | ❌           | ✅         |
-| Batch Processing       | ✅              | ✅           | ❌         |
-| Mobile Presets         | ✅              | ❌           | ❌         |
-| Custom Presets         | ✅              | ❌           | ❌         |
-| Config File            | ✅              | ❌           | ❌         |
-| Extension Preservation | ✅              | ❌           | ❌         |
-| Multi-Format Output    | ✅              | ✅           | ❌         |
+| Feature                 | imgconvert-cli | ImageMagick | Sharp CLI |
+| ----------------------- | -------------- | ----------- | --------- |
+| Easy Setup              | ✅              | ❌           | ✅         |
+| Batch Processing        | ✅              | ✅           | ❌         |
+| Mobile Presets          | ✅              | ❌           | ❌         |
+| Custom Presets          | ✅              | ❌           | ❌         |
+| Config File             | ✅              | ❌           | ❌         |
+| Extension Preservation  | ✅              | ❌           | ❌         |
+| Multi-Format Output     | ✅              | ✅           | ❌         |
+| **Comprehensive Tests** | **✅**          | **❌**       | **❌**     |
 
 ## Alloy Preset
 
@@ -501,12 +595,12 @@ Each platform (android/iphone) has its own source directory:
 "presets": {
   "alloy": {
     "android": {
-      "source": "android-source-folder",
-      "output": "thumbs/baby"
+      "output": "thumbs/baby",
+      "source": "android-source-folder"
     },
     "iphone": {
-      "source": "iphone-source-folder",
-      "output": "thumbs/baby"
+      "output": "thumbs/baby",
+      "source": "iphone-source-folder"
     }
   }
 }
@@ -601,6 +695,13 @@ Processed files:
  - app/assets/iphone/images/cards/baby/card1@2x.webp (config: cards, platform: iphone, scale: 2x)
  - app/assets/android/images/res-mdpi/thumbs/baby/thumb1.webp (config: thumbs, platform: android, scale: res-mdpi)
  ...
+
+Processing complete! Summary:
+  - Processed files: 24
+  - Total original size: 2.45 MB
+  - Total new size: 0.89 MB
+  - Total savings: 63.67%
+  - Duration: 1.24 seconds
 ```
 
 ### Practical Example: Game Development Workflow
@@ -669,7 +770,7 @@ With this multi-configuration setup in your `.imgconverter.config.json`:
           "quality": 95,
           "format": "png",
           "output": "icons",
-          "source": "icons-4x",
+          "source": "icons-4x"
         }
       }
     }
@@ -799,7 +900,7 @@ The tool follows a consistent 4-level precedence system for all configuration pa
 3. **Global Config** - Values in the `.imgconverter.config.json` file
 4. **Default Values** (lowest priority) - Built-in fallback values
 
-This means CLI arguments always override preset settings, preset settings override global config, and global config overrides defaults. This precedence applies to all parameters: `quality`, `format`, `width`, `height`, `output`, `replace-originals`, and `background`.
+This means CLI arguments always override preset settings, preset settings override global config, and global config overrides defaults. This precedence applies to all parameters: `quality`, `format`, `width`, `height`, `output`, `replace-originals`, `background`, `fit`, `position`, and `crop`.
 
 ### Configuration Parameters
 
@@ -807,11 +908,14 @@ This means CLI arguments always override preset settings, preset settings overri
 - **height**: Default height for image resizing.
 - **format**: Default format for image conversion.
 - **quality**: Default quality for image compression.
+- **fit**: Default resize strategy (`cover`, `contain`, `fill`, `inside`, `outside`).
+- **position**: Default cropping position for `fit: cover` (`center`, `top`, `bottom`, `left`, `right`, corners).
+- **crop**: Default crop coordinates in format `left,top,width,height`.
 - **replace-originals**: Default setting for replacing original files.
 - **source**: Global default source folder for images. If not provided as a CLI argument or in a preset, this will be used as the input folder.
 - **output**: Default output directory for processed images. If `null`, defaults to a `converted` directory at the same level as the source path.
 - **background**: Hex color used to fill transparent areas only when converting images with transparency to formats that do not support it (e.g., PNG to JPEG). Ignored if the output format supports transparency.
-- **presets**: Define custom presets for different use cases. Each preset can specify its own `format`, `quality`, `width`, `height`, `output`, and `source`. All preset configurations follow the precedence system: CLI arguments always override preset values, which override global config values.
+- **presets**: Define custom presets for different use cases. Each preset can specify its own `format`, `quality`, `width`, `height`, `output`, `source`, `fit`, `position`, and `crop`. All preset configurations follow the precedence system: CLI arguments always override preset values, which override global config values.
 
 ### Default Configuration File
 
@@ -824,28 +928,27 @@ This means CLI arguments always override preset settings, preset settings overri
   "source": null,
   "output": null,
   "format": null,
+  "replace": false,
   "background": "#ffffff",
-  "replace-originals": false,
-
   "presets": {
-    "web": { "source": null, "output": null, "format": "webp", "quality": 80 },
-    "print": { "source": null, "output": null, "format": "tiff", "quality": 100 },
-    "thumbnail": { "source": null, "output": null, "format": "png", "quality": 60, "width": 150, "height": 150 },
+    "web": { "source": null, "format": "webp", "quality": 80 },
+    "print": { "source": null, "format": "tiff", "quality": 100 },
+    "thumbnail": { "source": null, "format": "png", "quality": 60, "width": 150, "height": 150 },
     "alloy": {
       "android": {
         "source": null,
-        "output": null
+        "output": "./app/assets/android/images",
+        "scales": { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }
       },
       "iphone": {
         "source": null,
-        "output": null
+        "output": "./app/assets/iphone/images",
+        "scales": { "1x": 1, "2x": 2, "3x": 3 }
       }
     }
   }
 }
 ```
-
-> **🔒 Note**: The `scales` property is no longer needed or supported. Scale factors are now immutable constants that follow Titanium standards (Android: res-mdpi to res-xxxhdpi, iOS: 1x to 3x).
 
 #### Multi-Configuration Alloy Format (Recommended):
 ```json
@@ -853,6 +956,9 @@ This means CLI arguments always override preset settings, preset settings overri
   "width": null,
   "height": null,
   "quality": 85,
+  "fit": "contain",
+  "position": "center",
+  "crop": null,
   "source": null,
   "output": null,
   "format": null,
