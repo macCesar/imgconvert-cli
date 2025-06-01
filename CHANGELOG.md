@@ -5,6 +5,86 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-05-31
+
+### ✨ Major Alloy Preset Enhancement
+
+#### 🚀 Multi-Configuration Support for Alloy Preset
+- **Multiple Configuration Groups**: Enhanced alloy preset to support multiple configuration groups (e.g., `cards`, `thumbs`, `icons`) within a single preset
+- **Independent Source/Output Management**: Each configuration group can have its own source directories and output paths for both Android and iPhone platforms
+- **Flexible Quality and Format Control**: Per-configuration quality and format settings with proper precedence: CLI > Subpreset > ConfigGroup > Global > Default
+- **Batch Processing**: Process all configurations in a single command execution
+
+#### 🏗️ New Configuration Structure
+- **Legacy Compatibility**: Maintains full backward compatibility with existing alloy preset configurations (`alloy.android`, `alloy.iphone`)
+- **Auto-Detection**: Automatically detects new multi-configuration format vs legacy format
+- **Multi-Configuration Support**: New structure supports `alloy.{configName}.{platform}` format (e.g., `alloy.cards.android`, `alloy.thumbs.iphone`)
+
+#### 📊 Improved Debug and Monitoring
+- **Enhanced Debug Output**: Debug mode now shows configuration group and platform information for each processed file
+- **Progress Tracking**: Better progress indication showing current configuration group being processed
+- **Detailed Summary**: Processing summary includes configuration-specific information
+
+#### 🎯 Configuration Examples
+**New Multi-Configuration Format:**
+```json
+{
+  "presets": {
+    "alloy": {
+      "cards": {
+        "android": {
+          "quality": 90,
+          "format": "webp",
+          "source": "originals",
+          "output": "cards/baby"
+        },
+        "iphone": {
+          "quality": 90,
+          "format": "webp",
+          "source": "originals",
+          "output": "cards/baby"
+        }
+      },
+      "thumbs": {
+        "android": {
+          "quality": 80,
+          "format": "webp",
+          "source": "thumbs",
+          "output": "thumbs/baby"
+        },
+        "iphone": {
+          "quality": 80,
+          "format": "webp",
+          "source": "thumbs",
+          "output": "thumbs/baby"
+        }
+      }
+    }
+  }
+}
+```
+
+#### 🔧 Technical Improvements
+- **Smart Format Detection**: Automatically detects if using new multi-configuration format or legacy format
+- **Enhanced Function Signatures**: Updated `getEffectiveQuality` and `getEffectiveFormat` functions to support configuration group context
+- **Robust Error Handling**: Better error handling for missing source directories with clear warning messages
+- **Process Isolation**: Each configuration group processes independently with proper cleanup
+
+#### 💡 Usage Benefits
+- **Game Development Workflow**: Perfect for game card processing with different image sets (large cards, thumbnails, icons)
+- **Multi-Source Processing**: Process different source folders to different output locations in one command
+- **Consistent Scaling**: Maintains alloy preset's automatic 4x scaling behavior across all configurations
+- **Platform Optimization**: Different quality/format settings per platform and image type
+
+### 🔄 Breaking Changes
+- **No Breaking Changes**: This version maintains full backward compatibility with existing alloy preset configurations
+- **Enhanced Detection**: The system now automatically differentiates between legacy (`alloy.android`, `alloy.iphone`) and new multi-configuration formats (`alloy.cards.android`, `alloy.thumbs.android`, etc.)
+
+### 📝 Documentation
+- **Comprehensive Examples**: Added detailed configuration examples for the new multi-configuration format
+- **Migration Guide**: Clear guidance on how to upgrade from legacy to new format
+- **Use Case Documentation**: Specific examples for game development and multi-asset workflows
+
 ## [1.2.1] - 2025-05-31
 
 ### ✨ Enhanced Alloy Preset
@@ -120,7 +200,7 @@ Update your `.imgconverter.config.json` file:
 #### Precedence System Verification:
 The configuration precedence system continues to work correctly:
 1. **CLI Arguments** (highest priority)
-2. **Preset Settings** 
+2. **Preset Settings**
 3. **Global Config**
 4. **Default Values** (lowest priority)
 

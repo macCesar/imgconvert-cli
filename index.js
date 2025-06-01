@@ -278,11 +278,15 @@ function normalizeOutputSubfolder(subfolder) {
 }
 
 // Function to get the effective quality for Alloy (CLI > preset > global > default)
-function getEffectiveQuality(subPresetName, subPresetConfig) {
+function getEffectiveQuality(subPresetName, subPresetConfig, configGroupName) {
   // CLI flag always wins
   if (userArgs.quality) return parseInt(userArgs.quality, 10);
   // Subpreset (android/iphone) quality
   if (subPresetConfig && subPresetConfig.quality) return parseInt(subPresetConfig.quality, 10);
+  // Configuration group quality (cards, thumbs, etc.)
+  if (configGroupName && presets.alloy && presets.alloy[configGroupName] && presets.alloy[configGroupName].quality) {
+    return parseInt(presets.alloy[configGroupName].quality, 10);
+  }
   // Alloy preset quality
   if (presets.alloy && presets.alloy.quality) return parseInt(presets.alloy.quality, 10);
   // Global config
@@ -292,11 +296,15 @@ function getEffectiveQuality(subPresetName, subPresetConfig) {
 }
 
 // Function to get the effective format for Alloy (CLI > preset > global > original)
-function getEffectiveFormat(subPresetName, subPresetConfig, originalExt) {
+function getEffectiveFormat(subPresetName, subPresetConfig, originalExt, configGroupName) {
   // CLI flag always wins
   if (userArgs.format) return userArgs.format;
   // Subpreset (android/iphone) format
   if (subPresetConfig && subPresetConfig.format) return subPresetConfig.format;
+  // Configuration group format (cards, thumbs, etc.)
+  if (configGroupName && presets.alloy && presets.alloy[configGroupName] && presets.alloy[configGroupName].format) {
+    return presets.alloy[configGroupName].format;
+  }
   // Alloy preset format
   if (presets.alloy && presets.alloy.format) return presets.alloy.format;
   // Global config
@@ -490,14 +498,131 @@ const processImage = async (inputFile, outputFileBase, format) => {
   }
 };
 
-// Process images for alloy preset with multiple sources
-const processAlloyMultipleSources = async () => {
+// Function to process images for alloy preset with multiple configurations
+const processAlloyMultipleConfigurations = async () => {
   let totalNewSize = 0;
   let processedCount = 0;
   let totalOriginalSize = 0;
   const startTime = Date.now();
   const processedFilesInfo = [];
   const alloyPreset = presets.alloy;
+
+  // Get all configuration groups (cards, thumbs, etc.)
+  const configGroups = Object.keys(alloyPreset);
+
+  for (const configGroupName of configGroups) {
+    const configGroup = alloyPreset[configGroupName];
+
+    console.log(chalk.blue(`\nProcessing configuration: ${chalk.yellow(configGroupName)}`));
+
+    // Process each platform within the configuration group
+    for (const [subPresetName, subPresetConfig] of Object.entries(configGroup)) {
+      const sourceFolder = subPresetConfig.source;
+
+      if (!sourceFolder) {
+        console.log(chalk.yellow(`Warning: No source folder defined for ${configGroupName}.${subPresetName}, skipping...`));
+        continue;
+      }
+
+      if (!fs.existsSync(sourceFolder)) {
+        console.log(chalk.yellow(`Warning: Source folder "${sourceFolder}" for ${configGroupName}.${subPresetName} does not exist, skipping...`));
+        continue;
+      }
+
+      // Clear any previous progress line before showing platform message
+      process.stdout.write('\r' + ' '.repeat(100) + '\r');
+      console.log(chalk.blue(`  Processing ${subPresetName} from: ${chalk.yellow(sourceFolder)}`));
+
+      const isDirectory = fs.lstatSync(sourceFolder).isDirectory();
+      const inputDir = isDirectory ? sourceFolder : path.dirname(sourceFolder);
+      const files = isDirectory ? fs.readdirSync(sourceFolder) : [path.basename(sourceFolder)];
+
+      const tasks = files.flatMap(file => {
+        const inputFile = path.join(inputDir, file);
+        let fileExtension = path.extname(file).toLowerCase().slice(1);
+
+        if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
+          const scales = subPresetConfig.scales || (subPresetName === 'iphone'
+            ? { "1x": 1, "2x": 2, "3x": 3 }
+            : { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 });
+          const outputSubfolder = subPresetConfig.output || '';
+          const isIPhone = subPresetName === 'iphone';
+          const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig, configGroupName);
+          const effectiveFormat = getEffectiveFormat(subPresetName, subPresetConfig, path.extname(inputFile), configGroupName);
+
+          return processImageWithScaling(inputFile, scales, outputSubfolder, isIPhone, effectiveQuality, effectiveFormat).then(result => {
+            if (result) {
+              processedFilesInfo.push(...result.processedFiles.map(f => ({
+                ...f,
+                configGroup: configGroupName,
+                platform: subPresetName
+              })));
+              totalOriginalSize += result.originalSize;
+              totalNewSize += result.newSize;
+              processedCount++;
+            }
+            return result;
+          });
+        }
+        return [];
+      });
+
+      await Promise.all(tasks);
+
+      // Clear the progress line after processing this platform
+      process.stdout.write('\r' + ' '.repeat(100) + '\r');
+    }
+  }
+
+  // Log processed files info
+  if (debugMode) {
+    console.log(chalk.blue(`Processed files:`));
+    processedFilesInfo.forEach(fileInfo => {
+      console.log(chalk.blue(` - ${fileInfo.path} (config: ${fileInfo.configGroup}, platform: ${fileInfo.platform}, scale: ${fileInfo.scaleName})`));
+    });
+  }
+
+  // Summary
+  const endTime = Date.now();
+  const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+  // Calcular savings de manera segura para evitar NaN
+  let savings = '0.00';
+  if (totalOriginalSize > 0) {
+    savings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
+  }
+
+  process.stdout.write('\r' + ' '.repeat(100) + '\r');
+
+  console.log(chalk.green(`
+Processing complete! Summary:
+  - Processed files: ${chalk.yellow(processedCount)}
+  - Total original size: ${chalk.yellow((totalOriginalSize / 1024).toFixed(2) + ' KB')}
+  - Total new size: ${chalk.yellow((totalNewSize / 1024).toFixed(2) + ' KB')}
+  - Total savings: ${chalk.yellow(savings + '%')}
+  - Duration: ${chalk.yellow(duration + ' seconds')}
+`));
+};
+
+// Process images for alloy preset with multiple sources
+const processAlloyMultipleSources = async () => {
+  // Check if we have the new multiple configurations format
+  const alloyPreset = presets.alloy;
+
+  // Check if this is legacy format (direct android/iphone keys) or multi-config format
+  const isLegacyFormat = alloyPreset.android && alloyPreset.iphone;
+
+  if (!isLegacyFormat) {
+    // This is the new multi-configuration format
+    return await processAlloyMultipleConfigurations();
+  }
+
+  // Legacy format - original implementation
+  let totalNewSize = 0;
+  let processedCount = 0;
+  let totalOriginalSize = 0;
+  const startTime = Date.now();
+  const processedFilesInfo = [];
 
   // Process each platform separately with its own source
   for (const [subPresetName, subPresetConfig] of Object.entries(alloyPreset)) {
@@ -526,11 +651,13 @@ const processAlloyMultipleSources = async () => {
       let fileExtension = path.extname(file).toLowerCase().slice(1);
 
       if (supportedFormats.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
-        const scales = subPresetConfig.scales;
+        const scales = subPresetConfig.scales || (subPresetName === 'iphone'
+          ? { "1x": 1, "2x": 2, "3x": 3 }
+          : { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 });
         const outputSubfolder = args.output || subPresetConfig.output || '';
         const isIPhone = subPresetName === 'iphone';
-        const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig);
-        const effectiveFormat = getEffectiveFormat(subPresetName, subPresetConfig, path.extname(inputFile));
+        const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig, null);
+        const effectiveFormat = getEffectiveFormat(subPresetName, subPresetConfig, path.extname(inputFile), null);
 
         return processImageWithScaling(inputFile, scales, outputSubfolder, isIPhone, effectiveQuality, effectiveFormat).then(result => {
           if (result) {

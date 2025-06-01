@@ -30,12 +30,19 @@ It supports various formats and lets you optimize images for the web or other pu
     - [Key Features:](#key-features)
     - [Scale Factors:](#scale-factors)
     - [Usage:](#usage)
+      - [Single Configuration (Legacy Format):](#single-configuration-legacy-format)
+      - [Multi-Configuration Format:](#multi-configuration-format)
     - [Output for Alloy (Android \& iPhone)](#output-for-alloy-android--iphone)
     - [Using Preset Source Folders](#using-preset-source-folders)
+      - [Legacy Format (Single Source per Platform)](#legacy-format-single-source-per-platform)
+      - [Multi-Configuration Format (Recommended)](#multi-configuration-format-recommended)
+    - [Practical Example: Game Development Workflow](#practical-example-game-development-workflow)
   - [Configuration File](#configuration-file)
     - [Configuration Precedence](#configuration-precedence)
     - [Configuration Parameters](#configuration-parameters)
     - [Default Configuration File](#default-configuration-file)
+      - [Legacy Alloy Format:](#legacy-alloy-format)
+      - [Multi-Configuration Alloy Format (Recommended):](#multi-configuration-alloy-format-recommended)
   - [Debug Mode](#debug-mode)
   - [Dependencies](#dependencies)
   - [Error Handling](#error-handling)
@@ -248,7 +255,7 @@ Presets are predefined configurations for common use cases:
 - **web**: Optimized for the web (`webp`, quality `80`). Optionally defines a `source` path.
 - **print**: High-quality output (`tiff`, quality `100`). Optionally defines a `source` path.
 - **thumbnail**: Small previews (`png`, quality `60`, 150x150). Optionally defines a `source` path.
-- **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iPhone. Each platform can define its own `source` path.
+- **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iPhone. Supports both legacy single-source format and new multi-configuration format for complex workflows (e.g., cards, thumbnails, icons). Each platform can define its own `source` path.
 
 ## Alloy Preset
 
@@ -257,17 +264,29 @@ The `alloy` preset is specifically designed for mobile app development with Tita
 ### Key Features:
 - **Automatic scaling**: Creates multiple resolution versions based on predefined scale factors
 - **Platform-specific output**: Generates Android density folders and iOS @2x/@3x naming conventions
+- **Multi-configuration support**: Process multiple image groups (cards, thumbnails, icons) in a single command
+- **Independent source management**: Each configuration can have its own source directories and output paths
+- **Flexible quality/format control**: Per-configuration quality and format settings with proper precedence
 - **Ignores width/height**: The `width` and `height` parameters are ignored as images are scaled proportionally
 - **4x source requirement**: Source images should be 4x the target resolution for optimal results
+- **Legacy compatibility**: Maintains backward compatibility with existing alloy configurations
 
 ### Scale Factors:
 - **Android**: res-mdpi (1x), res-hdpi (1.5x), res-xhdpi (2x), res-xxhdpi (3x), res-xxxhdpi (4x)
 - **iOS**: 1x, 2x, 3x
 
 ### Usage:
+
+#### Single Configuration (Legacy Format):
 ```bash
 imgconvert source-images/ -p alloy
 ```
+
+#### Multi-Configuration Format:
+```bash
+imgconvert -p alloy
+```
+> **Note**: With multi-configuration format, all configuration groups are processed automatically from their respective source directories.
 
 > **Note**: When using the alloy preset, `width` and `height` parameters are automatically ignored since images are scaled based on predefined factors to maintain mobile platform standards.
 
@@ -278,61 +297,120 @@ When using the `alloy` preset, the output base path is always fixed:
 - Android: `app/assets/android/images`
 - iPhone: `app/assets/iphone/images`
 
-You only need to specify the relative subfolder (without leading or trailing slashes, e.g. `cards/thumbs/baby`) as the `output` in the preset or CLI. The script will generate the correct structure for each density:
+You only need to specify the relative subfolder (without leading or trailing slashes, e.g. `thumbs/baby`) as the `output` in the preset or CLI. The script will generate the correct structure for each density:
 
 **Correct usage:**
 
 ```
-"output": "cards/thumbs/baby"
+"output": "thumbs/baby"
 ```
 
 **Do NOT use:**
-- `/cards/thumbs/baby`
-- `cards/thumbs/baby/`
-- `/cards/thumbs/baby/`
+- `/thumbs/baby`
+- `thumbs/baby/`
+- `/thumbs/baby/`
 
 **Android Example:**
 
 ```
-app/assets/android/images/res-mdpi/cards/thumbs/baby/logo.png
-app/assets/android/images/res-hdpi/cards/thumbs/baby/logo.png
-app/assets/android/images/res-xhdpi/cards/thumbs/baby/logo.png
-app/assets/android/images/res-xxhdpi/cards/thumbs/baby/logo.png
-app/assets/android/images/res-xxxhdpi/cards/thumbs/baby/logo.png
+app/assets/android/images/res-mdpi/thumbs/baby/logo.png
+app/assets/android/images/res-hdpi/thumbs/baby/logo.png
+app/assets/android/images/res-xhdpi/thumbs/baby/logo.png
+app/assets/android/images/res-xxhdpi/thumbs/baby/logo.png
+app/assets/android/images/res-xxxhdpi/thumbs/baby/logo.png
 ```
 
 **iPhone Example:**
 
 ```
-app/assets/iphone/images/cards/thumbs/baby/logo.png
-app/assets/iphone/images/cards/thumbs/baby/logo@2x.png
-app/assets/iphone/images/cards/thumbs/baby/logo@3x.png
+app/assets/iphone/images/thumbs/baby/logo.png
+app/assets/iphone/images/thumbs/baby/logo@2x.png
+app/assets/iphone/images/thumbs/baby/logo@3x.png
 ```
 
 You do **not** need to specify the full output path, just the subfolder as shown above. The script will handle the rest.
 
 ### Using Preset Source Folders
 
-If you do not provide a `<source_path>` argument and the selected preset (or alloy subpreset) defines a `source` property, `imgconvert-cli` will automatically use that folder as the input. This works for top-level presets (like `web`, `print`, `thumbnail`) and for `alloy` subpresets (`android` and `iphone`).
+The alloy preset supports two configuration formats:
 
-For example:
+#### Legacy Format (Single Source per Platform)
+Each platform (android/iphone) has its own source directory:
 
 ```json
 "presets": {
   "alloy": {
     "android": {
       "source": "./images/alloy/android",
-      "output": "cards/thumbs/baby",
+      "output": "thumbs/baby",
       "scales": { ... }
     },
     "iphone": {
       "source": "./images/alloy/iphone",
-      "output": "cards/thumbs/baby",
+      "output": "thumbs/baby",
       "scales": { ... }
     }
   }
 }
 ```
+
+#### Multi-Configuration Format (Recommended)
+Multiple configuration groups with independent source/output management:
+
+```json
+"presets": {
+  "alloy": {
+    "cards": {
+      "android": {
+        "source": "originals",
+        "output": "cards/baby",
+        "quality": 90,
+        "format": "webp"
+      },
+      "iphone": {
+        "source": "originals",
+        "output": "cards/baby",
+        "quality": 90,
+        "format": "webp"
+      }
+    },
+    "thumbs": {
+      "android": {
+        "source": "thumbs",
+        "output": "thumbs/baby",
+        "quality": 80,
+        "format": "webp"
+      },
+      "iphone": {
+        "source": "thumbs",
+        "output": "thumbs/baby",
+        "quality": 80,
+        "format": "webp"
+      }
+    },
+    "icons": {
+      "android": {
+        "source": "icons-4x",
+        "output": "icons",
+        "quality": 95,
+        "format": "png"
+      },
+      "iphone": {
+        "source": "icons-4x",
+        "output": "icons",
+        "quality": 95,
+        "format": "png"
+      }
+    }
+  }
+}
+```
+
+**Benefits of Multi-Configuration Format:**
+- **Batch Processing**: Process all image groups in one command
+- **Independent Settings**: Each group can have different quality, format, source, and output
+- **Workflow Optimization**: Perfect for game development with different asset types
+- **Smart Detection**: Tool automatically detects and uses the appropriate format
 
 Then you can simply run:
 
@@ -340,7 +418,155 @@ Then you can simply run:
 imgconvert -p alloy
 ```
 
-And the tool will use the defined source folders and output subfolders automatically.
+The tool will automatically:
+1. Detect if you're using legacy or multi-configuration format
+2. Process each configuration group sequentially
+3. Show progress for each configuration and platform
+4. Provide detailed debug information when using `-d` flag
+
+**Multi-Configuration Debug Output Example:**
+```
+Processing configuration: cards
+  Processing android from: originals
+  Processing iphone from: originals
+
+Processing configuration: thumbs
+  Processing android from: thumbs
+  Processing iphone from: thumbs
+
+Processed files:
+ - app/assets/android/images/res-mdpi/cards/baby/card1.webp (config: cards, platform: android, scale: res-mdpi)
+ - app/assets/iphone/images/cards/baby/card1.webp (config: cards, platform: iphone, scale: 1x)
+ - app/assets/android/images/res-mdpi/thumbs/baby/card1.webp (config: thumbs, platform: android, scale: res-mdpi)
+ ...
+```
+
+### Practical Example: Game Development Workflow
+
+Let's say you're developing a card game and have the following directory structure:
+
+```
+my-game/
+├── originals/          # 4x resolution card images
+│   ├── card1.png
+│   ├── card2.png
+│   └── card3.png
+├── thumbs/             # 4x resolution thumbnail images
+│   ├── card1.png
+│   ├── card2.png
+│   └── card3.png
+├── icons-4x/           # 4x resolution icon images
+│   ├── star.png
+│   ├── coin.png
+│   └── heart.png
+└── .imgconverter.config.json
+```
+
+With this multi-configuration setup in your `.imgconverter.config.json`:
+
+```json
+{
+  "presets": {
+    "alloy": {
+      "cards": {
+        "android": {
+          "source": "originals",
+          "output": "cards/baby",
+          "quality": 90,
+          "format": "webp"
+        },
+        "iphone": {
+          "source": "originals",
+          "output": "cards/baby",
+          "quality": 90,
+          "format": "webp"
+        }
+      },
+      "thumbs": {
+        "android": {
+          "source": "thumbs",
+          "output": "thumbs/baby",
+          "quality": 80,
+          "format": "webp"
+        },
+        "iphone": {
+          "source": "thumbs",
+          "output": "thumbs/baby",
+          "quality": 80,
+          "format": "webp"
+        }
+      },
+      "icons": {
+        "android": {
+          "source": "icons-4x",
+          "output": "icons",
+          "quality": 95,
+          "format": "png"
+        },
+        "iphone": {
+          "source": "icons-4x",
+          "output": "icons",
+          "quality": 95,
+          "format": "png"
+        }
+      }
+    }
+  }
+}
+```
+
+Run a single command:
+
+```bash
+imgconvert -p alloy
+```
+
+And get all these files automatically generated:
+
+```
+app/
+└── assets/
+    ├── android/
+    │   └── images/
+    │       ├── res-mdpi/
+    │       │   ├── cards/baby/card1.webp (1x)
+    │       │   ├── thumbs/baby/card1.webp (1x)
+    │       │   └── icons/star.png (1x)
+    │       ├── res-hdpi/
+    │       │   ├── cards/baby/card1.webp (1.5x)
+    │       │   ├── thumbs/baby/card1.webp (1.5x)
+    │       │   └── icons/star.png (1.5x)
+    │       ├── res-xhdpi/
+    │       │   ├── cards/baby/card1.webp (2x)
+    │       │   ├── thumbs/baby/card1.webp (2x)
+    │       │   └── icons/star.png (2x)
+    │       ├── res-xxhdpi/
+    │       │   ├── cards/baby/card1.webp (3x)
+    │       │   ├── thumbs/baby/card1.webp (3x)
+    │       │   └── icons/star.png (3x)
+    │       └── res-xxxhdpi/
+    │           ├── cards/baby/card1.webp (4x)
+    │           ├── thumbs/baby/card1.webp (4x)
+    │           └── icons/star.png (4x)
+    └── iphone/
+        └── images/
+            ├── cards/baby/card1.webp (1x)
+            ├── cards/baby/card1@2x.webp (2x)
+            ├── cards/baby/card1@3x.webp (3x)
+            ├── thumbs/baby/card1.webp (1x)
+            ├── thumbs/baby/card1@2x.webp (2x)
+            ├── thumbs/baby/card1@3x.webp (3x)
+            ├── icons/star.png (1x)
+            ├── icons/star@2x.png (2x)
+            └── icons/star@3x.png (3x)
+```
+
+**Advantages:**
+- ✅ Process all asset types in one command
+- ✅ Different quality settings for different asset types
+- ✅ Different formats (WebP for cards/thumbs, PNG for icons)
+- ✅ Organized output structure
+- ✅ Perfect for CI/CD pipelines
 
 ## Configuration File
 
@@ -371,6 +597,7 @@ This means CLI arguments always override preset settings, preset settings overri
 
 ### Default Configuration File
 
+#### Legacy Alloy Format:
 ```json
 {
   "width": null,
@@ -401,9 +628,60 @@ This means CLI arguments always override preset settings, preset settings overri
 }
 ```
 
-> **Note for Alloy Preset**: The `output` value should only contain the relative subfolder path (e.g., `"cards/thumbs/baby"`), not the complete path. The base paths (`app/assets/android/images` and `app/assets/iphone/images`) are automatically handled by the tool.
+#### Multi-Configuration Alloy Format (Recommended):
+```json
+{
+  "width": null,
+  "height": null,
+  "quality": 85,
+  "source": null,
+  "output": null,
+  "format": null,
+  "replace-originals": false,
+  "background": "#ffffff",
+  "presets": {
+    "web": { "source": null, "output": null, "format": "webp", "quality": 80 },
+    "print": { "source": null, "output": null, "format": "tiff", "quality": 100 },
+    "thumbnail": { "source": null, "output": null, "format": "png", "quality": 60, "width": 150, "height": 150 },
+    "alloy": {
+      "cards": {
+        "android": {
+          "source": "originals",
+          "output": "cards/baby",
+          "quality": 90,
+          "format": "webp"
+        },
+        "iphone": {
+          "source": "originals",
+          "output": "cards/baby",
+          "quality": 90,
+          "format": "webp"
+        }
+      },
+      "thumbs": {
+        "android": {
+          "source": "thumbs",
+          "output": "thumbs/baby",
+          "quality": 80,
+          "format": "webp"
+        },
+        "iphone": {
+          "source": "thumbs",
+          "output": "thumbs/baby",
+          "quality": 80,
+          "format": "webp"
+        }
+      }
+    }
+  }
+}
+```
 
-**Example: How Precedence Works**
+> **Note**: The `scales` property is **not needed** in the multi-configuration format. Default scales are automatically applied based on the platform (Android: res-mdpi to res-xxxhdpi, iOS: 1x to 3x). Only specify `scales` if you need custom scaling factors.
+
+> **Note for Alloy Preset**: The `output` value should only contain the relative subfolder path (e.g., `"thumbs/baby"`), not the complete path. The base paths (`app/assets/android/images` and `app/assets/iphone/images`) are automatically handled by the tool.
+
+**Example: How Precedence Works with Multi-Configuration**
 
 Given this configuration file:
 ```json
@@ -412,13 +690,25 @@ Given this configuration file:
   "format": "jpeg",
   "presets": {
     "alloy": {
-      "android": {
-        "quality": 90,
-        "format": "webp"
+      "cards": {
+        "android": {
+          "quality": 90,
+          "format": "webp"
+        },
+        "iphone": {
+          "quality": 95,
+          "format": "png"
+        }
       },
-      "iphone": {
-        "quality": 95,
-        "format": "png"
+      "thumbs": {
+        "android": {
+          "quality": 70,
+          "format": "webp"
+        },
+        "iphone": {
+          "quality": 75,
+          "format": "webp"
+        }
       }
     }
   }
@@ -427,16 +717,20 @@ Given this configuration file:
 
 Different command scenarios would result in:
 
-- `imgconvert -p alloy` → Android: WebP at 90%, iPhone: PNG at 95%
-- `imgconvert -p alloy -q 80` → Android: WebP at 80%, iPhone: PNG at 80% (CLI overrides quality)
-- `imgconvert -p alloy -f jpeg` → Android: JPEG at 90%, iPhone: JPEG at 95% (CLI overrides format)
-- `imgconvert -p alloy -f jpeg -q 80` → Both platforms: JPEG at 80% (CLI overrides everything)
+- `imgconvert -p alloy` →
+  - Cards: Android WebP at 90%, iPhone PNG at 95%
+  - Thumbs: Android WebP at 70%, iPhone WebP at 75%
+- `imgconvert -p alloy -q 80` → All platforms and configurations use JPEG at 80% (CLI overrides everything)
+- `imgconvert -p alloy -f jpeg` →
+  - Cards: Android JPEG at 90%, iPhone JPEG at 95%
+  - Thumbs: Android JPEG at 70%, iPhone JPEG at 75%
+- `imgconvert -p alloy -f webp -q 85` → All platforms and configurations use WebP at 85% (CLI overrides everything)
 
 ## Debug Mode
 
-When debug mode is enabled with the `-d` or `--debug` option, the tool displays summary statistics after processing.
+When debug mode is enabled with the `-d` or `--debug` option, the tool displays detailed information about the processing, including configuration-specific details for alloy presets.
 
-**Sample Debug Output:**
+**Sample Debug Output (Standard Processing):**
 ```
 Processing complete! Summary:
   - Processed files: 5
@@ -444,6 +738,32 @@ Processing complete! Summary:
   - Total new size: 0.25 MB
   - Total savings: 71.11%
   - Duration: 0.24 seconds
+```
+
+**Sample Debug Output (Multi-Configuration Alloy):**
+```
+Processing configuration: cards
+  Processing android from: originals
+  Processing iphone from: originals
+
+Processing configuration: thumbs
+  Processing android from: thumbs
+  Processing iphone from: thumbs
+
+Processed files:
+ - app/assets/android/images/res-mdpi/cards/baby/card1.webp (config: cards, platform: android, scale: res-mdpi)
+ - app/assets/android/images/res-hdpi/cards/baby/card1.webp (config: cards, platform: android, scale: res-hdpi)
+ - app/assets/iphone/images/cards/baby/card1.webp (config: cards, platform: iphone, scale: 1x)
+ - app/assets/iphone/images/cards/baby/card1@2x.webp (config: cards, platform: iphone, scale: 2x)
+ - app/assets/android/images/res-mdpi/thumbs/baby/thumb1.webp (config: thumbs, platform: android, scale: res-mdpi)
+ ...
+
+Processing complete! Summary:
+  - Processed files: 24
+  - Total original size: 2.45 MB
+  - Total new size: 0.89 MB
+  - Total savings: 63.67%
+  - Duration: 1.24 seconds
 ```
 
 This information can be useful for troubleshooting and optimizing the image processing workflow.
