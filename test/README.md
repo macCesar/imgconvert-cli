@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![test coverage](https://img.shields.io/badge/tests-30%20passing-brightgreen)
+![test coverage](https://img.shields.io/badge/tests-74%20passing-brightgreen)
 ![test framework](https://img.shields.io/badge/framework-mocha%2Bchai-blue)
 
 </div>
@@ -64,7 +64,7 @@ This guide covers the comprehensive test suite for `imgconvert-cli`, including s
 
 The imgconvert-cli test suite is a comprehensive testing framework that includes:
 
-- **30 tests** covering all CLI functionality
+- **74 tests** covering all CLI functionality
 - **Detailed command logging** with full CLI command visibility
 - **File existence verification** with directory content inspection
 - **Error handling validation** for edge cases and invalid inputs

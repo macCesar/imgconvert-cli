@@ -107,10 +107,64 @@ async function processImage(inputFile, outputFileBase, format, options) {
     const resizeOptions = {
       width: options.width,
       height: options.height,
-      withoutEnlargement: true,
       fit: sharp.fit[options.fit] || sharp.fit.contain,
       position: sharp.gravity[options.position] || sharp.gravity.center
     };
+
+    // If --canvas option is used, force dimensions that will require padding
+    if (options.canvas) {
+      resizeOptions.fit = sharp.fit.contain; // Force contain for canvas resize
+
+      // For canvas mode, we need to force exact dimensions to ensure padding
+      // The trick is to specify both width and height, even if user only gave one
+      if (options.height && !options.width) {
+        // User specified height only - use original width to force padding
+        const metadata = await sharpInstance.metadata();
+        resizeOptions.width = metadata.width;
+      } else if (options.width && !options.height) {
+        // User specified width only - use original height to force padding
+        const metadata = await sharpInstance.metadata();
+        resizeOptions.height = metadata.height;
+      }
+
+      // Check if user explicitly specified background color
+      const userSpecifiedBackground = options._userArgs && options._userArgs.background !== undefined;
+
+      if (userSpecifiedBackground) {
+        // User explicitly specified background - use it
+        const hexColor = options.background.replace('#', '');
+        if (hexColor.length === 6) {
+          resizeOptions.background = {
+            r: parseInt(hexColor.substr(0, 2), 16),
+            g: parseInt(hexColor.substr(2, 2), 16),
+            b: parseInt(hexColor.substr(4, 2), 16),
+            alpha: 1
+          };
+        }
+      } else if (sharpFormat === 'png' || sharpFormat === 'webp') {
+        // No explicit background specified - use transparent for PNG/WebP
+        resizeOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
+      } else {
+        // Default to white background for JPEG when using canvas mode
+        resizeOptions.background = { r: 255, g: 255, b: 255, alpha: 1 };
+      }
+    } else {
+      // Original behavior: transparent background for PNG/WebP when enlarging
+      if ((sharpFormat === 'png' || sharpFormat === 'webp') && !options.background) {
+        resizeOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
+      } else if (options.background) {
+        // Parse hex color to RGBA if background is specified
+        const hexColor = options.background.replace('#', '');
+        if (hexColor.length === 6) {
+          resizeOptions.background = {
+            r: parseInt(hexColor.substr(0, 2), 16),
+            g: parseInt(hexColor.substr(2, 2), 16),
+            b: parseInt(hexColor.substr(4, 2), 16),
+            alpha: 1
+          };
+        }
+      }
+    }
 
     sharpInstance = sharpInstance.resize(resizeOptions);
   }
@@ -169,7 +223,7 @@ function applyFormatOptions(sharpInstance, format, options) {
   switch (format) {
     case 'png':
       return sharpInstance.png({
-        palette: true,
+        palette: false, // Disable palette to preserve transparency
         quality: quality,
         compressionLevel: 9,
       });
@@ -245,8 +299,10 @@ async function processImages(args, config) {
     fit: args.fit,
     position: args.position,
     background: args.background,
+    canvas: args.canvas,
     replaceOriginal: args['replace-originals'],
-    outputDir: outputDir
+    outputDir: outputDir,
+    _userArgs: args._userArgs // Pass user args to check explicit background
   };
 
   const format = args.format && args.format !== 'none' ? args.format : null;

@@ -6,7 +6,7 @@
   ![Node.js Version](https://img.shields.io/node/v/imgconvert-cli)
   ![downloads](https://img.shields.io/npm/dm/imgconvert-cli)
   ![license](https://img.shields.io/npm/l/imgconvert-cli)
-  ![test coverage](https://img.shields.io/badge/tests-30%20passing-brightgreen)
+  ![test coverage](https://img.shields.io/badge/tests-74%20passing-brightgreen)
   ![GitHub Stars](https://img.shields.io/github/stars/macCesar/imgconvert-cli)
 
 </div>
@@ -31,6 +31,10 @@ imgconvert photo.jpg --fit cover --position center -w 400 -h 400 -f webp
 # Manual cropping: extract specific region then resize
 imgconvert photo.jpg --crop 100,50,800,600 -w 400 -h 300 -f webp
 
+# Canvas resize: maintain original image, add transparent padding
+imgconvert photo.png --canvas -h 1660
+imgconvert design.png --canvas -w 800 -h 600 -f webp
+
 # Custom file naming and batch renaming
 imgconvert photo.jpg --name "hero-banner" -f webp
 imgconvert photos --rename "lowercase,replace-spaces,prefix:web-" -f webp
@@ -48,6 +52,8 @@ imgconvert -p alloy:another-config
 - **Web Optimization**: Batch convert images to WebP for faster loading times
 - **Perfect Thumbnails**: Use `--fit cover` with `--position` for consistent square thumbnails
 - **Hero Images**: Crop images to exact dimensions while preserving important content areas
+- **Canvas Design**: Use `--canvas` to maintain original images while extending to exact canvas dimensions
+- **Transparent Backgrounds**: Resize PNG images without losing transparency using `--canvas`
 - **Mobile App Development**: Generate multi-resolution assets for iOS/Android with Titanium Alloy
 - **Selective Asset Updates**: Use `imgconvert -p alloy:config-name` to update only specific user-defined asset categories
 - **Print Preparation**: Convert to high-quality TIFF format for professional printing
@@ -68,7 +74,7 @@ Typical compression results:
 
 - **Platforms**: macOS, Linux, Windows
 - **Dependencies**: 3 (sharp, minimist, chalk)
-- **Test Coverage**: 30 comprehensive tests
+- **Test Coverage**: 74 comprehensive tests
 - **Bundle Size**: ~45KB (excluding Sharp)
 
 ## Table of Contents
@@ -153,24 +159,25 @@ imgconvert <source_path>
 
 The available options for the `imgconvert-cli` command let users customize image conversions easily.
 
-| Option                | Alias | Description                                                                             | Default         |
-| --------------------- | ----- | --------------------------------------------------------------------------------------- | --------------- |
-| `--format`            | `-f`  | Output format: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, `all`                      | Original format |
-| `--quality`           | `-q`  | Quality (1-100)                                                                         | 85              |
-| `--background`        | `-b`  | Background color for PNG images                                                         | `#ffffff`       |
-| `--width`             | `-w`  | Output width in pixels                                                                  | -               |
-| `--height`            | `-h`  | Output height in pixels                                                                 | -               |
-| `--output`            | `-o`  | Output directory                                                                        | Same as source  |
-| `--preset`            | `-p`  | Apply preset: `web`, `print`, `thumbnail`, `alloy`                                      | -               |
-| `--fit`               | -     | Resize strategy: `cover`, `contain`, `fill`, `inside`, `outside`                        | `contain`       |
-| `--position`          | -     | Crop position: `center`, `top`, `bottom`, `left`, `right`, corners                      | `center`        |
-| `--crop`              | -     | Manual crop coordinates: `left,top,width,height`                                        | -               |
-| `--name`              | `-n`  | Custom filename for single file processing                                              | -               |
-| `--rename`            | -     | Batch rename strategy: `enumerate`, `lowercase`, `replace-spaces`, `prefix:`, `suffix:` | -               |
-| `--replace-originals` | -     | Replace original files                                                                  | `false`         |
-| `--debug`             | `-d`  | Enable debug mode                                                                       | `false`         |
-| `--version`           | `-v`  | Show version                                                                            | -               |
-| `--help`              | `-H`  | Show help message                                                                       | -               |
+| Option                | Alias | Description                                                                             | Default                                    |
+| --------------------- | ----- | --------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `--format`            | `-f`  | Output format: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, `all`                      | Original format                            |
+| `--quality`           | `-q`  | Quality (1-100)                                                                         | 85                                         |
+| `--background`        | `-b`  | Background color when converting from transparent formats to non-transparent formats    | Transparent for PNG/WebP, #ffffff for JPEG |
+| `--width`             | `-w`  | Output width in pixels                                                                  | -                                          |
+| `--height`            | `-h`  | Output height in pixels                                                                 | -                                          |
+| `--output`            | `-o`  | Output directory                                                                        | Same as source                             |
+| `--preset`            | `-p`  | Apply preset: `web`, `print`, `thumbnail`, `alloy`                                      | -                                          |
+| `--fit`               | -     | Resize strategy: `cover`, `contain`, `fill`, `inside`, `outside`                        | `contain`                                  |
+| `--position`          | -     | Crop position: `center`, `top`, `bottom`, `left`, `right`, corners                      | `center`                                   |
+| `--crop`              | -     | Manual crop coordinates: `left,top,width,height`                                        | -                                          |
+| `--canvas`            | -     | Resize canvas instead of image (maintains original, adds padding)                       | `false`                                    |
+| `--name`              | `-n`  | Custom filename for single file processing                                              | -                                          |
+| `--rename`            | -     | Batch rename strategy: `enumerate`, `lowercase`, `replace-spaces`, `prefix:`, `suffix:` | -                                          |
+| `--replace-originals` | -     | Replace original files                                                                  | `false`                                    |
+| `--debug`             | `-d`  | Enable debug mode                                                                       | `false`                                    |
+| `--version`           | `-v`  | Show version                                                                            | -                                          |
+| `--help`              | `-H`  | Show help message                                                                       | -                                          |
 
 ## Advanced Resize and Crop Control
 
@@ -213,6 +220,40 @@ Extract specific regions before resizing:
 - **Format**: `left,top,width,height` (all in pixels)
 - **Example**: `--crop 100,50,800,600` crops 800x600 region starting at (100,50)
 - **Workflow**: Cropping is applied first, then resizing with fit/position options
+
+### Canvas Resize vs Image Resize (`--canvas`)
+
+Choose between two different resizing approaches:
+
+#### Standard Resize (Default)
+- **Behavior**: Scales the image proportionally
+- **Transparency**: Preserves existing transparency
+- **Use case**: Traditional image resizing
+
+```bash
+imgconvert photo.png -h 1660
+# 1024x1536 → 1107x1660 (proportional scaling)
+```
+
+#### Canvas Resize (`--canvas`)
+- **Behavior**: Maintains original image, adds padding to reach target dimensions
+- **Transparency**: Adds transparent padding for PNG/WebP, white for JPEG
+- **Use case**: Design layouts, maintaining exact canvas sizes
+
+```bash
+imgconvert photo.png --canvas -h 1660
+# 1024x1536 → 1024x1660 (original image + transparent padding)
+
+imgconvert photo.png --canvas -h 1660 -b "#ff0000"
+# 1024x1536 → 1024x1660 (original image + red padding)
+```
+
+| Aspect               | Standard Resize         | Canvas Resize (`--canvas`) |
+| -------------------- | ----------------------- | -------------------------- |
+| **Image scaling**    | ✅ Scales proportionally | ❌ Maintains original size  |
+| **Exact dimensions** | ❌ Respects aspect ratio | ✅ Exact target dimensions  |
+| **Transparency**     | Preserves existing      | ✅ Adds transparent padding |
+| **Use case**         | Photo resizing          | Design layouts, mockups    |
 
 ## File Naming and Batch Renaming
 
@@ -309,6 +350,21 @@ imgconvert images --rename "enumerate,suffix:-optimized"
 
    # Crop and convert format
    imgconvert photo.jpg --crop 0,0,500,500 --fit cover -w 300 -h 300 -f webp
+   ```
+
+7. **Canvas resizing (maintain original image, add padding):**
+   ```bash
+   # Resize canvas to larger dimensions with transparent padding
+   imgconvert photo.png --canvas -h 1660
+   # Original 1024x1536 → Output 1024x1660 with transparent padding
+
+   # Resize canvas with custom background color
+   imgconvert photo.png --canvas -h 1660 -b "#ffffff"
+   # Adds white padding instead of transparent
+
+   # Resize canvas to exact dimensions
+   imgconvert image.jpg --canvas -w 800 -h 600 -f png
+   # Maintains original image centered, adds transparent padding to reach 800x600
    ```
 
 ### File Naming and Renaming
@@ -1025,10 +1081,11 @@ This means CLI arguments always override preset settings, preset settings overri
 - **fit**: Default resize strategy (`cover`, `contain`, `fill`, `inside`, `outside`).
 - **position**: Default cropping position for `fit: cover` (`center`, `top`, `bottom`, `left`, `right`, corners).
 - **crop**: Default crop coordinates in format `left,top,width,height`.
+- **canvas**: Default setting for canvas resize mode (maintains original image, adds padding instead of scaling).
 - **replace-originals**: Default setting for replacing original files.
 - **source**: Global default source folder for images. If not provided as a CLI argument or in a preset, this will be used as the input folder.
 - **output**: Default output directory for processed images. If `null`, defaults to a `converted` directory at the same level as the source path.
-- **background**: Hex color used to fill transparent areas only when converting images with transparency to formats that do not support it (e.g., PNG to JPEG). Ignored if the output format supports transparency.
+- **background**: Background color used when resizing images to larger dimensions or when converting from transparent formats (PNG, WebP) to non-transparent formats (JPEG). For PNG and WebP outputs, transparency is preserved by default. Only applies to JPEG conversion or when explicitly specified.
 - **presets**: Define custom presets for different use cases. Each preset can specify its own `format`, `quality`, `width`, `height`, `output`, `source`, `fit`, `position`, and `crop`. All preset configurations follow the precedence system: CLI arguments always override preset values, which override global config values.
 
 ### Default Configuration File

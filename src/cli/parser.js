@@ -27,7 +27,7 @@ function parseArguments(argv) {
       n: 'name',
       d: 'debug'
     },
-    boolean: ['replace-originals', 'debug', 'help', 'version']
+    boolean: ['replace-originals', 'debug', 'help', 'version', 'canvas']
   });
 
   // Build args object
@@ -48,6 +48,7 @@ function parseArguments(argv) {
     position: userArgs.position || null,
     name: userArgs.name || null,
     rename: userArgs.rename || null,
+    canvas: userArgs.canvas || false,
     'replace-originals': userArgs['replace-originals'] || false,
   };
 

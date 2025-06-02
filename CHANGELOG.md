@@ -5,6 +5,71 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2025-06-02
+
+### ✨ PNG Transparency Preservation - Canvas Resize Mode
+
+#### 🎨 New Canvas Mode for Transparent PNG Processing
+- **Canvas Resize Option**: Added `--canvas` flag for preserving PNG transparency when enlarging images
+- **Transparency Preservation**: Maintains transparent background instead of defaulting to black when scaling up images
+- **Alternative Approach**: Provides canvas-based resizing as an alternative to standard proportional scaling
+
+#### 🔧 Technical Implementation
+- **Smart Background Handling**: Automatically sets transparent background `{ r: 0, g: 0, b: 0, alpha: 0 }` for PNG and WebP formats when using `--canvas`
+- **Fit Strategy Override**: Forces `fit: 'contain'` mode when `--canvas` is enabled to ensure proper canvas behavior
+- **Enlargement Control**: Removes `withoutEnlargement: true` restriction to allow upscaling with canvas mode
+- **PNG Options**: Sets `palette: false` to preserve full transparency in PNG output
+
+#### 🆚 Canvas vs Standard Resize Behavior
+- **Standard Resize**: Maintains aspect ratio, scales proportionally (e.g., 1024x683 → 1107x1660 at `-h 1660`)
+- **Canvas Resize**: Preserves original image dimensions, adds transparent padding to reach target size (e.g., 1024x683 → 1024x1660 with transparent top/bottom)
+- **Use Cases**: 
+  - Canvas mode: Perfect for UI elements, icons, logos that need exact dimensions with transparency
+  - Standard mode: Ideal for photos and general images where proportional scaling is preferred
+
+#### 📊 Format Support and Transparency
+- **PNG Support**: Full transparency preservation with 4-channel output (RGBA)
+- **WebP Support**: Transparent background support for WebP format
+- **JPEG Handling**: Falls back to white background for JPEG (no transparency support)
+- **Channel Preservation**: Canvas mode maintains alpha channel information
+
+#### 💡 Usage Examples
+```bash
+# Enlarge PNG with transparent canvas (1024x683 → 1024x1660)
+imgconvert image.png --canvas -h 1660
+
+# Standard proportional resize (1024x683 → 1107x1660)  
+imgconvert image.png -h 1660
+
+# Canvas mode with format conversion
+imgconvert logo.png --canvas -h 1000 -f webp
+
+# Batch processing with canvas mode
+imgconvert icons/ --canvas -w 512 -h 512 -f png
+```
+
+#### 🛡️ Quality and Compatibility
+- **No Quality Loss**: Maintains original image quality within the canvas
+- **Sharp Integration**: Leverages Sharp's native canvas and transparency capabilities
+- **Background Control**: Intelligent background color selection based on output format
+- **Memory Efficient**: Optimized processing for large images with transparency
+
+#### 📚 Documentation and Help
+- **Updated Help System**: Added `--canvas` option to CLI help with clear examples
+- **README Enhancement**: Comprehensive documentation with comparison table showing Canvas vs Standard resize differences
+- **Real-world Examples**: Practical use cases for UI development, icon processing, and web design
+
+#### 🔄 Backward Compatibility
+- **Default Behavior Unchanged**: Standard resize behavior remains the default when `--canvas` is not specified
+- **Existing Workflows**: All existing commands and presets continue working exactly as before
+- **Optional Enhancement**: Canvas mode is an additive feature that doesn't affect existing functionality
+
+### 🔧 Implementation Details
+- **CLI Parser**: Added boolean `canvas` option with proper argument parsing
+- **Image Processor**: Enhanced Sharp configuration with conditional canvas logic
+- **Error Handling**: Proper validation and error messages for canvas mode usage
+- **Testing**: Comprehensive testing with transparency validation scripts
+
 ## [1.6.0] - 2025-06-01
 
 ### ✨ New Features - Custom File Naming and Batch Renaming
@@ -179,7 +244,7 @@ This refactoring establishes a solid foundation for future enhancements:
 - **Test Image Optimization**: Optimized test images for faster test execution and reduced repository size
 - **Descriptive Test Assets**: Renamed test images with descriptive names for better test clarity
 - **GIF Format Testing**: Added GIF format testing capability with new test.gif asset
-- **100% Test Success Rate**: All 49 tests pass successfully with the new modular structure
+- **100% Test Success Rate**: All 74 tests pass successfully with the new modular structure
 
 ### 🖼️ Test Asset Optimization and Clarity
 - **Image Size Optimization**: Reduced test images from 2000x1332px to ~1000px width for faster processing

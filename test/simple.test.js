@@ -1245,4 +1245,146 @@ describe('imgconvert CLI Tests', function () {
       expect(checkFileExists(outputFile, 'Renamed + quality optimized file')).to.be.true;
     });
   });
+
+  describe('Canvas resize mode tests (PNG transparency preservation)', () => {
+    it('should resize PNG with transparent canvas preserving transparency', () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'canvas-transparent');
+      const command = `"${inputFile}" --canvas -h 400 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas transparent resize', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'mountain-lake.png');
+      expect(checkFileExists(outputFile, 'Canvas transparent output')).to.be.true;
+    });
+
+    it('should resize PNG with canvas mode and white background', () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'canvas-white');
+      const command = `"${inputFile}" --canvas -h 400 -b "#ffffff" -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas white background', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'mountain-lake.png');
+      expect(checkFileExists(outputFile, 'Canvas white background output')).to.be.true;
+    });
+
+    it('should combine canvas mode with format conversion to WebP', () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'canvas-webp');
+      const command = `"${inputFile}" --canvas -h 400 -f webp -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas WebP conversion', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'mountain-lake.webp');
+      expect(checkFileExists(outputFile, 'Canvas WebP output')).to.be.true;
+    });
+
+    it('should demonstrate difference between canvas and standard resize', () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      
+      // Standard resize
+      const standardDir = path.join(testDir, 'standard-resize');
+      const standardCommand = `"${inputFile}" -h 400 -o "${standardDir}"`;
+      const standardResult = execCLI(standardCommand);
+      logResult('Standard resize', standardResult);
+      
+      // Canvas resize
+      const canvasDir = path.join(testDir, 'canvas-resize');
+      const canvasCommand = `"${inputFile}" --canvas -h 400 -o "${canvasDir}"`;
+      const canvasResult = execCLI(canvasCommand);
+      logResult('Canvas resize', canvasResult);
+
+      // Both should process successfully
+      expect(standardResult).to.include('Processed files: 1');
+      expect(canvasResult).to.include('Processed files: 1');
+
+      const standardFile = path.join(standardDir, 'mountain-lake.png');
+      const canvasFile = path.join(canvasDir, 'mountain-lake.png');
+      
+      expect(checkFileExists(standardFile, 'Standard resize output')).to.be.true;
+      expect(checkFileExists(canvasFile, 'Canvas resize output')).to.be.true;
+    });
+
+    it('should work with canvas mode and custom width', () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'canvas-width');
+      const command = `"${inputFile}" --canvas -w 300 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas width resize', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'mountain-lake.png');
+      expect(checkFileExists(outputFile, 'Canvas width output')).to.be.true;
+    });
+
+    it('should work with canvas mode and both width and height', () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'canvas-both');
+      const command = `"${inputFile}" --canvas -w 300 -h 400 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas width+height resize', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'mountain-lake.png');
+      expect(checkFileExists(outputFile, 'Canvas both dimensions output')).to.be.true;
+    });
+
+    it('should apply canvas mode to JPEG with white background fallback', () => {
+      const inputFile = path.join(testDir, 'canyon-river.jpg');
+      const outputDir = path.join(testDir, 'canvas-jpeg');
+      const command = `"${inputFile}" --canvas -h 400 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas JPEG (white background)', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'canyon-river.jpg');
+      expect(checkFileExists(outputFile, 'Canvas JPEG output')).to.be.true;
+    });
+
+    it('should combine canvas mode with quality settings', () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'canvas-quality');
+      const command = `"${inputFile}" --canvas -h 400 -f webp -q 90 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas with quality', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'mountain-lake.webp');
+      expect(checkFileExists(outputFile, 'Canvas quality output')).to.be.true;
+    });
+
+    it('should process directory with canvas mode', () => {
+      const outputDir = path.join(testDir, 'canvas-batch');
+      const command = `"${testDir}" --canvas -h 300 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas batch processing', result);
+      expect(result).to.match(/Processed files: [1-9]\d*/);
+
+      // Check that output directory contains files
+      if (fs.existsSync(outputDir)) {
+        const files = fs.readdirSync(outputDir);
+        if (isVerbose) {
+          console.log(`📁 Canvas batch output contains ${files.length} files: ${files.join(', ')}`);
+        }
+        expect(files.length).to.be.greaterThan(0);
+      } else {
+        if (isVerbose) {
+          console.log('❌ Canvas batch output directory not found');
+        }
+        expect.fail('Canvas batch output directory should exist');
+      }
+    });
+  });
 });

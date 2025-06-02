@@ -20,7 +20,7 @@ Options:
   ${chalk.green('-v, --version')}          Show the version of the module
   ${chalk.green('-f, --format')}           Set the desired output format (${chalk.yellow('jpeg, png, webp, avif, tiff, gif, all; default: none')})
   ${chalk.green('-q, --quality')}          Set the quality of the output images (${chalk.yellow('1-100; default: 85')})
-  ${chalk.green('-b, --background')}       Set the background color for PNG images (${chalk.yellow('default: #ffffff')})
+  ${chalk.green('-b, --background')}       Set the background color when converting from formats with transparency to formats without (${chalk.yellow('default: transparent for PNG/WebP, #ffffff for JPEG')})
   ${chalk.green('-w, --width')}            Set the width of the output images
   ${chalk.green('-h, --height')}           Set the height of the output images
   ${chalk.green('-o, --output')}           Set the output directory for processed images
@@ -37,6 +37,7 @@ Options:
   ${chalk.green('--fit')}                  Set resize strategy (${chalk.yellow('cover, contain, fill, inside, outside; default: contain')})
   ${chalk.green('--position')}             Set crop position when using fit: cover (${chalk.yellow('center, top, bottom, left, right, "top left", etc.')})
   ${chalk.green('--crop')}                 Manual crop coordinates (${chalk.yellow('format: left,top,width,height')})
+  ${chalk.green('--canvas')}               Resize canvas instead of image (maintains original image, adds transparent padding)
   ${chalk.green('--replace-originals')}    Replace original files instead of creating copies (default: false)
 
   ${chalk.green('-d, --debug')}            Enable debug mode to show detailed information
@@ -44,13 +45,14 @@ Options:
   ${chalk.green('<source_path>')}          The path to the image file or directory to process (${chalk.yellow('required')})
 
 Examples:
-  ${chalk.green('imgconvert image.jpg')}                    Compress image (preserves original format)
-  ${chalk.green('imgconvert image.jpg -w 300')}             Resize to 300px width
-  ${chalk.green('imgconvert image.jpg -f webp')}            Convert to WebP format
-  ${chalk.green('imgconvert image.jpg -n "converted"')}     Convert single file with custom name
-  ${chalk.green('imgconvert image.jpg -p web')}             Apply web preset (webp, quality 80)
-  ${chalk.green('imgconvert images -f webp -q 80')}         Convert folder to WebP with 80% quality
-  ${chalk.green('imgconvert images --rename enumerate')}    Convert folder and number files (001, 002...)
+  ${chalk.green('imgconvert image.jpg')}                                 Compress image (preserves original format)
+  ${chalk.green('imgconvert image.jpg -w 300')}                          Resize to 300px width
+  ${chalk.green('imgconvert image.jpg -f webp')}                         Convert to WebP format
+  ${chalk.green('imgconvert image.jpg -n "converted"')}                  Convert single file with custom name
+  ${chalk.green('imgconvert image.jpg -p web')}                          Apply web preset (webp, quality 80)
+  ${chalk.green('imgconvert image.png --canvas -h 1660')}                Canvas resize with transparent padding
+  ${chalk.green('imgconvert images -f webp -q 80')}                      Convert folder to WebP with 80% quality
+  ${chalk.green('imgconvert images --rename enumerate')}                 Convert folder and number files (001, 002...)
   ${chalk.green('imgconvert images --rename "prefix:thumb_,lowercase"')} Add prefix and lowercase filenames
 `));
 }

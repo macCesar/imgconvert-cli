@@ -27,9 +27,12 @@ const defaultConfig = {
   source: null,
   output: null,
   format: null,
+  canvas: false,
+
   crop: null,
   fit: 'contain',
   position: 'center',
+
   background: '#ffffff',
   'replace-originals': false
 };
@@ -78,10 +81,10 @@ const SUPPORTED_FORMATS = ['jpeg', 'jpg', 'png', 'webp', 'avif', 'tiff', 'gif'];
 
 // Constants
 const CONSTANTS = {
-  DEFAULT_QUALITY: 85,
   MIN_QUALITY: 1,
   MAX_QUALITY: 100,
   DENSITY_DPI: 72,
+  DEFAULT_QUALITY: 85,
   TEMP_FILE_LENGTH: 15,
   PROGRESS_BAR_WIDTH: 100
 };
