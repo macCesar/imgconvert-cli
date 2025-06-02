@@ -24,6 +24,7 @@ function parseArguments(argv) {
       h: 'height',
       o: 'output',
       p: 'preset',
+      n: 'name',
       d: 'debug'
     },
     boolean: ['replace-originals', 'debug', 'help', 'version']
@@ -45,6 +46,8 @@ function parseArguments(argv) {
     fit: userArgs.fit || null,
     crop: userArgs.crop || null,
     position: userArgs.position || null,
+    name: userArgs.name || null,
+    rename: userArgs.rename || null,
     'replace-originals': userArgs['replace-originals'] || false,
   };
 
@@ -74,6 +77,31 @@ function parseArguments(argv) {
       process.exit(1);
     }
     args.quality = quality;
+  }
+
+  // Validate rename strategy
+  if (args.rename) {
+    const validStrategies = ['enumerate', 'lowercase', 'replace-spaces'];
+    const strategies = args.rename.split(',').map(s => s.trim());
+
+    for (const strategy of strategies) {
+      if (!validStrategies.includes(strategy) &&
+        !strategy.startsWith('prefix:') &&
+        !strategy.startsWith('suffix:')) {
+        logger.error(`Error: Invalid rename strategy '${strategy}'. Valid strategies are: ${validStrategies.join(', ')}, prefix:<text>, suffix:<text>`);
+        process.exit(1);
+      }
+
+      // Validate prefix and suffix have content
+      if (strategy.startsWith('prefix:') && strategy.length <= 7) {
+        logger.error(`Error: prefix: strategy requires text after the colon (e.g., prefix:thumb_)`);
+        process.exit(1);
+      }
+      if (strategy.startsWith('suffix:') && strategy.length <= 7) {
+        logger.error(`Error: suffix: strategy requires text after the colon (e.g., suffix:_optimized)`);
+        process.exit(1);
+      }
+    }
   }
 
   // Parse preset and subpreset
@@ -129,6 +157,8 @@ function applyConfigPrecedence(args, config, presets) {
   args.crop = getValue('crop', null);
   args.fit = getValue('fit', 'contain');
   args.position = getValue('position', 'center');
+  args.name = getValue('name', null);
+  args.rename = getValue('rename', null);
   args['replace-originals'] = getValue('replace-originals', false);
 
   // Handle preset source

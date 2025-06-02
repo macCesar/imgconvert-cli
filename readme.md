@@ -31,6 +31,10 @@ imgconvert photo.jpg --fit cover --position center -w 400 -h 400 -f webp
 # Manual cropping: extract specific region then resize
 imgconvert photo.jpg --crop 100,50,800,600 -w 400 -h 300 -f webp
 
+# Custom file naming and batch renaming
+imgconvert photo.jpg --name "hero-banner" -f webp
+imgconvert photos --rename "lowercase,replace-spaces,prefix:web-" -f webp
+
 # Generate mobile app assets (all configurations)
 imgconvert source-images -p alloy
 
@@ -49,6 +53,8 @@ imgconvert -p alloy:another-config
 - **Print Preparation**: Convert to high-quality TIFF format for professional printing
 - **Custom Cropping**: Extract specific regions before resizing with `--crop`
 - **Batch Processing**: Convert entire directories while preserving folder structure
+- **File Organization**: Use custom naming and batch renaming for consistent file naming conventions
+- **SEO-Friendly Filenames**: Convert spaces to hyphens and apply lowercase for web-ready filenames
 
 ## 📊 Performance
 
@@ -70,6 +76,7 @@ Typical compression results:
 - [Installation](#installation)
 - [Basic Usage](#basic-usage)
 - [Options](#options)
+- [File Naming and Batch Renaming](#file-naming-and-batch-renaming)
 - [Examples](#examples)
 - [File Extension Behavior](#file-extension-behavior)
 - [Presets](#presets)
@@ -90,6 +97,8 @@ Typical compression results:
 - **Manual Cropping**: Extract specific regions before resizing with precise coordinate control
 - **File and Batch Processing**: Process a single image file or all images in a directory
 - **Smart Extension Handling**: Preserves original file extensions when no format conversion is specified
+- **Custom File Naming**: Rename individual files or apply batch renaming strategies during processing
+- **Batch Renaming Strategies**: Enumerate, lowercase, replace spaces, add prefixes/suffixes, and combine multiple strategies
 - **Customizable Quality**: Adjust output image quality from 1-100
 - **Configurable Background Color**: Set a background color for images converted from formats with transparency
 - **Multi-Format Conversion**: Convert images to all supported formats in one command
@@ -144,22 +153,24 @@ imgconvert <source_path>
 
 The available options for the `imgconvert-cli` command let users customize image conversions easily.
 
-| Option                | Alias | Description                                                        | Default         |
-| --------------------- | ----- | ------------------------------------------------------------------ | --------------- |
-| `--format`            | `-f`  | Output format: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, `all` | Original format |
-| `--quality`           | `-q`  | Quality (1-100)                                                    | 85              |
-| `--background`        | `-b`  | Background color for PNG images                                    | `#ffffff`       |
-| `--width`             | `-w`  | Output width in pixels                                             | -               |
-| `--height`            | `-h`  | Output height in pixels                                            | -               |
-| `--output`            | `-o`  | Output directory                                                   | Same as source  |
-| `--preset`            | `-p`  | Apply preset: `web`, `print`, `thumbnail`, `alloy`                 | -               |
-| `--fit`               | -     | Resize strategy: `cover`, `contain`, `fill`, `inside`, `outside`   | `contain`       |
-| `--position`          | -     | Crop position: `center`, `top`, `bottom`, `left`, `right`, corners | `center`        |
-| `--crop`              | -     | Manual crop coordinates: `left,top,width,height`                   | -               |
-| `--replace-originals` | -     | Replace original files                                             | `false`         |
-| `--debug`             | `-d`  | Enable debug mode                                                  | `false`         |
-| `--version`           | `-v`  | Show version                                                       | -               |
-| `--help`              | `-H`  | Show help message                                                  | -               |
+| Option                | Alias | Description                                                                             | Default         |
+| --------------------- | ----- | --------------------------------------------------------------------------------------- | --------------- |
+| `--format`            | `-f`  | Output format: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, `all`                      | Original format |
+| `--quality`           | `-q`  | Quality (1-100)                                                                         | 85              |
+| `--background`        | `-b`  | Background color for PNG images                                                         | `#ffffff`       |
+| `--width`             | `-w`  | Output width in pixels                                                                  | -               |
+| `--height`            | `-h`  | Output height in pixels                                                                 | -               |
+| `--output`            | `-o`  | Output directory                                                                        | Same as source  |
+| `--preset`            | `-p`  | Apply preset: `web`, `print`, `thumbnail`, `alloy`                                      | -               |
+| `--fit`               | -     | Resize strategy: `cover`, `contain`, `fill`, `inside`, `outside`                        | `contain`       |
+| `--position`          | -     | Crop position: `center`, `top`, `bottom`, `left`, `right`, corners                      | `center`        |
+| `--crop`              | -     | Manual crop coordinates: `left,top,width,height`                                        | -               |
+| `--name`              | `-n`  | Custom filename for single file processing                                              | -               |
+| `--rename`            | -     | Batch rename strategy: `enumerate`, `lowercase`, `replace-spaces`, `prefix:`, `suffix:` | -               |
+| `--replace-originals` | -     | Replace original files                                                                  | `false`         |
+| `--debug`             | `-d`  | Enable debug mode                                                                       | `false`         |
+| `--version`           | `-v`  | Show version                                                                            | -               |
+| `--help`              | `-H`  | Show help message                                                                       | -               |
 
 ## Advanced Resize and Crop Control
 
@@ -202,6 +213,47 @@ Extract specific regions before resizing:
 - **Format**: `left,top,width,height` (all in pixels)
 - **Example**: `--crop 100,50,800,600` crops 800x600 region starting at (100,50)
 - **Workflow**: Cropping is applied first, then resizing with fit/position options
+
+## File Naming and Batch Renaming
+
+The tool provides flexible options for customizing output filenames when processing images.
+
+### Single File Naming (`--name`, `-n`)
+
+Rename individual files during processing:
+
+```bash
+imgconvert photo.jpg --name "hero-image" -f webp
+# Output: hero-image.webp
+```
+
+**Important**: The `--name` option only works with single files, not directories.
+
+### Batch Renaming Strategies (`--rename`)
+
+Apply systematic renaming to multiple files:
+
+| Strategy         | Description                 | Example Input  | Example Output    |
+| ---------------- | --------------------------- | -------------- | ----------------- |
+| `enumerate`      | Add sequential numbers      | `photo.jpg`    | `001-photo.jpg`   |
+| `lowercase`      | Convert to lowercase        | `MyPhoto.JPG`  | `myphoto.jpg`     |
+| `replace-spaces` | Replace spaces with hyphens | `my photo.png` | `my-photo.png`    |
+| `prefix:text`    | Add prefix to filename      | `image.jpg`    | `thumb-image.jpg` |
+| `suffix:text`    | Add suffix to filename      | `image.jpg`    | `image-small.jpg` |
+
+### Combining Strategies
+
+Multiple rename strategies can be combined by separating them with commas:
+
+```bash
+imgconvert photos --rename "lowercase,replace-spaces,prefix:web-"
+# "My Photo.jpg" → "web-my-photo.jpg"
+
+imgconvert images --rename "enumerate,suffix:-optimized"
+# "photo.jpg" → "001-photo-optimized.jpg"
+```
+
+**Processing Order**: Strategies are applied in the order specified, allowing for predictable filename transformations.
 
 ## Examples
 
@@ -259,27 +311,81 @@ Extract specific regions before resizing:
    imgconvert photo.jpg --crop 0,0,500,500 --fit cover -w 300 -h 300 -f webp
    ```
 
+### File Naming and Renaming
+
+7. **Custom naming for single files:**
+   ```bash
+   # Rename during conversion
+   imgconvert hero-photo.jpg --name "main-banner" -f webp
+   # Output: main-banner.webp
+
+   # Custom name with resizing
+   imgconvert profile.png --name "avatar" --fit cover -w 200 -h 200
+   # Output: avatar.png
+   ```
+
+8. **Batch renaming strategies:**
+   ```bash
+   # Add sequential numbers
+   imgconvert photos --rename enumerate -f webp
+   # photo1.jpg → photo1-1.webp, photo2.jpg → photo2-2.webp
+
+   # Convert to lowercase and replace spaces
+   imgconvert "My Photos" --rename "lowercase,replace-spaces"
+   # "My Photo.JPG" → "my-photo.jpg"
+
+   # Add prefix for organization
+   imgconvert thumbnails --rename "prefix:thumb-" -w 150 -h 150
+   # image.jpg → thumb-image.jpg
+   ```
+
+9. **Advanced renaming combinations:**
+   ```bash
+   # Multiple strategies for web optimization
+   imgconvert uploads --rename "lowercase,replace-spaces,suffix:-optimized" -f webp -q 80
+   # "Product Photo.png" → "product-photo-optimized.webp"
+
+   # Enumerated thumbnails with prefix
+   imgconvert gallery --rename "prefix:gallery-,enumerate" --fit cover -w 300 -h 300
+   # photo.jpg → gallery-001-photo.jpg
+   ```
+
 ### Real-World Examples
 
 10. **Perfect for web development:**
     ```bash
-    # Social media thumbnails
-    imgconvert profiles/ --fit cover --position top -w 150 -h 150 -f webp
+    # Social media thumbnails with organized naming
+    imgconvert profiles --fit cover --position top -w 150 -h 150 -f webp --rename "prefix:profile-,enumerate"
 
-    # Product images with consistent dimensions
-    imgconvert products/ --fit contain -w 800 -h 600 -f webp -q 90
+    # Product images with consistent dimensions and clean filenames
+    imgconvert products --fit contain -w 800 -h 600 -f webp -q 90 --rename "lowercase,replace-spaces"
 
-    # Hero banners
-    imgconvert heroes/ --fit cover --position center -w 1920 -h 800 -f webp
+    # Hero banners with descriptive names
+    imgconvert heroes --fit cover --position center -w 1920 -h 800 -f webp --rename "suffix:-hero"
     ```
 
-11. **Mobile app assets:**
+11. **Mobile app assets with systematic naming:**
     ```bash
-    # Square app icons
-    imgconvert icons/ --fit cover --position center -w 512 -h 512 -f png
+    # Square app icons with size indicators
+    imgconvert icons --fit cover --position center -w 512 -h 512 -f png --rename "suffix:-512"
+
+    # Profile pictures with enumeration
+    imgconvert avatars --fit cover --position top -w 200 -h 200 -f webp --rename "prefix:avatar-,enumerate"
+    ```
+
+12. **E-commerce and content management:**
+    ```bash
+    # Product catalog with clean, SEO-friendly names
+    imgconvert "Product Photos" --rename "lowercase,replace-spaces,prefix:product-" -f webp -q 85
+    # "Blue Shirt Medium.jpg" → "product-blue-shirt-medium.webp"
+
+    # Blog post images with consistent naming
+    imgconvert blog-images --rename "lowercase,replace-spaces,suffix:-post" -w 800 -q 80
+    # "My Great Article Photo.png" → "my-great-article-photo-post.png"
+    ```
 
     # Profile pictures
-    imgconvert avatars/ --fit cover --position top -w 200 -h 200 -f webp
+    imgconvert avatars --fit cover --position top -w 200 -h 200 -f webp
     ```
 
 12. **Use alloy preset with platform-specific formats:**

@@ -90,6 +90,14 @@ function validateInput(args, config) {
     args.fit = fitValue;
   }
 
+  // Validate --name option only works with single files
+  if (args.name && inputPath && fs.lstatSync(inputPath).isDirectory()) {
+    return {
+      valid: false,
+      error: 'Error: The --name option can only be used with single files, not directories. Use --rename for batch renaming.'
+    };
+  }
+
   // Warning for alloy preset with width/height
   if (args.presetName === 'alloy' && (args.width || args.height)) {
     logger.warning('Warning: Width and height parameters are ignored when using the alloy preset. Images are scaled based on predefined factors.');

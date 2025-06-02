@@ -24,6 +24,14 @@ Options:
   ${chalk.green('-w, --width')}            Set the width of the output images
   ${chalk.green('-h, --height')}           Set the height of the output images
   ${chalk.green('-o, --output')}           Set the output directory for processed images
+  ${chalk.green('-n, --name')}             Set custom filename for single file conversion (without extension)
+  ${chalk.green('--rename')}               Batch renaming strategy for folder processing:
+                            ${chalk.yellow('enumerate')} - Number files sequentially (001, 002, 003...)
+                            ${chalk.yellow('lowercase')} - Convert filenames to lowercase
+                            ${chalk.yellow('replace-spaces')} - Replace spaces with underscores
+                            ${chalk.yellow('prefix:<text>')} - Add prefix to all files (e.g., prefix:thumb_)
+                            ${chalk.yellow('suffix:<text>')} - Add suffix before extension (e.g., suffix:_optimized)
+                            Multiple strategies can be combined with commas
   ${chalk.green('-p, --preset')}           Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy')})
                             ${chalk.yellow('alloy')} preset is for Titanium SDK development, generates multi-resolution images for Android/iOS
   ${chalk.green('--fit')}                  Set resize strategy (${chalk.yellow('cover, contain, fill, inside, outside; default: contain')})
@@ -39,8 +47,11 @@ Examples:
   ${chalk.green('imgconvert image.jpg')}                    Compress image (preserves original format)
   ${chalk.green('imgconvert image.jpg -w 300')}             Resize to 300px width
   ${chalk.green('imgconvert image.jpg -f webp')}            Convert to WebP format
+  ${chalk.green('imgconvert image.jpg -n "converted"')}     Convert single file with custom name
   ${chalk.green('imgconvert image.jpg -p web')}             Apply web preset (webp, quality 80)
   ${chalk.green('imgconvert images -f webp -q 80')}         Convert folder to WebP with 80% quality
+  ${chalk.green('imgconvert images --rename enumerate')}    Convert folder and number files (001, 002...)
+  ${chalk.green('imgconvert images --rename "prefix:thumb_,lowercase"')} Add prefix and lowercase filenames
 `));
 }
 

@@ -14,6 +14,47 @@ const { getMergedPresets } = require('../config/loader');
 const { determineOutputDirectory, validateOutputDirectory } = require('../utils/validation');
 
 /**
+ * Generate filename based on rename strategies
+ * @param {string} originalName - Original filename without extension
+ * @param {number} index - File index for enumeration
+ * @param {Object} args - Command line arguments
+ * @param {boolean} isSingleFile - Whether processing a single file
+ * @returns {string} Generated filename without extension
+ */
+function generateFilename(originalName, index, args, isSingleFile = false) {
+  // For single file with custom name (only works for single files)
+  if (args.name && isSingleFile) {
+    return args.name;
+  }
+
+  let filename = originalName;
+
+  if (args.rename) {
+    const strategies = args.rename.split(',').map(s => s.trim());
+
+    for (const strategy of strategies) {
+      if (strategy === 'enumerate') {
+        // Add enumerated prefix with padding (001-, 002-, etc.)
+        const paddedIndex = String(index).padStart(3, '0');
+        filename = paddedIndex + '-' + filename;
+      } else if (strategy === 'lowercase') {
+        filename = filename.toLowerCase();
+      } else if (strategy === 'replace-spaces') {
+        filename = filename.replace(/\s+/g, '-');
+      } else if (strategy.startsWith('prefix:')) {
+        const prefix = strategy.substring(7);
+        filename = prefix + filename;
+      } else if (strategy.startsWith('suffix:')) {
+        const suffix = strategy.substring(7);
+        filename = filename + suffix;
+      }
+    }
+  }
+
+  return filename;
+}
+
+/**
  * Process a single image file
  * @param {string} inputFile - Input file path
  * @param {string} outputFileBase - Output file base path
@@ -178,6 +219,12 @@ async function processImages(args, config) {
   const inputDir = isDirectory ? inputPath : path.dirname(inputPath);
   const files = isDirectory ? fs.readdirSync(inputPath) : [path.basename(inputPath)];
 
+  // Validate incompatible options
+  if (args.name && isDirectory) {
+    logger.error('Error: --name option can only be used with single files, not directories. Use --rename for batch processing.');
+    return;
+  }
+
   // Determine output directory
   const outputDir = determineOutputDirectory(args, config, inputPath);
   if (!validateOutputDirectory(outputDir)) {
@@ -204,23 +251,30 @@ async function processImages(args, config) {
 
   const format = args.format && args.format !== 'none' ? args.format : null;
 
-  // Process each file
-  const tasks = files.map(async (file) => {
+  // Prepare file list for enumeration if needed
+  const imageFiles = files.filter(file => {
     const inputFile = path.join(inputDir, file);
     const fileExtension = path.extname(file).toLowerCase().slice(1);
+    return SUPPORTED_FORMATS.includes(fileExtension) && fs.lstatSync(inputFile).isFile();
+  });
 
-    if (SUPPORTED_FORMATS.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
-      const outputFileBase = path.join(outputDir, path.parse(inputFile).name);
-      const result = await processImage(inputFile, outputFileBase, format, options);
+  // Process each file
+  const tasks = imageFiles.map(async (file, index) => {
+    const inputFile = path.join(inputDir, file);
+    const originalName = path.parse(file).name;
 
-      if (result) {
-        totalOriginalSize += result.originalSize;
-        totalNewSize += result.newSize;
-        processedCount++;
-      }
-      return result;
+    // Generate output filename based on rename strategies
+    const outputFilename = generateFilename(originalName, index + 1, args, !isDirectory);
+    const outputFileBase = path.join(outputDir, outputFilename);
+
+    const result = await processImage(inputFile, outputFileBase, format, options);
+
+    if (result) {
+      totalOriginalSize += result.originalSize;
+      totalNewSize += result.newSize;
+      processedCount++;
     }
-    return null;
+    return result;
   });
 
   await Promise.all(tasks);

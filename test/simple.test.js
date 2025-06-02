@@ -203,7 +203,7 @@ describe('imgconvert CLI Tests', function () {
   describe('Basic CLI functionality', () => {
     it('should display version information', () => {
       const result = execCLI('-v');
-      expect(result).to.include('1.5.0');
+      expect(result).to.include('1.6.0');
       expect(result).to.include('imgconvert-cli version');
     });
 
@@ -952,6 +952,297 @@ describe('imgconvert CLI Tests', function () {
 
       const outputFile = path.join(outputDir, 'canyon-river.gif');
       expect(checkFileExists(outputFile, 'JPG to GIF output')).to.be.true;
+    });
+  });
+
+  describe('Custom file naming tests', () => {
+    it('should rename single file with --name option', () => {
+      const inputFile = path.join(testDir, 'canyon-river.jpg');
+      const outputDir = path.join(testDir, 'custom-name');
+      const command = `"${inputFile}" --name "hero-banner" -f webp -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Custom file naming', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'hero-banner.webp');
+      expect(checkFileExists(outputFile, 'Custom named file')).to.be.true;
+    });
+
+    it('should preserve format extension with --name option', () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'preserve-format');
+      const command = `"${inputFile}" --name "my-image" -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Preserve format with custom name', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'my-image.png');
+      expect(checkFileExists(outputFile, 'Custom named PNG file')).to.be.true;
+    });
+
+    it('should reject --name option when processing directories', () => {
+      const command = `"${testDir}" --name "invalid-name"`;
+
+      const error = execCLIExpectError(command);
+      logResult('Name with directory error', error.stderr || error.stdout);
+      expect(error.stderr || error.stdout || '').to.include('--name');
+      expect(error.status).to.not.equal(0);
+    });
+  });
+
+  describe('Batch renaming tests', () => {
+    beforeEach(() => {
+      // Create a subdirectory with multiple test files
+      const batchDir = path.join(testDir, 'batch-test');
+      if (fs.existsSync(batchDir)) {
+        fs.rmSync(batchDir, { recursive: true, force: true });
+      }
+      fs.mkdirSync(batchDir, { recursive: true });
+
+      // Copy test images with various names
+      const testImages = [
+        { src: 'canyon-river.jpg', dest: 'Photo One.jpg' },
+        { src: 'mountain-lake.png', dest: 'MyImage.PNG' },
+        { src: 'test.gif', dest: 'test file.gif' }
+      ];
+
+      testImages.forEach(({ src, dest }) => {
+        const srcPath = path.join(testDir, src);
+        const destPath = path.join(batchDir, dest);
+        if (fs.existsSync(srcPath)) {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      });
+    });
+
+    it('should apply enumerate strategy', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const outputDir = path.join(testDir, 'enumerate-output');
+      const command = `"${inputDir}" --rename enumerate -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Enumerate renaming', result);
+      expect(result).to.include('Processed files: 3');
+
+      // Check for enumerated files (with prefix format: 001-filename)
+      // Order is alphabetical: MyImage < Photo One < test file
+      const expectedFiles = [
+        '001-MyImage.png',
+        '002-Photo One.jpg',
+        '003-test file.gif'
+      ];
+
+      expectedFiles.forEach(fileName => {
+        const outputFile = path.join(outputDir, fileName);
+        expect(checkFileExists(outputFile, `Enumerated file: ${fileName}`)).to.be.true;
+      });
+    });
+
+    it('should apply lowercase strategy', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const outputDir = path.join(testDir, 'lowercase-output');
+      const command = `"${inputDir}" --rename lowercase -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Lowercase renaming', result);
+      expect(result).to.include('Processed files: 3');
+
+      // Check for lowercase files
+      const expectedFiles = [
+        'photo one.jpg',
+        'myimage.png',
+        'test file.gif'
+      ];
+
+      expectedFiles.forEach(fileName => {
+        const outputFile = path.join(outputDir, fileName);
+        expect(checkFileExists(outputFile, `Lowercase file: ${fileName}`)).to.be.true;
+      });
+    });
+
+    it('should apply replace-spaces strategy', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const outputDir = path.join(testDir, 'replace-spaces-output');
+      const command = `"${inputDir}" --rename replace-spaces -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Replace spaces renaming', result);
+      expect(result).to.include('Processed files: 3');
+
+      // Check for space-replaced files
+      const expectedFiles = [
+        'Photo-One.jpg',
+        'MyImage.png',
+        'test-file.gif'
+      ];
+
+      expectedFiles.forEach(fileName => {
+        const outputFile = path.join(outputDir, fileName);
+        expect(checkFileExists(outputFile, `Space-replaced file: ${fileName}`)).to.be.true;
+      });
+    });
+
+    it('should apply prefix strategy', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const outputDir = path.join(testDir, 'prefix-output');
+      const command = `"${inputDir}" --rename "prefix:thumb-" -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Prefix renaming', result);
+      expect(result).to.include('Processed files: 3');
+
+      // Check for prefixed files
+      const expectedFiles = [
+        'thumb-Photo One.jpg',
+        'thumb-MyImage.png',
+        'thumb-test file.gif'
+      ];
+
+      expectedFiles.forEach(fileName => {
+        const outputFile = path.join(outputDir, fileName);
+        expect(checkFileExists(outputFile, `Prefixed file: ${fileName}`)).to.be.true;
+      });
+    });
+
+    it('should apply suffix strategy', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const outputDir = path.join(testDir, 'suffix-output');
+      const command = `"${inputDir}" --rename "suffix:-small" -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Suffix renaming', result);
+      expect(result).to.include('Processed files: 3');
+
+      // Check for suffixed files
+      const expectedFiles = [
+        'Photo One-small.jpg',
+        'MyImage-small.png',
+        'test file-small.gif'
+      ];
+
+      expectedFiles.forEach(fileName => {
+        const outputFile = path.join(outputDir, fileName);
+        expect(checkFileExists(outputFile, `Suffixed file: ${fileName}`)).to.be.true;
+      });
+    });
+
+    it('should combine multiple rename strategies', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const outputDir = path.join(testDir, 'combined-output');
+      const command = `"${inputDir}" --rename "lowercase,replace-spaces,prefix:web-" -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Combined renaming strategies', result);
+      expect(result).to.include('Processed files: 3');
+
+      // Check for combined strategy results
+      const expectedFiles = [
+        'web-photo-one.jpg',
+        'web-myimage.png',
+        'web-test-file.gif'
+      ];
+
+      expectedFiles.forEach(fileName => {
+        const outputFile = path.join(outputDir, fileName);
+        expect(checkFileExists(outputFile, `Combined strategy file: ${fileName}`)).to.be.true;
+      });
+    });
+
+    it('should combine enumerate with other strategies', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const outputDir = path.join(testDir, 'enumerate-combined-output');
+      const command = `"${inputDir}" --rename "enumerate,suffix:-optimized" -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Enumerate with suffix', result);
+      expect(result).to.include('Processed files: 3');
+
+      // Check for enumerated + suffixed files (enumerate creates prefix, suffix adds at end)
+      // Order is alphabetical: MyImage < Photo One < test file
+      const expectedFiles = [
+        '001-MyImage-optimized.png',
+        '002-Photo One-optimized.jpg',
+        '003-test file-optimized.gif'
+      ];
+
+      expectedFiles.forEach(fileName => {
+        const outputFile = path.join(outputDir, fileName);
+        expect(checkFileExists(outputFile, `Enumerate+suffix file: ${fileName}`)).to.be.true;
+      });
+    });
+
+    it('should reject invalid rename strategy', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const command = `"${inputDir}" --rename "invalid-strategy"`;
+
+      const error = execCLIExpectError(command);
+      logResult('Invalid rename strategy error', error.stderr || error.stdout);
+      expect(error.stderr || error.stdout).to.include('Invalid rename strategy');
+      expect(error.status).to.not.equal(0);
+    });
+
+    it('should reject malformed prefix strategy', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const command = `"${inputDir}" --rename "prefix"`;
+
+      const error = execCLIExpectError(command);
+      logResult('Malformed prefix strategy error', error.stderr || error.stdout);
+      expect(error.stderr || error.stdout).to.include('Invalid rename strategy');
+      expect(error.status).to.not.equal(0);
+    });
+
+    it('should reject malformed suffix strategy', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const command = `"${inputDir}" --rename "suffix"`;
+
+      const error = execCLIExpectError(command);
+      logResult('Malformed suffix strategy error', error.stderr || error.stdout);
+      expect(error.stderr || error.stdout).to.include('Invalid rename strategy');
+      expect(error.status).to.not.equal(0);
+    });
+  });
+
+  describe('Renaming integration tests', () => {
+    it('should combine renaming with format conversion', () => {
+      const inputFile = path.join(testDir, 'canyon-river.jpg');
+      const outputDir = path.join(testDir, 'rename-format-output');
+      const command = `"${inputFile}" --name "hero-image" -f webp -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Rename with format conversion', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'hero-image.webp');
+      expect(checkFileExists(outputFile, 'Renamed + converted file')).to.be.true;
+    });
+
+    it('should combine renaming with resizing', () => {
+      const inputDir = path.join(testDir, 'batch-test');
+      const outputDir = path.join(testDir, 'rename-resize-output');
+      const command = `"${inputDir}" --rename "prefix:thumb-" -w 150 -h 150 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Rename with resizing', result);
+      expect(result).to.include('Processed files: 3');
+
+      // Just check one file exists - detailed size checking would require image analysis
+      const outputFile = path.join(outputDir, 'thumb-Photo One.jpg');
+      expect(checkFileExists(outputFile, 'Renamed + resized file')).to.be.true;
+    });
+
+    it('should work with quality settings', () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'rename-quality-output');
+      const command = `"${inputFile}" --name "optimized-image" -f webp -q 80 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Rename with quality setting', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'optimized-image.webp');
+      expect(checkFileExists(outputFile, 'Renamed + quality optimized file')).to.be.true;
     });
   });
 });

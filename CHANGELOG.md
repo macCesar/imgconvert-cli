@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-06-01
+
+### ✨ New Features - Custom File Naming and Batch Renaming
+
+#### 🏷️ Custom File Naming
+- **Single File Naming**: Added `--name, -n` option for custom filename when processing individual files
+- **Simple Usage**: `imgconvert photo.jpg --name "hero-banner" -f webp` → `hero-banner.webp`
+- **Format Preservation**: Custom names respect the target format extension
+
+#### 🔄 Batch Renaming Strategies
+- **Multiple Strategies**: Added `--rename` option with support for systematic batch renaming
+- **Available Strategies**:
+  - `enumerate`: Add sequential numbers with padding (`photo.jpg` → `001-photo.jpg`)
+  - `lowercase`: Convert filenames to lowercase (`MyPhoto.JPG` → `myphoto.jpg`)
+  - `replace-spaces`: Replace spaces with hyphens (`my photo.png` → `my-photo.png`)
+  - `prefix:text`: Add custom prefix (`image.jpg` → `thumb-image.jpg`)
+  - `suffix:text`: Add custom suffix (`image.jpg` → `image-small.jpg`)
+
+#### 🔗 Strategy Combinations
+- **Chainable Strategies**: Combine multiple strategies with comma separation
+- **Predictable Processing**: Strategies applied in specified order for consistent results
+- **Example**: `--rename "lowercase,replace-spaces,prefix:web-"` transforms "My Photo.JPG" → "web-my-photo.jpg"
+- **Enumerate Format**: Sequential numbering uses padded prefix format (001-, 002-, 003-) for natural sorting
+
+#### 🛡️ Enhanced Validation
+- **Input Validation**: Prevents `--name` usage with directory inputs
+- **Strategy Validation**: Validates rename strategy syntax and supported options
+- **Error Handling**: Clear error messages for invalid combinations
+
+#### 📚 Documentation Updates
+- **Comprehensive Examples**: Added real-world usage examples in README
+- **Integration Examples**: Showed combination with existing resize and format options
+- **Use Case Scenarios**: E-commerce, content management, and web development examples
+
+### 🔧 Technical Implementation
+- **Parser Enhancement**: Extended CLI parser with new option support and validation
+- **Image Processor Updates**: Integrated filename generation into core processing workflow
+- **Help System**: Updated help documentation with detailed option descriptions and examples
+
 ## [1.5.0] - 2025-06-01
 
 ### 🏗️ Major Code Refactoring - Modular Architecture Implementation
