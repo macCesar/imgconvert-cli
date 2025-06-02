@@ -270,10 +270,10 @@ This refactoring establishes a solid foundation for future enhancements:
 imgconvert hero.jpg --crop 0,100,1920,800 --fit cover -w 1200 -h 600 -f webp
 
 # Profile pictures keeping faces visible
-imgconvert portraits/ --fit cover --position top -w 200 -h 200 -f png
+imgconvert portraits --fit cover --position top -w 200 -h 200 -f png
 
 # Product thumbnails with consistent dimensions
-imgconvert products/ --fit cover --position center -w 400 -h 400 -f webp -q 85
+imgconvert products --fit cover --position center -w 400 -h 400 -f webp -q 85
 
 # Social media content from landscape images
 imgconvert image.jpg --fit cover --position center -w 1080 -h 1080 -f jpeg
