@@ -1133,7 +1133,7 @@ This means CLI arguments always override preset settings, preset settings overri
   "source": null,
   "output": null,
   "format": null,
-  "background": "#ffffff",
+  "background": null,
   "replace-originals": false,
 
   "presets": {

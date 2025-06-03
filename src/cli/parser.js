@@ -154,7 +154,7 @@ function applyConfigPrecedence(args, config, presets) {
   args.width = getValue('width', null);
   args.height = getValue('height', null);
   args.output = getValue('output', null);
-  args.background = getValue('background', '#ffffff');
+  args.background = getValue('background', null);
   args.crop = getValue('crop', null);
   args.fit = getValue('fit', 'contain');
   args.position = getValue('position', 'center');

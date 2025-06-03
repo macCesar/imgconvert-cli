@@ -52,14 +52,19 @@ function createDefaultConfig() {
     crop: null,
     fit: 'contain',
     position: 'center',
-    background: '#ffffff',
+    background: null,
     'replace-originals': false,
     presets: defaultPresets,
   };
 
   try {
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(configContent, null, 2), 'utf-8');
-    logger.success(`Default configuration file created at ${CONFIG_PATH}`);
+
+    // Show a shorter, more readable path
+    const relativePath = path.relative(process.cwd(), CONFIG_PATH);
+    const displayPath = relativePath.startsWith('..') ? CONFIG_PATH : `./${relativePath}`;
+
+    logger.success(`Default configuration file created at ${displayPath}`);
   } catch (error) {
     logger.error(`Failed to create configuration file: ${error.message}`);
     process.exit(1);

@@ -28,12 +28,12 @@ const defaultConfig = {
   output: null,
   format: null,
   canvas: false,
+  background: null,
 
   crop: null,
   fit: 'contain',
   position: 'center',
 
-  background: '#ffffff',
   'replace-originals': false
 };
 

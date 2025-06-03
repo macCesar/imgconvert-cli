@@ -14,6 +14,25 @@ const { getMergedPresets } = require('../config/loader');
 const { determineOutputDirectory, validateOutputDirectory } = require('../utils/validation');
 
 /**
+ * Parse hex color to RGBA object for Sharp
+ * @param {string} hexColor - Hex color string (with or without #)
+ * @returns {Object|null} RGBA object or null if invalid
+ */
+function parseHexToRgba(hexColor) {
+  if (!hexColor) return null;
+
+  const hex = hexColor.replace('#', '');
+  if (hex.length !== 6) return null;
+
+  return {
+    r: parseInt(hex.substr(0, 2), 16),
+    g: parseInt(hex.substr(2, 2), 16),
+    b: parseInt(hex.substr(4, 2), 16),
+    alpha: 1
+  };
+}
+
+/**
  * Generate filename based on rename strategies
  * @param {string} originalName - Original filename without extension
  * @param {number} index - File index for enumeration
@@ -127,41 +146,28 @@ async function processImage(inputFile, outputFileBase, format, options) {
         resizeOptions.height = metadata.height;
       }
 
-      // Check if user explicitly specified background color
-      const userSpecifiedBackground = options._userArgs && options._userArgs.background !== undefined;
-
-      if (userSpecifiedBackground) {
-        // User explicitly specified background - use it
-        const hexColor = options.background.replace('#', '');
-        if (hexColor.length === 6) {
-          resizeOptions.background = {
-            r: parseInt(hexColor.substr(0, 2), 16),
-            g: parseInt(hexColor.substr(2, 2), 16),
-            b: parseInt(hexColor.substr(4, 2), 16),
-            alpha: 1
-          };
+      // Apply background for canvas mode
+      if (options.background) {
+        // User specified background - use it
+        const rgba = parseHexToRgba(options.background);
+        if (rgba) {
+          resizeOptions.background = rgba;
         }
-      } else if (sharpFormat === 'png' || sharpFormat === 'webp') {
-        // No explicit background specified - use transparent for PNG/WebP
-        resizeOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
       } else {
-        // Default to white background for JPEG when using canvas mode
-        resizeOptions.background = { r: 255, g: 255, b: 255, alpha: 1 };
+        // No background specified - use format-appropriate defaults for canvas mode
+        if (sharpFormat === 'png' || sharpFormat === 'webp' || sharpFormat === 'avif') {
+          resizeOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
+        } else {
+          // For JPEG and other formats that don't support transparency, use white
+          resizeOptions.background = { r: 255, g: 255, b: 255, alpha: 1 };
+        }
       }
     } else {
-      // Original behavior: transparent background for PNG/WebP when enlarging
-      if ((sharpFormat === 'png' || sharpFormat === 'webp') && !options.background) {
-        resizeOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
-      } else if (options.background) {
-        // Parse hex color to RGBA if background is specified
-        const hexColor = options.background.replace('#', '');
-        if (hexColor.length === 6) {
-          resizeOptions.background = {
-            r: parseInt(hexColor.substr(0, 2), 16),
-            g: parseInt(hexColor.substr(2, 2), 16),
-            b: parseInt(hexColor.substr(4, 2), 16),
-            alpha: 1
-          };
+      // Normal resize mode (not canvas) - only apply background if user specified one
+      if (options.background) {
+        const rgba = parseHexToRgba(options.background);
+        if (rgba) {
+          resizeOptions.background = rgba;
         }
       }
     }
@@ -218,7 +224,6 @@ async function processImage(inputFile, outputFileBase, format, options) {
  */
 function applyFormatOptions(sharpInstance, format, options) {
   const quality = options.quality || CONSTANTS.DEFAULT_QUALITY;
-  const backgroundColor = options.background || '#ffffff';
 
   switch (format) {
     case 'png':
@@ -243,10 +248,10 @@ function applyFormatOptions(sharpInstance, format, options) {
     case 'gif':
       return sharpInstance.gif();
     default:
-      // For JPEG (including original JPG files)
-      return sharpInstance.flatten({ background: backgroundColor }).jpeg({
-        quality: quality,
-      });
+      // JPEG - always apply background (JPEG doesn't support transparency)
+      return sharpInstance
+        .flatten({ background: options.background || '#ffffff' })
+        .jpeg({ quality: quality });
   }
 }
 
