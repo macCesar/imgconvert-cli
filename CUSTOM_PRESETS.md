@@ -193,6 +193,105 @@ For different deployment environments:
 }
 ```
 
+#### UI/UX Design Preset
+For user interface elements and transparent graphics:
+
+```json
+{
+  "presets": {
+    "ui-icons": {
+      "width": 64,
+      "height": 64,
+      "format": "png",
+      "canvas": true,
+      "quality": 95,
+      "source": "ui/icons-source",
+      "output": "ui/icons"
+    },
+    "ui-transparent-assets": {
+      "width": 512,
+      "height": 512,
+      "format": "png",
+      "canvas": true,
+      "quality": 95,
+      "background": "transparent",
+      "source": "ui/transparent-source",
+      "output": "ui/assets"
+    },
+    "logo-variants": {
+      "canvas": true,
+      "format": "webp",
+      "quality": 90,
+      "source": "branding/logos",
+      "output": "branding/web"
+    }
+  }
+}
+```
+
+Usage:
+```bash
+# Process UI icons maintaining transparency with exact dimensions
+imgconvert -p ui-icons
+
+# Create transparent logo variants for web
+imgconvert -p logo-variants
+
+# Process all transparent assets maintaining exact canvas sizes
+imgconvert -p ui-transparent-assets
+```
+
+#### File Organization and Workflow Preset
+For batch processing with systematic file naming:
+
+```json
+{
+  "presets": {
+    "web-gallery-organized": {
+      "width": 800,
+      "quality": 85,
+      "format": "webp",
+      "rename": "lowercase,replace-spaces,prefix:gallery-",
+      "source": "photos/raw",
+      "output": "web/gallery"
+    },
+    "thumbnail-enumerated": {
+      "width": 200,
+      "height": 200,
+      "fit": "cover",
+      "quality": 75,
+      "format": "webp",
+      "rename": "enumerate,suffix:-thumb",
+      "source": "photos/raw",
+      "output": "web/thumbs"
+    },
+    "seo-friendly-images": {
+      "width": 1200,
+      "quality": 80,
+      "format": "webp",
+      "rename": "lowercase,replace-spaces",
+      "source": "content/images",
+      "output": "content/web"
+    }
+  }
+}
+```
+
+Usage:
+```bash
+# Create organized web gallery with systematic naming
+imgconvert -p web-gallery-organized
+# "Beautiful Sunset.jpg" → "gallery-beautiful-sunset.webp"
+
+# Generate enumerated thumbnails
+imgconvert -p thumbnail-enumerated  
+# photo.jpg → "001-photo-thumb.webp"
+
+# Create SEO-friendly filenames
+imgconvert -p seo-friendly-images
+# "Product Image 2024.png" → "product-image-2024.webp"
+```
+
 ### Advanced Custom Preset Features
 
 #### Using Source Paths in Presets
@@ -284,6 +383,34 @@ Choose formats based on content type:
 - **WebP**: Modern web format, excellent compression
 - **AVIF**: Next-gen format for cutting-edge applications
 
+#### 5. **Leverage Canvas Mode for Transparency**
+Use `canvas: true` in presets when working with transparent images:
+```json
+{
+  "presets": {
+    "transparent-icons": {
+      "canvas": true,
+      "format": "png",
+      "quality": 95
+    }
+  }
+}
+```
+
+#### 6. **Implement Systematic File Naming**
+Use `rename` strategies for consistent file organization:
+```json
+{
+  "presets": {
+    "organized-web": {
+      "rename": "lowercase,replace-spaces,prefix:web-",
+      "format": "webp",
+      "quality": 85
+    }
+  }
+}
+```
+
 ### Complete Custom Configuration Example
 
 Here's a comprehensive example showing multiple custom presets for a web development agency:
@@ -360,6 +487,21 @@ Here's a comprehensive example showing multiple custom presets for a web develop
       "background": "#ffffff",
       "source": "clients/images/social",
       "output": "clients/social/instagram"
+    },
+    "client-ui-components": {
+      "canvas": true,
+      "format": "png", 
+      "quality": 95,
+      "source": "clients/images/ui",
+      "output": "clients/ui/components"
+    },
+    "client-organized-web": {
+      "width": 1200,
+      "quality": 85,
+      "format": "webp",
+      "rename": "lowercase,replace-spaces,prefix:client-",
+      "source": "clients/images/mixed",
+      "output": "clients/web/organized"
     }
   }
 }
@@ -376,6 +518,8 @@ imgconvert -p client-web-thumbs
 imgconvert -p client-web-gallery
 imgconvert -p client-social-facebook
 imgconvert -p client-social-instagram
+imgconvert -p client-ui-components
+imgconvert -p client-organized-web
 ```
 
 #### Scripted Workflows
@@ -393,8 +537,19 @@ imgconvert -p client-web-thumbs
 imgconvert -p client-web-gallery
 imgconvert -p client-social-facebook
 imgconvert -p client-social-instagram
+imgconvert -p client-ui-components
+imgconvert -p client-organized-web
 
 echo "Client deliverables ready!"
+```
+
+#### Batch Processing with New Features
+```bash
+# Process UI components maintaining transparency
+imgconvert -p client-ui-components
+
+# Organize mixed images with systematic naming
+imgconvert -p client-organized-web
 ```
 
 ### Tips for Preset Management
@@ -404,5 +559,5 @@ echo "Client deliverables ready!"
 3. **Testing**: Test presets with sample images before production use
 4. **Sharing**: Share preset configurations across team members
 5. **Backup**: Keep backup copies of complex preset configurations
-
-Custom presets make imgconvert-cli incredibly flexible and allow you to standardize image processing across projects, teams, and workflows. They're perfect for maintaining consistency in brand guidelines, technical specifications, and delivery requirements.
+6. **Canvas Mode**: Use `canvas: true` for maintaining exact dimensions with transparency
+7. **Systematic Naming**: Implement `rename` strategies for consistent file organization across projects
