@@ -516,10 +516,10 @@ imgconvert -p client-email
 imgconvert -p client-web-hero
 imgconvert -p client-web-thumbs
 imgconvert -p client-web-gallery
-imgconvert -p client-social-facebook
-imgconvert -p client-social-instagram
 imgconvert -p client-ui-components
 imgconvert -p client-organized-web
+imgconvert -p client-social-facebook
+imgconvert -p client-social-instagram
 ```
 
 #### Scripted Workflows
@@ -535,10 +535,10 @@ imgconvert -p client-email
 imgconvert -p client-web-hero
 imgconvert -p client-web-thumbs
 imgconvert -p client-web-gallery
-imgconvert -p client-social-facebook
-imgconvert -p client-social-instagram
 imgconvert -p client-ui-components
 imgconvert -p client-organized-web
+imgconvert -p client-social-facebook
+imgconvert -p client-social-instagram
 
 echo "Client deliverables ready!"
 ```
