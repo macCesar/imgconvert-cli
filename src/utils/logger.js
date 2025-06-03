@@ -37,11 +37,13 @@ class Logger {
   }
 
   progress(message) {
-    process.stdout.write(chalk.green(`${message}\r`));
+    // Clear the entire line and move cursor to beginning, then write the message
+    process.stdout.write('\r\x1b[K' + chalk.green(message));
   }
 
   clearProgress() {
-    process.stdout.write('\r' + ' '.repeat(100) + '\r');
+    // Clear the entire line and move cursor to beginning
+    process.stdout.write('\r\x1b[K');
   }
 
   summary(data) {
