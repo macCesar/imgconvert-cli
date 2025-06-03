@@ -202,26 +202,26 @@ For user interface elements and transparent graphics:
     "ui-icons": {
       "width": 64,
       "height": 64,
-      "format": "png",
-      "canvas": true,
       "quality": 95,
+      "canvas": true,
+      "format": "png",
       "source": "ui/icons-source",
       "output": "ui/icons"
     },
     "ui-transparent-assets": {
       "width": 512,
       "height": 512,
-      "format": "png",
-      "canvas": true,
       "quality": 95,
+      "canvas": true,
+      "format": "png",
       "background": "transparent",
       "source": "ui/transparent-source",
       "output": "ui/assets"
     },
     "logo-variants": {
+      "quality": 90,
       "canvas": true,
       "format": "webp",
-      "quality": 90,
       "source": "branding/logos",
       "output": "branding/web"
     }
@@ -258,8 +258,8 @@ For batch processing with systematic file naming:
     "thumbnail-enumerated": {
       "width": 200,
       "height": 200,
-      "fit": "cover",
       "quality": 75,
+      "fit": "cover",
       "format": "webp",
       "rename": "enumerate,suffix:-thumb",
       "source": "photos/raw",
@@ -284,7 +284,7 @@ imgconvert -p web-gallery-organized
 # "Beautiful Sunset.jpg" → "gallery-beautiful-sunset.webp"
 
 # Generate enumerated thumbnails
-imgconvert -p thumbnail-enumerated  
+imgconvert -p thumbnail-enumerated
 # photo.jpg → "001-photo-thumb.webp"
 
 # Create SEO-friendly filenames
@@ -389,9 +389,9 @@ Use `canvas: true` in presets when working with transparent images:
 {
   "presets": {
     "transparent-icons": {
+      "quality": 95,
       "canvas": true,
-      "format": "png",
-      "quality": 95
+      "format": "png"
     }
   }
 }
@@ -403,9 +403,9 @@ Use `rename` strategies for consistent file organization:
 {
   "presets": {
     "organized-web": {
-      "rename": "lowercase,replace-spaces,prefix:web-",
+      "quality": 85,
       "format": "webp",
-      "quality": 85
+      "rename": "lowercase,replace-spaces,prefix:web-"
     }
   }
 }
@@ -447,9 +447,9 @@ Here's a comprehensive example showing multiple custom presets for a web develop
       "source": "clients/images/gallery"
     },
     "client-web-thumbs": {
-      "quality": 75,
       "width": 300,
       "height": 225,
+      "quality": 75,
       "format": "webp",
       "output": "clients/web/thumbs",
       "source": "clients/images/gallery"
@@ -489,9 +489,9 @@ Here's a comprehensive example showing multiple custom presets for a web develop
       "output": "clients/social/instagram"
     },
     "client-ui-components": {
-      "canvas": true,
-      "format": "png", 
       "quality": 95,
+      "canvas": true,
+      "format": "png",
       "source": "clients/images/ui",
       "output": "clients/ui/components"
     },
@@ -554,10 +554,10 @@ imgconvert -p client-organized-web
 
 ### Tips for Preset Management
 
-1. **Version Control**: Keep your `.imgconverter.config.json` in version control
-2. **Documentation**: Comment your presets (JSON doesn't support comments, but maintain separate docs)
+1. **Sharing**: Share preset configurations across team members
+2. **Backup**: Keep backup copies of complex preset configurations
 3. **Testing**: Test presets with sample images before production use
-4. **Sharing**: Share preset configurations across team members
-5. **Backup**: Keep backup copies of complex preset configurations
-6. **Canvas Mode**: Use `canvas: true` for maintaining exact dimensions with transparency
-7. **Systematic Naming**: Implement `rename` strategies for consistent file organization across projects
+4. **Version Control**: Keep your `.imgconverter.config.json` in version control
+5. **Canvas Mode**: Use `canvas: true` for maintaining exact dimensions with transparency
+6. **Systematic Naming**: Implement `rename` strategies for consistent file organization across projects
+7. **Documentation**: Comment your presets (JSON doesn't support comments, but maintain separate docs)
