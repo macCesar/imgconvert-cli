@@ -6,10 +6,11 @@
 const fs = require('fs');
 const path = require('path');
 const { logger } = require('../utils/logger');
-const { ALLOY_SCALES, SUPPORTED_FORMATS } = require('../config/defaults');
+const { naturalSort } = require('../utils/sorting');
+const { getMergedPresets } = require('../config/loader');
 const { processImageWithScaling } = require('./scaling');
 const { applyConfigPrecedence } = require('../cli/parser');
-const { getMergedPresets } = require('../config/loader');
+const { ALLOY_SCALES, SUPPORTED_FORMATS } = require('../config/defaults');
 
 /**
  * Process images using Alloy preset
@@ -178,7 +179,7 @@ async function processAlloyPlatform(subPresetName, subPresetConfig, configGroupN
 
   const isDirectory = fs.lstatSync(sourceFolder).isDirectory();
   const inputDir = isDirectory ? sourceFolder : path.dirname(sourceFolder);
-  const files = isDirectory ? fs.readdirSync(sourceFolder) : [path.basename(sourceFolder)];
+  const files = isDirectory ? fs.readdirSync(sourceFolder).sort(naturalSort) : [path.basename(sourceFolder)];
 
   let processedCount = 0;
   let totalOriginalSize = 0;

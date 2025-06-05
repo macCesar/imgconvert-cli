@@ -8,9 +8,10 @@ const os = require('os');
 const path = require('path');
 const sharp = require('sharp');
 const { logger } = require('../utils/logger');
-const { SUPPORTED_FORMATS, CONSTANTS } = require('../config/defaults');
-const { applyConfigPrecedence } = require('../cli/parser');
+const { naturalSort } = require('../utils/sorting');
 const { getMergedPresets } = require('../config/loader');
+const { applyConfigPrecedence } = require('../cli/parser');
+const { SUPPORTED_FORMATS, CONSTANTS } = require('../config/defaults');
 const { determineOutputDirectory, validateOutputDirectory } = require('../utils/validation');
 
 /**
@@ -276,7 +277,7 @@ async function processImages(args, config) {
 
   const isDirectory = fs.lstatSync(inputPath).isDirectory();
   const inputDir = isDirectory ? inputPath : path.dirname(inputPath);
-  const files = isDirectory ? fs.readdirSync(inputPath) : [path.basename(inputPath)];
+  const files = isDirectory ? fs.readdirSync(inputPath).sort(naturalSort) : [path.basename(inputPath)];
 
   // Validate incompatible options
   if (args.name && isDirectory) {

@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2025-06-04
+
+### 🔢 Natural Numeric File Sorting Enhancement
+
+#### 📁 Improved Directory Processing Order
+- **Natural Sort Implementation**: Added intelligent numeric sorting for batch file processing
+- **Numeric Filename Handling**: Files with pure numeric names now process in logical order (1.png, 2.png, 10.png, 11.png) instead of lexicographic order (1.png, 10.png, 11.png, 2.png)
+- **Mixed Content Support**: Enhanced sorting also handles mixed alphanumeric filenames with numeric awareness
+
+#### 🏗️ Code Structure Improvements
+- **Centralized Utility**: Created `src/utils/sorting.js` module for reusable sorting functionality
+- **DRY Principle**: Eliminated code duplication by consolidating natural sort logic
+- **Clean Architecture**: Both `image.js` and `alloy.js` processors now import from shared utility
+
+#### 🎯 Processing Benefits
+- **Logical Sequence**: Image sequences and numbered assets process in expected numerical order
+- **Predictable Output**: Enumerated output files maintain logical numbering when using `--rename enumerate`
+- **Better UX**: Especially valuable for processing animation frames, sequential images, and organized asset collections
+
+#### 🔧 Technical Implementation
+- **Smart Comparison**: Pure numeric filenames are compared mathematically for true numeric ordering
+- **Fallback Strategy**: Non-numeric and mixed filenames use `localeCompare` with numeric sensitivity
+- **Universal Application**: Applied to both standard image processing and Alloy preset workflows
+- **Zero Breaking Changes**: Maintains full backward compatibility with existing processing behavior
+
+#### 💡 Use Cases Enhanced
+```bash
+# Animation frames process in correct order
+imgconvert frames/ --rename enumerate
+# 1.png → 001-1.webp, 2.png → 002-2.webp, 10.png → 003-10.webp
+
+# Organized asset sequences maintain logical flow
+imgconvert assets/ -f webp
+# Processes: 1.jpg, 2.jpg, 3.jpg, 10.jpg, 11.jpg, 20.jpg (not 1.jpg, 10.jpg, 11.jpg, 2.jpg, 20.jpg)
+```
+
+#### 📦 Module Structure
+- **New Utility**: `src/utils/sorting.js` - Centralized natural sorting functionality
+- **Updated Processors**: Enhanced `image.js` and `alloy.js` with intelligent file ordering
+- **Maintainable Code**: Single source of truth for sorting logic across the application
+
 ## [1.7.0] - 2025-06-02
 
 ### ✨ PNG Transparency Preservation - Canvas Resize Mode
