@@ -73,9 +73,9 @@ Typical compression results:
 ## 📊 Project Stats
 
 - **Platforms**: macOS, Linux, Windows
-- **Dependencies**: 3 (sharp, minimist, chalk)
-- **Test Coverage**: 74 comprehensive tests
 - **Bundle Size**: ~45KB (excluding Sharp)
+- **Test Coverage**: 74 comprehensive tests
+- **Dependencies**: 3 (sharp, minimist, chalk)
 
 ## Table of Contents
 - [Features](#features)
@@ -226,9 +226,9 @@ Extract specific regions before resizing:
 Choose between two different resizing approaches:
 
 #### Standard Resize (Default)
+- **Use case**: Traditional image resizing
 - **Behavior**: Scales the image proportionally
 - **Transparency**: Preserves existing transparency
-- **Use case**: Traditional image resizing
 
 ```bash
 imgconvert photo.png -h 1660
@@ -236,9 +236,9 @@ imgconvert photo.png -h 1660
 ```
 
 #### Canvas Resize (`--canvas`)
+- **Use case**: Design layouts, maintaining exact canvas sizes
 - **Behavior**: Maintains original image, adds padding to reach target dimensions
 - **Transparency**: Adds transparent padding for PNG/WebP, white for JPEG
-- **Use case**: Design layouts, maintaining exact canvas sizes
 
 ```bash
 imgconvert photo.png --canvas -h 1660
@@ -290,11 +290,11 @@ Multiple rename strategies can be combined by separating them with commas:
 imgconvert photos --rename "lowercase,replace-spaces,prefix:web-"
 # "My Photo.jpg" → "web-my-photo.jpg"
 
-imgconvert images --rename "enumerate,suffix:-optimized"
-# "photo.jpg" → "001-photo-optimized.jpg"
+imgconvert images --rename "prefix:gallery-,enumerate"
+# "photo.jpg" → "gallery-001-photo.jpg"
 ```
 
-**Processing Order**: Strategies are applied in the order specified, allowing for predictable filename transformations.
+**Visual Order**: Strategies are applied to build the filename in visual order from left to right, making the result predictable and intuitive.
 
 ## Examples
 
@@ -384,7 +384,7 @@ imgconvert images --rename "enumerate,suffix:-optimized"
    ```bash
    # Add sequential numbers
    imgconvert photos --rename enumerate -f webp
-   # photo1.jpg → photo1-1.webp, photo2.jpg → photo2-2.webp
+   # photo1.jpg → 001-photo1.webp, photo2.jpg → 002-photo2.webp
 
    # Convert to lowercase and replace spaces
    imgconvert "My Photos" --rename "lowercase,replace-spaces"

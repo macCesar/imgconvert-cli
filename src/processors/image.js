@@ -52,23 +52,28 @@ function generateFilename(originalName, index, args, isSingleFile = false) {
   if (args.rename) {
     const strategies = args.rename.split(',').map(s => s.trim());
 
+    // Apply strategies in visual order (left to right in final filename)
+    let parts = { prefix: '', core: filename, suffix: '' };
+
     for (const strategy of strategies) {
       if (strategy === 'enumerate') {
         // Add enumerated prefix with padding (001-, 002-, etc.)
         const paddedIndex = String(index).padStart(3, '0');
-        filename = paddedIndex + '-' + filename;
+        parts.prefix = parts.prefix + paddedIndex + '-';
       } else if (strategy === 'lowercase') {
-        filename = filename.toLowerCase();
+        parts.core = parts.core.toLowerCase();
       } else if (strategy === 'replace-spaces') {
-        filename = filename.replace(/\s+/g, '-');
+        parts.core = parts.core.replace(/\s+/g, '-');
       } else if (strategy.startsWith('prefix:')) {
         const prefix = strategy.substring(7);
-        filename = prefix + filename;
+        parts.prefix = parts.prefix + prefix;
       } else if (strategy.startsWith('suffix:')) {
         const suffix = strategy.substring(7);
-        filename = filename + suffix;
+        parts.suffix = parts.suffix + suffix;
       }
     }
+
+    filename = parts.prefix + parts.core + parts.suffix;
   }
 
   return filename;

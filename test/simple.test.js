@@ -203,7 +203,7 @@ describe('imgconvert CLI Tests', function () {
   describe('Basic CLI functionality', () => {
     it('should display version information', () => {
       const result = execCLI('-v');
-      expect(result).to.include('1.6.0');
+      expect(result).to.include('1.7.2');
       expect(result).to.include('imgconvert-cli version');
     });
 
@@ -1288,13 +1288,13 @@ describe('imgconvert CLI Tests', function () {
 
     it('should demonstrate difference between canvas and standard resize', () => {
       const inputFile = path.join(testDir, 'mountain-lake.png');
-      
+
       // Standard resize
       const standardDir = path.join(testDir, 'standard-resize');
       const standardCommand = `"${inputFile}" -h 400 -o "${standardDir}"`;
       const standardResult = execCLI(standardCommand);
       logResult('Standard resize', standardResult);
-      
+
       // Canvas resize
       const canvasDir = path.join(testDir, 'canvas-resize');
       const canvasCommand = `"${inputFile}" --canvas -h 400 -o "${canvasDir}"`;
@@ -1307,7 +1307,7 @@ describe('imgconvert CLI Tests', function () {
 
       const standardFile = path.join(standardDir, 'mountain-lake.png');
       const canvasFile = path.join(canvasDir, 'mountain-lake.png');
-      
+
       expect(checkFileExists(standardFile, 'Standard resize output')).to.be.true;
       expect(checkFileExists(canvasFile, 'Canvas resize output')).to.be.true;
     });

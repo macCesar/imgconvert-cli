@@ -129,7 +129,7 @@ function validateOutputDirectory(outputDir, shouldCreate = true) {
 /**
  * Determine output directory
  * @param {Object} args - Arguments object
- * @param {Object} config - Configuration object  
+ * @param {Object} config - Configuration object
  * @param {string} inputPath - Input file/directory path
  * @returns {string} Output directory path
  */
@@ -140,7 +140,9 @@ function determineOutputDirectory(args, config, inputPath) {
     return config.output;
   } else if (inputPath) {
     const inputDir = fs.lstatSync(inputPath).isDirectory() ? inputPath : path.dirname(inputPath);
-    return path.join(inputDir, 'converted');
+    const inputName = path.basename(inputDir);
+    const parentDir = path.dirname(inputDir);
+    return path.join(parentDir, `${inputName}-converted`);
   }
   return null;
 }
