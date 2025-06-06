@@ -5,20 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.3] - 2025-06-05
+
+### Fixed
+- Fixed cryptic error when using invalid command-line options
+- Invalid options now show clear error message with suggestion to run `--help`
+
 ## [1.7.2] - 2025-06-05
 
-### 🎯 Enhanced Rename Strategy UX
-
-#### 💡 Intuitive Visual Order Processing
-- **Improved Strategy Application**: Rename strategies now build filenames in visual left-to-right order
-- **Predictable Results**: `--rename "prefix:gallery-,enumerate"` now produces `gallery-001-photo.jpg` as expected
-- **Better User Experience**: The order specified in the command now directly corresponds to the visual result
-- **Zero Breaking Impact**: Change affects only the recent rename feature, maintaining compatibility
-
-#### 📚 Documentation Updates
-- **Clarified Behavior**: Updated README to reflect "Visual Order" instead of "Processing Order"
-- **Improved Examples**: Enhanced examples to demonstrate the intuitive behavior
-- **Better Explanation**: Clearer documentation of how strategies combine to build final filenames
+### Changed
+- Rename strategies now build filenames in visual left-to-right order
+- `--rename "prefix:gallery-,enumerate"` now produces `gallery-001-photo.jpg` as expected
 
 ## [1.7.1] - 2025-06-04
 

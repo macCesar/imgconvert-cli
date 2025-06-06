@@ -27,7 +27,15 @@ function parseArguments(argv) {
       n: 'name',
       d: 'debug'
     },
-    boolean: ['replace-originals', 'debug', 'help', 'version', 'canvas']
+    boolean: ['replace-originals', 'debug', 'help', 'version', 'canvas'],
+    unknown: (arg) => {
+      if (arg.startsWith('-')) {
+        logger.error(`Error: Unknown option '${arg}'`);
+        logger.error(`Run 'imgconvert --help' to see available options.`);
+        process.exit(1);
+      }
+      return true;
+    }
   });
 
   // Build args object
@@ -106,12 +114,20 @@ function parseArguments(argv) {
   }
 
   // Parse preset and subpreset
-  if (args.preset && args.preset.includes(':')) {
+  if (args.preset && typeof args.preset === 'string' && args.preset.includes(':')) {
     const parts = args.preset.split(':');
     args.presetName = parts[0];
     args.subPreset = parts[1];
-  } else {
+  } else if (args.preset && typeof args.preset === 'string') {
     args.presetName = args.preset;
+    args.subPreset = null;
+  } else if (args.preset && typeof args.preset !== 'string') {
+    // If preset is not a string (e.g., boolean, array), it's invalid
+    logger.error(`Error: Invalid preset value. Expected a string but got: ${typeof args.preset}`);
+    logger.error(`Tip: Use '-p <preset>' or '--preset <preset>' to specify a preset.`);
+    process.exit(1);
+  } else {
+    args.presetName = null;
     args.subPreset = null;
   }
 
