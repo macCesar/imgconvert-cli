@@ -34,6 +34,49 @@ function parseHexToRgba(hexColor) {
 }
 
 /**
+ * Map user-friendly position names to Sharp gravity constants
+ * @param {string} position - User-provided position string
+ * @returns {number} Sharp gravity constant
+ */
+function mapPositionToGravity(position) {
+  if (!position) return sharp.gravity.center;
+
+  // Normalize position string
+  const normalizedPosition = position.toLowerCase().trim();
+
+  // Map user-friendly positions to Sharp gravity constants
+  const positionMap = {
+    // Single positions
+    'center': sharp.gravity.center,
+    'centre': sharp.gravity.centre,
+    'top': sharp.gravity.north,
+    'bottom': sharp.gravity.south,
+    'left': sharp.gravity.west,
+    'right': sharp.gravity.east,
+    'north': sharp.gravity.north,
+    'south': sharp.gravity.south,
+    'east': sharp.gravity.east,
+    'west': sharp.gravity.west,
+
+    // Corner positions
+    'top left': sharp.gravity.northwest,
+    'top right': sharp.gravity.northeast,
+    'bottom left': sharp.gravity.southwest,
+    'bottom right': sharp.gravity.southeast,
+    'left top': sharp.gravity.northwest,
+    'right top': sharp.gravity.northeast,
+    'left bottom': sharp.gravity.southwest,
+    'right bottom': sharp.gravity.southeast,
+    'northwest': sharp.gravity.northwest,
+    'northeast': sharp.gravity.northeast,
+    'southwest': sharp.gravity.southwest,
+    'southeast': sharp.gravity.southeast
+  };
+
+  return positionMap[normalizedPosition] || sharp.gravity.center;
+}
+
+/**
  * Generate filename based on rename strategies
  * @param {string} originalName - Original filename without extension
  * @param {number} index - File index for enumeration
@@ -133,12 +176,14 @@ async function processImage(inputFile, outputFileBase, format, options) {
       width: options.width,
       height: options.height,
       fit: sharp.fit[options.fit] || sharp.fit.contain,
-      position: sharp.gravity[options.position] || sharp.gravity.center
+      position: mapPositionToGravity(options.position)
     };
 
     // If --canvas option is used, force dimensions that will require padding
     if (options.canvas) {
       resizeOptions.fit = sharp.fit.contain; // Force contain for canvas resize
+      // In canvas mode, respect user's position preference (top, center, bottom, etc.)
+      // This allows positioning the image within the expanded canvas
 
       // For canvas mode, we need to force exact dimensions to ensure padding
       // The trick is to specify both width and height, even if user only gave one
@@ -169,11 +214,17 @@ async function processImage(inputFile, outputFileBase, format, options) {
         }
       }
     } else {
-      // Normal resize mode (not canvas) - only apply background if user specified one
+      // Normal resize mode (not canvas) - apply smart background defaults
       if (options.background) {
         const rgba = parseHexToRgba(options.background);
         if (rgba) {
           resizeOptions.background = rgba;
+        }
+      } else {
+        // For non-canvas mode with contain/cover, apply transparent background for formats that support it
+        if ((resizeOptions.fit === sharp.fit.contain || resizeOptions.fit === sharp.fit.cover) &&
+          (sharpFormat === 'png' || sharpFormat === 'webp' || sharpFormat === 'avif')) {
+          resizeOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
         }
       }
     }

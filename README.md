@@ -199,7 +199,7 @@ Controls how images are resized when both width and height are specified:
 
 ### Position Control (`--position`)
 
-When using `--fit cover` or `--fit contain`, controls which part of the image to preserve or focus on:
+When using `--fit cover`, `--fit contain`, or `--canvas`, controls which part of the image to preserve or focus on:
 
 | Position       | Description                  | Best For                 |
 | -------------- | ---------------------------- | ------------------------ |
@@ -239,10 +239,17 @@ imgconvert photo.png -h 1660
 - **Use case**: Design layouts, maintaining exact canvas sizes
 - **Behavior**: Maintains original image, adds padding to reach target dimensions
 - **Transparency**: Adds transparent padding for PNG/WebP, white for JPEG
+- **Position Control**: Use `--position` to control where the image is placed within the expanded canvas
 
 ```bash
 imgconvert photo.png --canvas -h 1660
-# 1024x1536 → 1024x1660 (original image + transparent padding)
+# 1024x1536 → 1024x1660 (original image centered + transparent padding)
+
+imgconvert photo.png --canvas -h 1660 --position top
+# 1024x1536 → 1024x1660 (original image at top + transparent padding at bottom)
+
+imgconvert photo.png --canvas -h 1660 --position bottom
+# 1024x1536 → 1024x1660 (original image at bottom + transparent padding at top)
 
 imgconvert photo.png --canvas -h 1660 -b "#ff0000"
 # 1024x1536 → 1024x1660 (original image + red padding)
@@ -253,6 +260,7 @@ imgconvert photo.png --canvas -h 1660 -b "#ff0000"
 | **Image scaling**    | ✅ Scales proportionally | ❌ Maintains original size  |
 | **Exact dimensions** | ❌ Respects aspect ratio | ✅ Exact target dimensions  |
 | **Transparency**     | Preserves existing      | ✅ Adds transparent padding |
+| **Position control** | Via `--position`        | ✅ Via `--position` (NEW)   |
 | **Use case**         | Photo resizing          | Design layouts, mockups    |
 
 ## File Naming and Batch Renaming
@@ -365,7 +373,14 @@ imgconvert images --rename "prefix:gallery-,enumerate"
    ```bash
    # Resize canvas to larger dimensions with transparent padding
    imgconvert photo.png --canvas -h 1660
-   # Original 1024x1536 → Output 1024x1660 with transparent padding
+   # Original 1024x1536 → Output 1024x1660 with transparent padding (centered)
+
+   # Control position within the expanded canvas
+   imgconvert photo.png --canvas -h 1660 --position top
+   # Original 1024x1536 → Output 1024x1660 with image at top, transparent padding at bottom
+
+   imgconvert photo.png --canvas -h 1660 --position bottom
+   # Original 1024x1536 → Output 1024x1660 with image at bottom, transparent padding at top
 
    # Resize canvas with custom background color
    imgconvert photo.png --canvas -h 1660 -b "#ffffff"
