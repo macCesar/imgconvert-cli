@@ -54,14 +54,12 @@ class Logger {
       savings = ((totalOriginalSize - totalNewSize) / totalOriginalSize * 100).toFixed(2);
     }
 
-    console.log(chalk.green(`
-Processing complete! Summary:
+    console.log(chalk.green(`Processing complete! Summary:
   - Processed files: ${chalk.yellow(processedCount)}
   - Total original size: ${chalk.yellow(this.formatBytes(totalOriginalSize))}
   - Total new size: ${chalk.yellow(this.formatBytes(totalNewSize))}
   - Total savings: ${chalk.yellow(savings + '%')}
-  - Duration: ${chalk.yellow(duration + ' seconds')}
-`));
+  - Duration: ${chalk.yellow(duration + ' seconds')}`));
   }
 
   formatBytes(bytes) {

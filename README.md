@@ -199,7 +199,7 @@ Controls how images are resized when both width and height are specified:
 
 ### Position Control (`--position`)
 
-When using `--fit cover`, controls which part of the image to preserve:
+When using `--fit cover` or `--fit contain`, controls which part of the image to preserve or focus on:
 
 | Position       | Description                  | Best For                 |
 | -------------- | ---------------------------- | ------------------------ |
@@ -343,7 +343,16 @@ imgconvert images --rename "prefix:gallery-,enumerate"
    imgconvert image.jpg --fit cover --position "top left" -w 400 -h 400
    ```
 
-6. **Manual cropping before resizing:**
+6. **Control positioning with contain strategy (letterboxing):**
+   ```bash
+   # Position image at top of canvas when letterboxing
+   imgconvert wide-image.jpg --fit contain --position top -w 400 -h 400
+
+   # Position image at bottom-right when letterboxing
+   imgconvert landscape.jpg --fit contain --position "bottom right" -w 600 -h 600
+   ```
+
+7. **Manual cropping before resizing:**
    ```bash
    # Crop specific region then resize
    imgconvert image.png --crop 100,50,300,200 -w 200 -h 150
@@ -352,7 +361,7 @@ imgconvert images --rename "prefix:gallery-,enumerate"
    imgconvert photo.jpg --crop 0,0,500,500 --fit cover -w 300 -h 300 -f webp
    ```
 
-7. **Canvas resizing (maintain original image, add padding):**
+8. **Canvas resizing (maintain original image, add padding):**
    ```bash
    # Resize canvas to larger dimensions with transparent padding
    imgconvert photo.png --canvas -h 1660
@@ -369,7 +378,7 @@ imgconvert images --rename "prefix:gallery-,enumerate"
 
 ### File Naming and Renaming
 
-7. **Custom naming for single files:**
+9. **Custom naming for single files:**
    ```bash
    # Rename during conversion
    imgconvert hero-photo.jpg --name "main-banner" -f webp
@@ -380,7 +389,7 @@ imgconvert images --rename "prefix:gallery-,enumerate"
    # Output: avatar.png
    ```
 
-8. **Batch renaming strategies:**
+10. **Batch renaming strategies:**
    ```bash
    # Add sequential numbers
    imgconvert photos --rename enumerate -f webp

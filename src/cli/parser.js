@@ -31,6 +31,10 @@ function parseArguments(argv) {
     string: ['crop', 'fit', 'position', 'rename'],
     unknown: (arg) => {
       if (arg.startsWith('-')) {
+        // Allow negative numbers (they will be validated later)
+        if (/^-\d+$/.test(arg)) {
+          return true;
+        }
         logger.error(`Error: Unknown option '${arg}'`);
         logger.error(`Run 'imgconvert --help' to see available options.`);
         process.exit(1);

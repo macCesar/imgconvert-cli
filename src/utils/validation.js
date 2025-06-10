@@ -139,10 +139,10 @@ function determineOutputDirectory(args, config, inputPath) {
   } else if (config.output) {
     return config.output;
   } else if (inputPath) {
-    const inputDir = fs.lstatSync(inputPath).isDirectory() ? inputPath : path.dirname(inputPath);
-    const inputName = path.basename(inputDir);
-    const parentDir = path.dirname(inputDir);
-    return path.join(parentDir, `${inputName}-converted`);
+    const isDirectory = fs.lstatSync(inputPath).isDirectory();
+    const baseDir = isDirectory ? path.dirname(inputPath) : path.dirname(inputPath);
+    const outputName = isDirectory ? `${path.basename(inputPath)}-converted` : 'converted';
+    return path.join(baseDir, outputName);
   }
   return null;
 }
