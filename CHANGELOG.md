@@ -9,18 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Position control for canvas mode: `--canvas --position top/bottom/left/right` now works
-- Enhanced position mapping with support for user-friendly names (top, bottom, etc.)
-- Canvas mode now respects `--position` parameter for precise image placement within expanded canvas
 
 ### Fixed
 - Fixed position parameter not working due to incorrect Sharp gravity mapping
 - Fixed transparent background not applied by default for `--fit contain` operations on PNG/WebP/AVIF
-- Position names like `top`, `bottom`, `left`, `right` now correctly map to Sharp's gravity constants
-
-### Changed
-- Improved position mapping function with comprehensive user-friendly position names
-- Canvas mode now supports all position options (top, bottom, left, right, corners)
-- Better default transparent backgrounds for formats that support transparency
 
 ## [1.7.3] - 2025-06-05
 
