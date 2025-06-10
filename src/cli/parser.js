@@ -28,6 +28,7 @@ function parseArguments(argv) {
       d: 'debug'
     },
     boolean: ['replace-originals', 'debug', 'help', 'version', 'canvas'],
+    string: ['crop', 'fit', 'position', 'rename'],
     unknown: (arg) => {
       if (arg.startsWith('-')) {
         logger.error(`Error: Unknown option '${arg}'`);
