@@ -27,7 +27,7 @@ function parseArguments(argv) {
       n: 'name',
       d: 'debug'
     },
-    boolean: ['replace-originals', 'debug', 'help', 'version', 'canvas'],
+    boolean: ['replace-originals', 'debug', 'help', 'version', 'canvas', 'trim'],
     string: ['crop', 'fit', 'position', 'rename'],
     unknown: (arg) => {
       if (arg.startsWith('-')) {
@@ -47,21 +47,22 @@ function parseArguments(argv) {
   const args = {
     _: userArgs._,
     help: userArgs.help,
+    fit: userArgs.fit || null,
     version: userArgs.version,
+    name: userArgs.name || null,
+    crop: userArgs.crop || null,
+    trim: userArgs.trim || false,
     width: userArgs.width || null,
     debug: userArgs.debug || false,
     output: userArgs.output || null,
     preset: userArgs.preset || null,
     height: userArgs.height || null,
     format: userArgs.format || null,
-    quality: userArgs.quality || null,
-    background: userArgs.background || null,
-    fit: userArgs.fit || null,
-    crop: userArgs.crop || null,
-    position: userArgs.position || null,
-    name: userArgs.name || null,
     rename: userArgs.rename || null,
     canvas: userArgs.canvas || false,
+    quality: userArgs.quality || null,
+    position: userArgs.position || null,
+    background: userArgs.background || null,
     'replace-originals': userArgs['replace-originals'] || false,
   };
 
@@ -170,17 +171,18 @@ function applyConfigPrecedence(args, config, presets) {
   };
 
   // Apply precedence for each option
-  args.format = getValue('format', null);
-  args.quality = getValue('quality', 85);
+  args.crop = getValue('crop', null);
+  args.name = getValue('name', null);
+  args.trim = getValue('trim', false);
   args.width = getValue('width', null);
+  args.fit = getValue('fit', 'contain');
   args.height = getValue('height', null);
   args.output = getValue('output', null);
-  args.background = getValue('background', null);
-  args.crop = getValue('crop', null);
-  args.fit = getValue('fit', 'contain');
-  args.position = getValue('position', 'center');
-  args.name = getValue('name', null);
   args.rename = getValue('rename', null);
+  args.format = getValue('format', null);
+  args.quality = getValue('quality', 85);
+  args.position = getValue('position', 'center');
+  args.background = getValue('background', null);
   args['replace-originals'] = getValue('replace-originals', false);
 
   // Handle preset source

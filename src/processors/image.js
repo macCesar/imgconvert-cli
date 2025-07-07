@@ -133,9 +133,14 @@ function generateFilename(originalName, index, args, isSingleFile = false) {
 async function processImage(inputFile, outputFileBase, format, options) {
   let sharpInstance = sharp(inputFile);
 
+  // Handle trim first (if specified) - removes transparent borders
+  if (options.trim) {
+    sharpInstance = sharpInstance.trim();
+  }
+
   // Preserve the original extension for the output
-  let outputExtension = format;
   let sharpFormat = format;
+  let outputExtension = format;
 
   if (!outputExtension) {
     outputExtension = path.extname(inputFile).slice(1).toLowerCase();
@@ -170,62 +175,195 @@ async function processImage(inputFile, outputFileBase, format, options) {
     }
   }
 
-  // Handle resize with fit and position options
-  if (options.width || options.height) {
+  // Handle canvas mode (extend canvas without resizing image)
+  if (options.canvas && (options.width || options.height)) {
+    const metadata = await sharpInstance.metadata();
+    const currentWidth = metadata.width;
+    const currentHeight = metadata.height;
+
+    // Determine target dimensions
+    const targetWidth = options.width || currentWidth;
+    const targetHeight = options.height || currentHeight;
+
+    // Define valid positions and their mappings
+    const positionMap = {
+      'center': { horizontal: 'center', vertical: 'center' },
+      'top': { horizontal: 'center', vertical: 'top' },
+      'bottom': { horizontal: 'center', vertical: 'bottom' },
+      'left': { horizontal: 'left', vertical: 'center' },
+      'right': { horizontal: 'right', vertical: 'center' },
+      'top-left': { horizontal: 'left', vertical: 'top' },
+      'top-right': { horizontal: 'right', vertical: 'top' },
+      'bottom-left': { horizontal: 'left', vertical: 'bottom' },
+      'bottom-right': { horizontal: 'right', vertical: 'bottom' }
+    };
+
+    // Validate and normalize position
+    const normalizedPosition = options.position || 'center';
+    const positionConfig = positionMap[normalizedPosition];
+
+    if (!positionConfig) {
+      logger.warning(`Invalid position '${normalizedPosition}', defaulting to 'center'`);
+      positionConfig = positionMap['center'];
+    }
+
+    // Check if we need to extend or warn about reduction
+    const needsHorizontalExtension = targetWidth > currentWidth;
+    const needsVerticalExtension = targetHeight > currentHeight;
+    const needsReduction = targetWidth < currentWidth || targetHeight < currentHeight;
+
+    if (needsReduction) {
+      logger.warning(`Canvas dimensions (${targetWidth}x${targetHeight}) are smaller than image (${currentWidth}x${currentHeight}). Image will be cropped.`);
+    }
+
+    // Only process if at least one dimension needs extension
+    if (needsHorizontalExtension || needsVerticalExtension || needsReduction) {
+      let extendOptions = { top: 0, bottom: 0, left: 0, right: 0 };
+
+      // Calculate horizontal padding/cropping
+      const horizontalDiff = targetWidth - currentWidth;
+      if (horizontalDiff !== 0) {
+        if (horizontalDiff > 0) {
+          // Extension needed
+          switch (positionConfig.horizontal) {
+            case 'left':
+              extendOptions.right = horizontalDiff;
+              break;
+            case 'right':
+              extendOptions.left = horizontalDiff;
+              break;
+            case 'center':
+            default:
+              extendOptions.left = Math.floor(horizontalDiff / 2);
+              extendOptions.right = horizontalDiff - extendOptions.left;
+              break;
+          }
+        } else {
+          // Reduction needed (negative values will crop)
+          const cropAmount = Math.abs(horizontalDiff);
+          switch (positionConfig.horizontal) {
+            case 'left':
+              extendOptions.right = -cropAmount;
+              break;
+            case 'right':
+              extendOptions.left = -cropAmount;
+              break;
+            case 'center':
+            default:
+              const leftCrop = Math.floor(cropAmount / 2);
+              extendOptions.left = -leftCrop;
+              extendOptions.right = -(cropAmount - leftCrop);
+              break;
+          }
+        }
+      }
+
+      // Calculate vertical padding/cropping
+      const verticalDiff = targetHeight - currentHeight;
+      if (verticalDiff !== 0) {
+        if (verticalDiff > 0) {
+          // Extension needed
+          switch (positionConfig.vertical) {
+            case 'top':
+              extendOptions.bottom = verticalDiff;
+              break;
+            case 'bottom':
+              extendOptions.top = verticalDiff;
+              break;
+            case 'center':
+            default:
+              extendOptions.top = Math.floor(verticalDiff / 2);
+              extendOptions.bottom = verticalDiff - extendOptions.top;
+              break;
+          }
+        } else {
+          // Reduction needed (negative values will crop)
+          const cropAmount = Math.abs(verticalDiff);
+          switch (positionConfig.vertical) {
+            case 'top':
+              extendOptions.bottom = -cropAmount;
+              break;
+            case 'bottom':
+              extendOptions.top = -cropAmount;
+              break;
+            case 'center':
+            default:
+              const topCrop = Math.floor(cropAmount / 2);
+              extendOptions.top = -topCrop;
+              extendOptions.bottom = -(cropAmount - topCrop);
+              break;
+          }
+        }
+      }
+
+      // Set background color
+      if (options.background) {
+        // parseHexToRgba should handle: #RGB, #RGBA, #RRGGBB, #RRGGBBAA, rgb(), rgba(), color names
+        const rgba = parseHexToRgba(options.background);
+        if (rgba) {
+          extendOptions.background = rgba;
+        } else {
+          logger.warning(`Invalid background color '${options.background}', using default`);
+          // Fall through to format-based defaults
+        }
+      }
+
+      // Use format-appropriate defaults if no valid background specified
+      if (!extendOptions.background) {
+        const transparentFormats = ['png', 'webp', 'avif', 'tiff'];
+        if (transparentFormats.includes(sharpFormat)) {
+          extendOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
+        } else {
+          extendOptions.background = { r: 255, g: 255, b: 255, alpha: 1 }; // White
+        }
+      }
+
+      // Apply the extension/cropping
+      sharpInstance = sharpInstance.extend(extendOptions);
+    }
+  }
+  // Handle normal resize with fit and position options
+  else if (options.width || options.height) {
+    // Validate fit option
+    const validFits = ['contain', 'cover', 'fill', 'inside', 'outside'];
+    const selectedFit = options.fit || 'contain';
+
+    if (!validFits.includes(selectedFit)) {
+      logger.warning(`Invalid fit option '${selectedFit}', defaulting to 'contain'`);
+      selectedFit = 'contain';
+    }
+
     const resizeOptions = {
       width: options.width,
       height: options.height,
-      fit: sharp.fit[options.fit] || sharp.fit.contain,
-      position: mapPositionToGravity(options.position)
+      fit: sharp.fit[selectedFit],
+      withoutEnlargement: options.withoutEnlargement || false
     };
 
-    // If --canvas option is used, force dimensions that will require padding
-    if (options.canvas) {
-      resizeOptions.fit = sharp.fit.contain; // Force contain for canvas resize
-      // In canvas mode, respect user's position preference (top, center, bottom, etc.)
-      // This allows positioning the image within the expanded canvas
+    // Only add position for fits that use it (contain and cover)
+    if (selectedFit === 'contain' || selectedFit === 'cover') {
+      resizeOptions.position = mapPositionToGravity(options.position);
+    }
 
-      // For canvas mode, we need to force exact dimensions to ensure padding
-      // The trick is to specify both width and height, even if user only gave one
-      if (options.height && !options.width) {
-        // User specified height only - use original width to force padding
-        const metadata = await sharpInstance.metadata();
-        resizeOptions.width = metadata.width;
-      } else if (options.width && !options.height) {
-        // User specified width only - use original height to force padding
-        const metadata = await sharpInstance.metadata();
-        resizeOptions.height = metadata.height;
+    // Apply background
+    if (options.background) {
+      const rgba = parseHexToRgba(options.background);
+      if (rgba) {
+        resizeOptions.background = rgba;
+      } else {
+        logger.warning(`Invalid background color '${options.background}', using default`);
       }
+    }
 
-      // Apply background for canvas mode
-      if (options.background) {
-        // User specified background - use it
-        const rgba = parseHexToRgba(options.background);
-        if (rgba) {
-          resizeOptions.background = rgba;
-        }
+    // For contain fit, apply transparent background for formats that support it
+    // Note: 'cover' and 'fill' don't leave empty spaces, so background doesn't matter
+    // 'inside' and 'outside' also don't use background
+    if (!resizeOptions.background && selectedFit === 'contain') {
+      const transparentFormats = ['png', 'webp', 'avif', 'tiff'];
+      if (transparentFormats.includes(sharpFormat)) {
+        resizeOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
       } else {
-        // No background specified - use format-appropriate defaults for canvas mode
-        if (sharpFormat === 'png' || sharpFormat === 'webp' || sharpFormat === 'avif') {
-          resizeOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
-        } else {
-          // For JPEG and other formats that don't support transparency, use white
-          resizeOptions.background = { r: 255, g: 255, b: 255, alpha: 1 };
-        }
-      }
-    } else {
-      // Normal resize mode (not canvas) - apply smart background defaults
-      if (options.background) {
-        const rgba = parseHexToRgba(options.background);
-        if (rgba) {
-          resizeOptions.background = rgba;
-        }
-      } else {
-        // For non-canvas mode with contain/cover, apply transparent background for formats that support it
-        if ((resizeOptions.fit === sharp.fit.contain || resizeOptions.fit === sharp.fit.cover) &&
-          (sharpFormat === 'png' || sharpFormat === 'webp' || sharpFormat === 'avif')) {
-          resizeOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
-        }
+        resizeOptions.background = { r: 255, g: 255, b: 255, alpha: 1 }; // White for JPEG, etc.
       }
     }
 
@@ -348,23 +486,24 @@ async function processImages(args, config) {
     return;
   }
 
+  let totalNewSize = 0;
   let processedCount = 0;
   let totalOriginalSize = 0;
-  let totalNewSize = 0;
 
   // Process options
   const options = {
-    quality: args.quality,
+    fit: args.fit,
+    crop: args.crop,
+    trim: args.trim,
     width: args.width,
     height: args.height,
-    crop: args.crop,
-    fit: args.fit,
-    position: args.position,
-    background: args.background,
     canvas: args.canvas,
-    replaceOriginal: args['replace-originals'],
     outputDir: outputDir,
-    _userArgs: args._userArgs // Pass user args to check explicit background
+    quality: args.quality,
+    position: args.position,
+    _userArgs: args._userArgs, // Pass user args to check explicit background
+    background: args.background,
+    replaceOriginal: args['replace-originals']
   };
 
   const format = args.format && args.format !== 'none' ? args.format : null;
@@ -404,11 +543,46 @@ async function processImages(args, config) {
   const duration = ((endTime - startTime) / 1000).toFixed(2);
 
   logger.summary({
-    processedCount,
-    totalOriginalSize,
+    duration,
     totalNewSize,
-    duration
+    processedCount,
+    totalOriginalSize
   });
+}
+
+// Helper function to map position strings to Sharp gravity constants
+function mapPositionToGravity(position) {
+  // Sharp uses different terminology for positions
+  const positionMap = {
+    'center': sharp.gravity.center,
+    'centre': sharp.gravity.centre,
+    'north': sharp.gravity.north,
+    'south': sharp.gravity.south,
+    'east': sharp.gravity.east,
+    'west': sharp.gravity.west,
+    'northeast': sharp.gravity.northeast,
+    'northwest': sharp.gravity.northwest,
+    'southeast': sharp.gravity.southeast,
+    'southwest': sharp.gravity.southwest,
+    // Map common position names to Sharp equivalents
+    'top': sharp.gravity.north,
+    'bottom': sharp.gravity.south,
+    'left': sharp.gravity.west,
+    'right': sharp.gravity.east,
+    'top-left': sharp.gravity.northwest,
+    'top-right': sharp.gravity.northeast,
+    'bottom-left': sharp.gravity.southwest,
+    'bottom-right': sharp.gravity.southeast
+  };
+
+  const normalizedPosition = (position || 'center').toLowerCase();
+
+  if (!positionMap[normalizedPosition]) {
+    logger.warning(`Invalid position '${position}' for resize, defaulting to 'center'`);
+    return sharp.gravity.center;
+  }
+
+  return positionMap[normalizedPosition];
 }
 
 module.exports = {

@@ -38,6 +38,7 @@ Options:
   ${chalk.green('--position')}             Set crop position when using fit: cover (${chalk.yellow('center, top, bottom, left, right, "top left", etc.')})
   ${chalk.green('--crop')}                 Manual crop coordinates (${chalk.yellow('format: left,top,width,height')})
   ${chalk.green('--canvas')}               Resize canvas instead of image (maintains original image, adds transparent padding)
+  ${chalk.green('--trim')}                 Automatically remove transparent borders around images
   ${chalk.green('--replace-originals')}    Replace original files instead of creating copies (default: false)
 
   ${chalk.green('-d, --debug')}            Enable debug mode to show detailed information
@@ -51,6 +52,7 @@ Examples:
   ${chalk.green('imgconvert image.jpg -n "converted"')}                  Convert single file with custom name
   ${chalk.green('imgconvert image.jpg -p web')}                          Apply web preset (webp, quality 80)
   ${chalk.green('imgconvert image.png --canvas -h 1660')}                Canvas resize with transparent padding
+  ${chalk.green('imgconvert image.png --trim')}                          Remove transparent borders automatically
   ${chalk.green('imgconvert images -f webp -q 80')}                      Convert folder to WebP with 80% quality
   ${chalk.green('imgconvert images --rename enumerate')}                 Convert folder and number files (001, 002...)
   ${chalk.green('imgconvert images --rename "prefix:thumb_,lowercase"')} Add prefix and lowercase filenames
