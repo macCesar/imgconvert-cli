@@ -32,7 +32,7 @@ class Logger {
 
   debug(message) {
     if (this.debugMode) {
-      console.log(chalk.gray(`[DEBUG] ${message}`));
+      console.log(chalk.cyan(`${message}`));
     }
   }
 

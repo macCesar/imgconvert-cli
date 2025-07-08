@@ -46,6 +46,11 @@ async function main() {
     const presets = getMergedPresets(config);
     const finalArgs = applyConfigPrecedence(args, config, presets);
 
+    // Set debug mode if enabled
+    if (finalArgs.debug) {
+      logger.setDebugMode(true);
+    }
+
     // Validate input
     const validation = validateInput(finalArgs, config);
     if (!validation.valid) {
