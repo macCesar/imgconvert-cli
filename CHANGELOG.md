@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.5] - 2025-07-08
+
+### Added
+- Auto-trim functionality with `--trim` flag to automatically remove transparent borders
+- Enhanced debug mode with colored output, emojis, and better formatting
+- Canvas resize functionality now properly extends canvas without scaling the image
+
+### Fixed
+- Fixed canvas mode to use Sharp's `extend()` instead of `resize()` for proper canvas extension
+- Improved position validation to handle undefined positions gracefully
+- Enhanced debug logger with cyan color and emoji support for better readability
+
+### Changed
+- Debug mode now shows processing steps with visual indicators (📂, ✂️, 🖼️, 📏)
+- Removed [DEBUG] prefix from debug output for cleaner console experience
+- Updated help documentation to include new `--trim` option and examples
+
 ## [1.7.4] - 2025-06-10
 
 ### Added
