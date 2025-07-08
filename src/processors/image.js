@@ -15,22 +15,83 @@ const { SUPPORTED_FORMATS, CONSTANTS } = require('../config/defaults');
 const { determineOutputDirectory, validateOutputDirectory } = require('../utils/validation');
 
 /**
- * Parse hex color to RGBA object for Sharp
- * @param {string} hexColor - Hex color string (with or without #)
+ * Parse color string to RGBA object for Sharp
+ * Supports: #RGB, #RGBA, #RRGGBB, #RRGGBBAA, rgb(), rgba(), color names
+ * @param {string} colorString - Color string
  * @returns {Object|null} RGBA object or null if invalid
  */
-function parseHexToRgba(hexColor) {
-  if (!hexColor) return null;
+function parseHexToRgba(colorString) {
+  if (!colorString || typeof colorString !== 'string') return null;
 
-  const hex = hexColor.replace('#', '');
-  if (hex.length !== 6) return null;
+  const color = colorString.trim().toLowerCase();
 
-  return {
-    r: parseInt(hex.substr(0, 2), 16),
-    g: parseInt(hex.substr(2, 2), 16),
-    b: parseInt(hex.substr(4, 2), 16),
-    alpha: 1
+  // Named colors (common ones)
+  const namedColors = {
+    'white': { r: 255, g: 255, b: 255, alpha: 1 },
+    'black': { r: 0, g: 0, b: 0, alpha: 1 },
+    'red': { r: 255, g: 0, b: 0, alpha: 1 },
+    'green': { r: 0, g: 128, b: 0, alpha: 1 },
+    'blue': { r: 0, g: 0, b: 255, alpha: 1 },
+    'yellow': { r: 255, g: 255, b: 0, alpha: 1 },
+    'cyan': { r: 0, g: 255, b: 255, alpha: 1 },
+    'magenta': { r: 255, g: 0, b: 255, alpha: 1 },
+    'transparent': { r: 0, g: 0, b: 0, alpha: 0 },
+    'gray': { r: 128, g: 128, b: 128, alpha: 1 },
+    'grey': { r: 128, g: 128, b: 128, alpha: 1 }
   };
+
+  if (namedColors[color]) {
+    return namedColors[color];
+  }
+
+  // rgb() or rgba() format
+  const rgbMatch = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)$/);
+  if (rgbMatch) {
+    return {
+      r: parseInt(rgbMatch[1], 10),
+      g: parseInt(rgbMatch[2], 10),
+      b: parseInt(rgbMatch[3], 10),
+      alpha: rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1
+    };
+  }
+
+  // Hex format
+  let hex = color.replace('#', '');
+
+  // Convert 3-char hex to 6-char
+  if (hex.length === 3) {
+    hex = hex.split('').map(c => c + c).join('');
+  }
+
+  // Handle 4-char hex (with alpha) to 8-char
+  if (hex.length === 4) {
+    hex = hex.split('').map(c => c + c).join('');
+  }
+
+  // Parse 6-char hex
+  if (hex.length === 6) {
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+
+    if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+      return { r, g, b, alpha: 1 };
+    }
+  }
+
+  // Parse 8-char hex (with alpha)
+  if (hex.length === 8) {
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const a = parseInt(hex.substr(6, 2), 16);
+
+    if (!isNaN(r) && !isNaN(g) && !isNaN(b) && !isNaN(a)) {
+      return { r, g, b, alpha: a / 255 };
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -133,9 +194,12 @@ function generateFilename(originalName, index, args, isSingleFile = false) {
 async function processImage(inputFile, outputFileBase, format, options) {
   let sharpInstance = sharp(inputFile);
 
+  logger.debug(`📂 Processing: ${path.basename(inputFile)}`);
+
   // Handle trim first (if specified) - removes transparent borders
   if (options.trim) {
     sharpInstance = sharpInstance.trim();
+    logger.debug(`✂️ Trimmed transparent borders`);
   }
 
   // Preserve the original extension for the output
@@ -200,7 +264,7 @@ async function processImage(inputFile, outputFileBase, format, options) {
 
     // Validate and normalize position
     const normalizedPosition = options.position || 'center';
-    const positionConfig = positionMap[normalizedPosition];
+    let positionConfig = positionMap[normalizedPosition];
 
     if (!positionConfig) {
       logger.warning(`Invalid position '${normalizedPosition}', defaulting to 'center'`);
@@ -320,13 +384,14 @@ async function processImage(inputFile, outputFileBase, format, options) {
 
       // Apply the extension/cropping
       sharpInstance = sharpInstance.extend(extendOptions);
+      logger.debug(`🖼️ Canvas: ${currentWidth}x${currentHeight} → ${targetWidth}x${targetHeight}`);
     }
   }
   // Handle normal resize with fit and position options
   else if (options.width || options.height) {
     // Validate fit option
     const validFits = ['contain', 'cover', 'fill', 'inside', 'outside'];
-    const selectedFit = options.fit || 'contain';
+    let selectedFit = options.fit || 'contain';
 
     if (!validFits.includes(selectedFit)) {
       logger.warning(`Invalid fit option '${selectedFit}', defaulting to 'contain'`);
@@ -368,6 +433,7 @@ async function processImage(inputFile, outputFileBase, format, options) {
     }
 
     sharpInstance = sharpInstance.resize(resizeOptions);
+    logger.debug(`📏 Resize: ${options.width || 'auto'}x${options.height || 'auto'} (${selectedFit})`);
   }
 
   // Apply format-specific options
@@ -503,7 +569,8 @@ async function processImages(args, config) {
     position: args.position,
     _userArgs: args._userArgs, // Pass user args to check explicit background
     background: args.background,
-    replaceOriginal: args['replace-originals']
+    replaceOriginal: args['replace-originals'],
+    withoutEnlargement: args.withoutEnlargement
   };
 
   const format = args.format && args.format !== 'none' ? args.format : null;
@@ -548,41 +615,6 @@ async function processImages(args, config) {
     processedCount,
     totalOriginalSize
   });
-}
-
-// Helper function to map position strings to Sharp gravity constants
-function mapPositionToGravity(position) {
-  // Sharp uses different terminology for positions
-  const positionMap = {
-    'center': sharp.gravity.center,
-    'centre': sharp.gravity.centre,
-    'north': sharp.gravity.north,
-    'south': sharp.gravity.south,
-    'east': sharp.gravity.east,
-    'west': sharp.gravity.west,
-    'northeast': sharp.gravity.northeast,
-    'northwest': sharp.gravity.northwest,
-    'southeast': sharp.gravity.southeast,
-    'southwest': sharp.gravity.southwest,
-    // Map common position names to Sharp equivalents
-    'top': sharp.gravity.north,
-    'bottom': sharp.gravity.south,
-    'left': sharp.gravity.west,
-    'right': sharp.gravity.east,
-    'top-left': sharp.gravity.northwest,
-    'top-right': sharp.gravity.northeast,
-    'bottom-left': sharp.gravity.southwest,
-    'bottom-right': sharp.gravity.southeast
-  };
-
-  const normalizedPosition = (position || 'center').toLowerCase();
-
-  if (!positionMap[normalizedPosition]) {
-    logger.warning(`Invalid position '${position}' for resize, defaulting to 'center'`);
-    return sharp.gravity.center;
-  }
-
-  return positionMap[normalizedPosition];
 }
 
 module.exports = {
