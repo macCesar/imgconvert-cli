@@ -277,7 +277,8 @@ async function processImage(inputFile, outputFileBase, format, options) {
     const needsReduction = targetWidth < currentWidth || targetHeight < currentHeight;
 
     if (needsReduction) {
-      logger.warning(`Canvas dimensions (${targetWidth}x${targetHeight}) are smaller than image (${currentWidth}x${currentHeight}). Image will be cropped.`);
+      logger.warning(`Image “${inputFile}” (${currentWidth}x${currentHeight}) is larger than canvas (${targetWidth}x${targetHeight}). Skipping.`);
+      return null; // Skip this image - no cropping for oversized images
     }
 
     // Only process if at least one dimension needs extension
