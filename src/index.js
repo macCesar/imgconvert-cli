@@ -67,7 +67,10 @@ async function main() {
 
   } catch (error) {
     logger.error(`Unexpected error: ${error.message}`);
-    if (args.debug) {
+    // Check for debug mode from finalArgs or process.argv as fallback
+    const isDebugMode = (typeof finalArgs !== 'undefined' && finalArgs.debug) || 
+                        process.argv.includes('-d') || process.argv.includes('--debug');
+    if (isDebugMode) {
       console.error(error.stack);
     }
     process.exit(1);
