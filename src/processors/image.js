@@ -457,7 +457,20 @@ async function processImage(inputFile, outputFileBase, format, options) {
       fs.mkdirSync(path.dirname(finalOutputFile), { recursive: true });
     }
 
-    fs.renameSync(tempOutputFile, finalOutputFile);
+    // Try to rename (move) the temp file to the final destination
+    // If cross-device link error (EXDEV), use copy+unlink instead
+    try {
+      fs.renameSync(tempOutputFile, finalOutputFile);
+    } catch (renameErr) {
+      if (renameErr.code === 'EXDEV') {
+        // Cross-device link: source and dest are on different filesystems
+        // Use copy+unlink as fallback
+        fs.copyFileSync(tempOutputFile, finalOutputFile);
+        fs.unlinkSync(tempOutputFile);
+      } else {
+        throw renameErr;
+      }
+    }
 
     const { size: newSize } = fs.statSync(finalOutputFile);
 
