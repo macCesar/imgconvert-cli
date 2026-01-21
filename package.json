@@ -4,7 +4,7 @@
   "description": "A CLI tool for compressing and converting images",
   "main": "src/index.js",
   "bin": {
-    "imgconvert": "./index.js"
+    "imgconvert": "index.js"
   },
   "engines": {
     "node": ">=14.0.0",
