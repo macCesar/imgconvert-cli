@@ -21,8 +21,8 @@ async function main() {
     // Parse command line arguments
     const args = parseArguments(process.argv.slice(2));
 
-    // Handle help
-    if (args.help) {
+    // Handle help (explicit flag or no arguments at all)
+    if (args.help || (args._.length === 0 && !args.version && !args.preset)) {
       displayHelp();
       process.exit(0);
     }
