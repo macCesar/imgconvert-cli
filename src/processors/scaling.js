@@ -20,7 +20,7 @@ const { normalizeOutputSubfolder } = require('../utils/validation');
  * @param {string} outputFormat - Output format
  * @returns {Promise<Object>} Processing result
  */
-async function processImageWithScaling(inputFile, scales, outputSubfolder, isIPhone, quality, outputFormat) {
+async function processImageWithScaling(inputFile, scales, outputSubfolder, isIPhone, quality, outputFormat, outputBase) {
   // Normalize output subfolder to remove leading/trailing slashes
   const normalizedSubfolder = normalizeOutputSubfolder(outputSubfolder);
 
@@ -31,10 +31,11 @@ async function processImageWithScaling(inputFile, scales, outputSubfolder, isIPh
   let totalNewSize = 0;
   const processedFiles = [];
 
-  // Set fixed output base for Alloy
+  // Set output base for Alloy: use provided outputBase, fallback to input file's directory
+  const baseDir = outputBase || path.dirname(inputFile);
   const outputBaseDir = isIPhone
-    ? path.join('app', 'assets', 'iphone', 'images')
-    : path.join('app', 'assets', 'android', 'images');
+    ? path.join(baseDir, 'app', 'assets', 'iphone', 'images')
+    : path.join(baseDir, 'app', 'assets', 'android', 'images');
 
   for (const [scaleName, scaleFactor] of Object.entries(scales)) {
     const result = await processScale(

@@ -197,13 +197,24 @@ async function processAlloyPlatform(subPresetName, subPresetConfig, configGroupN
       const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig, configGroupName, args, alloyPreset);
       const effectiveFormat = getEffectiveFormat(subPresetName, subPresetConfig, path.extname(inputFile), configGroupName, args, alloyPreset);
 
+      // Determine output base: CLI -o flag > Titanium project root (CWD with tiapp.xml) > input file's directory
+      let outputBase;
+      if (args.output) {
+        outputBase = args.output;
+      } else if (fs.existsSync(path.join(process.cwd(), 'tiapp.xml'))) {
+        outputBase = process.cwd();
+      } else {
+        outputBase = path.dirname(inputFile);
+      }
+
       const result = await processImageWithScaling(
         inputFile,
         scales,
         outputSubfolder,
         isIPhone,
         effectiveQuality,
-        effectiveFormat
+        effectiveFormat,
+        outputBase
       );
 
       if (result) {
