@@ -1,10 +1,8 @@
-# Custom Presets Documentation
+# Custom presets
 
-## Creating Custom Presets
+Besides the built-in presets (`web`, `print`, `thumbnail`, `alloy`), you can add your own in `.imgconverter.config.json`.
 
-Beyond the built-in presets (`web`, `print`, `thumbnail`, `alloy`), you can create your own custom presets in the `.imgconverter.config.json` file. This allows you to define reusable configurations for specific workflows or project requirements.
-
-### Basic Custom Preset Structure
+### Structure
 
 ```json
 {
@@ -23,10 +21,9 @@ Beyond the built-in presets (`web`, `print`, `thumbnail`, `alloy`), you can crea
 }
 ```
 
-### Custom Preset Examples
+### Examples
 
-#### Social Media Preset
-Perfect for social media platforms with specific size requirements:
+#### Social media
 
 ```json
 {
@@ -62,8 +59,7 @@ imgconvert photos -p instagram-post
 imgconvert banner.png -p twitter-header
 ```
 
-#### E-commerce Preset
-For online store product images:
+#### E-commerce
 
 ```json
 {
@@ -106,8 +102,7 @@ imgconvert -p product-gallery
 imgconvert -p product-thumbnail
 ```
 
-#### Email Marketing Preset
-For email newsletter images:
+#### Email marketing
 
 ```json
 {
@@ -129,8 +124,7 @@ For email newsletter images:
 }
 ```
 
-#### Blog/Website Preset
-For content management systems:
+#### Blog / website
 
 ```json
 {
@@ -162,8 +156,7 @@ For content management systems:
 }
 ```
 
-#### Development Environment Preset
-For different deployment environments:
+#### Per-environment
 
 ```json
 {
@@ -193,8 +186,7 @@ For different deployment environments:
 }
 ```
 
-#### UI/UX Design Preset
-For user interface elements and transparent graphics:
+#### UI / transparent assets
 
 ```json
 {
@@ -229,20 +221,13 @@ For user interface elements and transparent graphics:
 }
 ```
 
-Usage:
 ```bash
-# Process UI icons maintaining transparency with exact dimensions
 imgconvert -p ui-icons
-
-# Create transparent logo variants for web
 imgconvert -p logo-variants
-
-# Process all transparent assets maintaining exact canvas sizes
 imgconvert -p ui-transparent-assets
 ```
 
-#### File Organization and Workflow Preset
-For batch processing with systematic file naming:
+#### File organization with renaming
 
 ```json
 {
@@ -277,25 +262,20 @@ For batch processing with systematic file naming:
 }
 ```
 
-Usage:
 ```bash
-# Create organized web gallery with systematic naming
 imgconvert -p web-gallery-organized
 # "Beautiful Sunset.jpg" → "gallery-beautiful-sunset.webp"
 
-# Generate enumerated thumbnails
 imgconvert -p thumbnail-enumerated
 # photo.jpg → "001-photo-thumb.webp"
 
-# Create SEO-friendly filenames
 imgconvert -p seo-friendly-images
 # "Product Image 2024.png" → "product-image-2024.webp"
 ```
 
-### Advanced Custom Preset Features
+### Source paths in presets
 
-#### Using Source Paths in Presets
-When a preset defines a `source` path, you don't need to specify the source in the command:
+If a preset defines `source`, you don't need to pass it on the command line:
 
 ```json
 {
@@ -318,8 +298,9 @@ Usage:
 imgconvert -p icons
 ```
 
-#### Preset Inheritance and Overrides
-CLI arguments always override preset values:
+### CLI overrides
+
+CLI arguments always win over preset values:
 
 ```json
 {
@@ -340,80 +321,18 @@ imgconvert images -p base-web -q 95
 imgconvert images -p base-web -f jpeg
 ```
 
-### Best Practices for Custom Presets
+### Tips
 
-#### 1. **Descriptive Naming**
-Use clear, descriptive names that indicate the purpose:
-```json
-{
-  "presets": {
-    "mobile-app-icon": { ... },
-    "product-catalog-thumb": { ... },
-    "email-newsletter-header": { ... }
-  }
-}
-```
+- Use descriptive names: `product-catalog-thumb`, not `preset1`
+- Group related presets by prefix: `ecommerce-main`, `ecommerce-zoom`, `ecommerce-thumb`
+- Quality guidelines: 90-100 for print, 75-89 for web, 60-74 for thumbnails/email
+- Format guidelines: JPEG for photos, PNG for transparency, WebP for web, AVIF for best compression
+- Use `canvas: true` when you need exact dimensions with transparency
+- Use `rename` for consistent file naming across batches
 
-#### 2. **Organize by Project or Platform**
-Group related presets together:
-```json
-{
-  "presets": {
-    "ecommerce-main": { ... },
-    "ecommerce-zoom": { ... },
-    "ecommerce-thumb": { ... },
+### Full example
 
-    "social-twitter": { ... },
-    "social-facebook": { ... },
-    "social-instagram": { ... }
-  }
-}
-```
-
-#### 3. **Consider File Size vs Quality**
-Balance quality and file size for different use cases:
-- **High quality** (90-100): Print, professional photography
-- **Medium quality** (75-89): Web content, product images
-- **Lower quality** (60-74): Thumbnails, email, mobile apps
-
-#### 4. **Use Appropriate Formats**
-Choose formats based on content type:
-- **JPEG**: Photos, complex images with many colors
-- **PNG**: Images with transparency, simple graphics, logos
-- **WebP**: Modern web format, excellent compression
-- **AVIF**: Next-gen format for cutting-edge applications
-
-#### 5. **Leverage Canvas Mode for Transparency**
-Use `canvas: true` in presets when working with transparent images:
-```json
-{
-  "presets": {
-    "transparent-icons": {
-      "quality": 95,
-      "canvas": true,
-      "format": "png"
-    }
-  }
-}
-```
-
-#### 6. **Implement Systematic File Naming**
-Use `rename` strategies for consistent file organization:
-```json
-{
-  "presets": {
-    "organized-web": {
-      "quality": 85,
-      "format": "webp",
-      "rename": "lowercase,replace-spaces,prefix:web-"
-    }
-  }
-}
-```
-
-### Complete Custom Configuration Example
-
-Here's a comprehensive example showing multiple custom presets for a web development agency:
+A config file for a web development agency:
 
 ```json
 {
@@ -507,9 +426,9 @@ Here's a comprehensive example showing multiple custom presets for a web develop
 }
 ```
 
-### Using Custom Presets in Workflows
+### Workflows
 
-#### Batch Processing Multiple Presets
+#### Running multiple presets
 ```bash
 # Process all client deliverables
 imgconvert -p client-email
@@ -522,8 +441,7 @@ imgconvert -p client-social-facebook
 imgconvert -p client-social-instagram
 ```
 
-#### Scripted Workflows
-Create shell scripts for complex workflows:
+#### Shell script
 
 ```bash
 #!/bin/bash
@@ -543,21 +461,4 @@ imgconvert -p client-social-instagram
 echo "Client deliverables ready!"
 ```
 
-#### Batch Processing with New Features
-```bash
-# Process UI components maintaining transparency
-imgconvert -p client-ui-components
-
-# Organize mixed images with systematic naming
-imgconvert -p client-organized-web
-```
-
-### Tips for Preset Management
-
-1. **Sharing**: Share preset configurations across team members
-2. **Backup**: Keep backup copies of complex preset configurations
-3. **Testing**: Test presets with sample images before production use
-4. **Version Control**: Keep your `.imgconverter.config.json` in version control
-5. **Canvas Mode**: Use `canvas: true` for maintaining exact dimensions with transparency
-6. **Systematic Naming**: Implement `rename` strategies for consistent file organization across projects
-7. **Documentation**: Comment your presets (JSON doesn't support comments, but maintain separate docs)
+Keep your `.imgconverter.config.json` in version control so the whole team uses the same presets. Test with a few sample images before running on the full set.

@@ -11,9 +11,9 @@
 
 </div>
 
-`imgconvert-cli` is a powerful command-line tool for compressing, converting, and resizing images using the `sharp` library. It supports various formats and lets you optimize images for the web or other purposes, with customizable quality, background color, advanced resizing strategies, and multi-format conversion.
+`imgconvert-cli` is a command-line tool for compressing, converting, and resizing images using the `sharp` library. It supports JPEG, PNG, WebP, AVIF, TIFF, and GIF, with options for quality, background color, resize strategies, and batch processing.
 
-## 🚀 Quick Start
+## Quick start
 
 ```bash
 # Install globally
@@ -47,35 +47,33 @@ imgconvert -p alloy:your-config-name
 imgconvert -p alloy:another-config
 ```
 
-## 🎯 Common Use Cases
+## Common use cases
 
-- **Web Optimization**: Batch convert images to WebP for faster loading times
-- **Perfect Thumbnails**: Use `--fit cover` with `--position` for consistent square thumbnails
-- **Hero Images**: Crop images to exact dimensions while preserving important content areas
-- **Canvas Design**: Use `--canvas` to maintain original images while extending to exact canvas dimensions
-- **Transparent Backgrounds**: Resize PNG images without losing transparency using `--canvas`
-- **Mobile App Development**: Generate multi-resolution assets for iOS/Android with Titanium Alloy
-- **Selective Asset Updates**: Use `imgconvert -p alloy:config-name` to update only specific user-defined asset categories
-- **Print Preparation**: Convert to high-quality TIFF format for professional printing
-- **Custom Cropping**: Extract specific regions before resizing with `--crop`
-- **Batch Processing**: Convert entire directories while preserving folder structure
-- **File Organization**: Use custom naming and batch renaming for consistent file naming conventions
-- **SEO-Friendly Filenames**: Convert spaces to hyphens and apply lowercase for web-ready filenames
+- Batch convert images to WebP for faster loading
+- Consistent square thumbnails with `--fit cover` and `--position`
+- Crop to exact dimensions with `--crop`, then resize
+- Extend canvas without scaling the image using `--canvas`
+- Resize PNGs without losing transparency
+- Generate multi-resolution assets for iOS/Android with the Titanium Alloy preset
+- Update only specific asset categories with `imgconvert -p alloy:config-name`
+- Convert to TIFF for print
+- Process entire directories at once
+- Batch rename files: lowercase, replace spaces, add prefixes/suffixes
 
-## 📊 Performance
+## Performance
 
 Typical compression results:
-- **JPEG → WebP**: 25-35% size reduction
-- **PNG → WebP**: 40-60% size reduction
-- **Batch processing**: ~50-100 images/second
-- **Memory efficient**: Processes large batches without memory issues
+- JPEG to WebP: 25-35% size reduction
+- PNG to WebP: 40-60% size reduction
+- Batch processing: ~50-100 images/second
+- Handles large batches without memory issues
 
-## 📊 Project Stats
+## Project stats
 
-- **Platforms**: macOS, Linux, Windows
-- **Bundle Size**: ~45KB (excluding Sharp)
-- **Test Coverage**: 74 comprehensive tests
-- **Dependencies**: 3 (sharp, minimist, chalk)
+- Platforms: macOS, Linux, Windows
+- Bundle size: ~45KB (excluding Sharp)
+- Tests: 74 passing
+- Dependencies: 3 (sharp, minimist, chalk)
 
 ## Table of Contents
 - [Features](#features)
@@ -96,23 +94,21 @@ Typical compression results:
 
 ## Features
 
-- **Image Compression**: Compress images to reduce file size while maintaining quality
-- **Format Conversion**: Convert images between JPEG, PNG, WebP, AVIF, TIFF, and GIF
-- **Advanced Resizing Strategies**: Control how images fit target dimensions with multiple strategies (cover, contain, fill, inside, outside)
-- **Smart Positioning**: Choose which part of the image to preserve when cropping (center, top, bottom, left, right, corners)
-- **Manual Cropping**: Extract specific regions before resizing with precise coordinate control
-- **File and Batch Processing**: Process a single image file or all images in a directory
-- **Smart Extension Handling**: Preserves original file extensions when no format conversion is specified
-- **Custom File Naming**: Rename individual files or apply batch renaming strategies during processing
-- **Batch Renaming Strategies**: Enumerate, lowercase, replace spaces, add prefixes/suffixes, and combine multiple strategies
-- **Customizable Quality**: Adjust output image quality from 1-100
-- **Configurable Background Color**: Set a background color for images converted from formats with transparency
-- **Multi-Format Conversion**: Convert images to all supported formats in one command
-- **Image Resizing**: Resize images by specifying width and/or height
-- **Replace Original Files**: Optionally replace original files with processed images
-- **Presets**: Use predefined settings for different use cases
-- **Custom Output Directory**: Set a custom directory for processed images
-- **Debug Mode**: Enable detailed logging for troubleshooting
+- Compress images while maintaining quality
+- Convert between JPEG, PNG, WebP, AVIF, TIFF, and GIF
+- Multiple resize strategies: cover, contain, fill, inside, outside
+- Position control when cropping (center, top, bottom, left, right, corners)
+- Manual cropping with precise coordinates
+- Process single files or entire directories
+- Preserves original file extensions when no format conversion is specified
+- Custom file naming and batch renaming (enumerate, lowercase, replace spaces, prefix, suffix)
+- Adjustable quality from 1-100
+- Configurable background color for transparency handling
+- Convert to all supported formats in one command with `-f all`
+- Replace originals in-place with `--replace-originals`
+- Built-in presets: web, print, thumbnail, alloy
+- Custom output directory with `-o`
+- Debug mode with `-d` for troubleshooting
 
 ## How It Works
 
@@ -149,7 +145,7 @@ imgconvert <source_path>
 
 - `<source_path>`: The path to the image file or directory containing the images you want to process. This is a required positional argument.
 
-> **📝 Important:** When you don't specify the `-f`/`--format` option, each output image will **preserve its original file extension**. For example:
+> When you don't specify `-f`, each output image keeps its original extension:
 > - `image.jpg` → `image.jpg` (compressed but same format)
 > - `image.png` → `image.png` (compressed but same format)
 >
@@ -157,7 +153,6 @@ imgconvert <source_path>
 
 ## Options
 
-The available options for the `imgconvert-cli` command let users customize image conversions easily.
 
 | Option                | Alias | Description                                                                             | Default                                    |
 | --------------------- | ----- | --------------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -179,11 +174,9 @@ The available options for the `imgconvert-cli` command let users customize image
 | `--version`           | `-v`  | Show version                                                                            | -                                          |
 | `--help`              | `-H`  | Show help message                                                                       | -                                          |
 
-## Advanced Resize and Crop Control
+## Advanced resize and crop control
 
-The Sharp library integration provides powerful image manipulation capabilities with precise control over how images are resized and cropped.
-
-**Processing Workflow**: Manual Crop → Resize → Format Conversion
+Processing order: Manual Crop → Resize → Format Conversion
 
 ### Fit Strategies (`--fit`)
 
@@ -221,9 +214,7 @@ Extract specific regions before resizing:
 - **Example**: `--crop 100,50,800,600` crops 800x600 region starting at (100,50)
 - **Workflow**: Cropping is applied first, then resizing with fit/position options
 
-### Canvas Resize vs Image Resize (`--canvas`)
-
-Choose between two different resizing approaches:
+### Canvas resize vs image resize (`--canvas`)
 
 #### Standard Resize (Default)
 - **Use case**: Traditional image resizing
@@ -263,11 +254,9 @@ imgconvert photo.png --canvas -h 1660 -b "#ff0000"
 | **Position control** | Via `--position`        | ✅ Via `--position` (NEW)   |
 | **Use case**         | Photo resizing          | Design layouts, mockups    |
 
-## File Naming and Batch Renaming
+## File naming and batch renaming
 
-The tool provides flexible options for customizing output filenames when processing images.
-
-### Single File Naming (`--name`, `-n`)
+### Single file naming (`--name`, `-n`)
 
 Rename individual files during processing:
 
@@ -278,7 +267,7 @@ imgconvert photo.jpg --name "hero-image" -f webp
 
 **Important**: The `--name` option only works with single files, not directories.
 
-### Batch Renaming Strategies (`--rename`)
+### Batch renaming strategies (`--rename`)
 
 Apply systematic renaming to multiple files:
 
@@ -290,7 +279,7 @@ Apply systematic renaming to multiple files:
 | `prefix:text`    | Add prefix to filename      | `image.jpg`    | `thumb-image.jpg` |
 | `suffix:text`    | Add suffix to filename      | `image.jpg`    | `image-small.jpg` |
 
-### Combining Strategies
+### Combining strategies
 
 Multiple rename strategies can be combined by separating them with commas:
 
@@ -302,11 +291,11 @@ imgconvert images --rename "prefix:gallery-,enumerate"
 # "photo.jpg" → "gallery-001-photo.jpg"
 ```
 
-**Visual Order**: Strategies are applied to build the filename in visual order from left to right, making the result predictable and intuitive.
+Strategies are applied left to right, so the result matches the order you write them.
 
 ## Examples
 
-### Basic Operations
+### Basic operations
 
 1. **Compress images without changing format (preserves extensions):**
    ```bash
@@ -325,7 +314,7 @@ imgconvert images --rename "prefix:gallery-,enumerate"
    imgconvert image.png -f jpeg          # → image.jpeg
    ```
 
-### Advanced Resizing and Cropping
+### Resizing and cropping
 
 4. **Smart resizing strategies:**
    ```bash
@@ -391,7 +380,7 @@ imgconvert images --rename "prefix:gallery-,enumerate"
    # Maintains original image centered, adds transparent padding to reach 800x600
    ```
 
-### File Naming and Renaming
+### File naming and renaming
 
 9. **Custom naming for single files:**
    ```bash
@@ -430,9 +419,9 @@ imgconvert images --rename "prefix:gallery-,enumerate"
    # photo.jpg → gallery-001-photo.jpg
    ```
 
-### Real-World Examples
+### Real-world examples
 
-10. **Perfect for web development:**
+10. **Web development:**
     ```bash
     # Social media thumbnails with organized naming
     imgconvert profiles --fit cover --position top -w 150 -h 150 -f webp --rename "prefix:profile-,enumerate"
@@ -521,7 +510,7 @@ imgconvert images --rename "prefix:gallery-,enumerate"
     imgconvert group-photo.jpg --crop 350,200,500,500 --fit cover -w 150 -h 150 -f webp
     ```
 
-### Utility Operations
+### Utility operations
 
 18. **Specify a custom output directory:**
     ```bash
@@ -543,11 +532,9 @@ imgconvert images --rename "prefix:gallery-,enumerate"
     imgconvert --help
     ```
 
-## File Extension Behavior
+## File extension behavior
 
-`imgconvert-cli` has intelligent file extension handling:
-
-### **Preserve Original Extensions**
+### Preserve original extensions
 When no format is specified with `-f`, the original file extension is preserved:
 
 | Input       | Command                | Output      |
@@ -556,7 +543,7 @@ When no format is specified with `-f`, the original file extension is preserved:
 | `icon.webp` | `imgconvert icon.webp` | `icon.webp` |
 | `photo.jpg` | `imgconvert photo.jpg` | `photo.jpg` |
 
-### **Format Conversion Changes Extensions**
+### Format conversion changes extensions
 When using `-f` to specify a format, the extension changes accordingly:
 
 | Input       | Command                        | Output       |
@@ -565,7 +552,7 @@ When using `-f` to specify a format, the extension changes accordingly:
 | `icon.webp` | `imgconvert icon.webp -f png`  | `icon.png`   |
 | `photo.jpg` | `imgconvert photo.jpg -f webp` | `photo.webp` |
 
-> **💡 Tip:** This behavior ensures consistency and user expectations while maintaining technical compatibility with the Sharp image processing library.
+> **Tip:** The extension only changes when you explicitly use `-f`.
 
 ## Presets
 
@@ -576,13 +563,13 @@ Presets are predefined configurations for common use cases:
 - **thumbnail**: Small previews (`png`, quality `60`, 150x150). Optionally defines a `source` path.
 - **square-thumbs**: Consistent square thumbnails (`webp`, quality `80`, 300x300). Optionally defines a `source` path.
 - **hero-images**: High-quality hero images (`webp`, quality `85`, 1920x1080). Optionally defines a `source` path.
-- **alloy**: For Titanium SDK, generates images at multiple resolutions for Android and iOS. Supports both legacy single-source format and new multi-configuration format for complex workflows (e.g., cards, thumbnails, icons). Each platform can define its own `source` path. You can process all configurations with `-p alloy` or target specific ones with `-p alloy:configName` where `configName` is your custom configuration defined in `.imgconverter.config.json`.
+- **alloy**: For Titanium SDK. Generates scaled images for Android and iOS at all required densities. Supports a single-source legacy format and a multi-configuration format (e.g., cards, thumbnails, icons with independent settings). Process everything with `-p alloy` or target one group with `-p alloy:configName`.
 
 ## Custom Presets
 
-Beyond the built-in presets, you can create your own custom presets in the `.imgconverter.config.json` file. This allows you to define reusable configurations for specific workflows or project requirements.
+You can define your own presets in `.imgconverter.config.json`.
 
-### Basic Example
+### Example
 
 ```json
 {
@@ -629,17 +616,15 @@ imgconvert -p alloy:your-config-name -q 90  # Process only your-config-name with
 # Note: These configurations must be defined in your .imgconverter.config.json
 ```
 
-### Key Features
+### Key points
 
-- **Source and output paths** can be predefined in presets
-- **Reusable configurations** for consistent processing across projects
-- **Workflow optimization**: Perfect for batch processing with consistent requirements
-- **CLI override capability**: Command line arguments always take precedence over preset values
-- **Full parameter support**: quality, format, width, height, background, source, output, replace-originals
+- Presets can include source and output paths
+- CLI arguments always override preset values
+- Supports all parameters: quality, format, width, height, background, source, output, replace-originals
 
-📖 **[Complete Custom Presets Guide](custom_presets.md)** - See advanced examples, best practices, and complex workflows including social media, e-commerce, email marketing, and development environment presets.
+See [custom_presets.md](custom_presets.md) for more examples.
 
-## Why Choose imgconvert-cli?
+## Comparison
 
 | Feature                 | imgconvert-cli | ImageMagick | Sharp CLI |
 | ----------------------- | -------------- | ----------- | --------- |
@@ -652,29 +637,28 @@ imgconvert -p alloy:your-config-name -q 90  # Process only your-config-name with
 | Multi-Format Output     | ✅              | ✅           | ❌         |
 | **Comprehensive Tests** | **✅**          | **❌**       | **❌**     |
 
-## Alloy Preset
+## Alloy preset
 
-The `alloy` preset is specifically designed for mobile app development with Titanium Alloy framework. It generates multiple scaled versions of images for both Android and iOS platforms.
+The `alloy` preset generates scaled images for Titanium Alloy apps, producing all required density variants for Android and iOS from a single set of source images.
 
-### Key Features:
-- **Legacy compatibility**: Maintains backward compatibility with existing alloy configurations
-- **Automatic scaling**: Creates multiple resolution versions based on predefined scale factors
-- **4x source requirement**: Source images should be 4x the target resolution for optimal results
-- **Platform-specific output**: Generates Android density folders and iOS @2x/@3x naming conventions
-- **Flexible quality/format control**: Per-configuration quality and format settings with proper precedence
-- **Immutable scale factors**: Uses fixed Titanium-standard scale factors for consistency and compatibility
-- **Ignores width/height**: The `width` and `height` parameters are ignored as images are scaled proportionally
-- **Multi-configuration support**: Process multiple image groups (cards, thumbnails, icons) in a single command
-- **Independent source management**: Each configuration can have its own source directories and output paths
-- **Selective configuration processing**: Target specific configurations with `alloy:configName` syntax for efficient workflows
+- Backward compatible with existing alloy configurations
+- Source images should be 4x resolution (the tool scales down from there)
+- Generates Android density folders (`res-mdpi` through `res-xxxhdpi`) and iOS `@2x`/`@3x` naming
+- Per-configuration quality and format settings with proper precedence
+- Scale factors are fixed to Titanium standards and cannot be changed
+- `width` and `height` parameters are ignored (scaling is based on fixed factors)
+- Supports multiple image groups (cards, thumbnails, icons) in a single command
+- Each configuration can have its own source directory and output path
+- Target a specific configuration with `alloy:configName`
 
-### Selective Configuration Processing:
-The alloy preset now supports targeting specific configurations, which is perfect for:
+### Selective configuration processing
 
-- **Resource Efficiency**: Save time and processing power by targeting exactly what you need
-- **CI/CD Optimization**: Update only the asset categories that have changed in your build pipeline
-- **Development Workflow**: Test specific configurations quickly without waiting for all assets to be processed
-- **Incremental Updates**: When adding new design categories (like 'neon'), process only the new assets without regenerating everything
+You can target individual configurations instead of processing everything:
+
+- Process only what changed, saving time during development
+- Update specific asset categories in CI/CD pipelines
+- Test one configuration without waiting for all assets to rebuild
+- Add a new category and process just that one
 
 **Examples:**
 ```bash
@@ -693,16 +677,17 @@ imgconvert -p alloy:your-new-category  # Only process your custom 'new-category'
 # Note: All configuration names must be defined in your .imgconverter.config.json
 ```
 
-### Scale Factors:
-Scale factors are **immutable constants** that follow Titanium platform standards and cannot be modified:
+### Scale factors
+
+These are fixed to match Titanium platform standards:
 - **iOS**: 1x, 2x, 3x
 - **Android**: res-mdpi (1x), res-hdpi (1.5x), res-xhdpi (2x), res-xxhdpi (3x), res-xxxhdpi (4x)
 
-> **🔒 Note**: Scale factors are fixed to ensure Titanium compatibility and cannot be customized. This prevents configuration errors and maintains consistency with Titanium SDK requirements.
+> Scale factors cannot be customized. They match what Titanium expects.
 
-### Usage:
+### Usage
 
-#### Process All Configurations:
+#### Process all configurations:
 ```bash
 # Legacy format (single android/iphone configuration)
 imgconvert source-images -p alloy
@@ -711,7 +696,7 @@ imgconvert source-images -p alloy
 imgconvert -p alloy
 ```
 
-#### Process Specific Configuration:
+#### Process a specific configuration:
 ```bash
 # Process only your custom configuration
 imgconvert -p alloy:your-config-name
@@ -725,27 +710,53 @@ imgconvert -p alloy:another-config-name
 # Note: All configuration names must be defined in your .imgconverter.config.json
 ```
 
-#### Single Configuration (Legacy Format):
+#### Single configuration (legacy format):
 ```bash
 imgconvert source-images -p alloy
 ```
 
-#### Multi-Configuration Format:
+#### Multi-configuration format:
 ```bash
 imgconvert -p alloy
 ```
-> **Note**: With multi-configuration format, all configuration groups are processed automatically from their respective source directories when using `-p alloy`, or you can target specific configurations using `-p alloy:configName`.
+> With multi-configuration format, all groups are processed from their respective source directories. Use `-p alloy:configName` to target one.
 
-> **Note**: When using the alloy preset, `width` and `height` parameters are automatically ignored since images are scaled based on predefined factors to maintain mobile platform standards.
+> `width` and `height` are ignored with the alloy preset. Images are scaled based on fixed factors.
 
 ### Output for Alloy (Android & iPhone)
 
-When using the `alloy` preset, the output base path is always fixed:
+When using the `alloy` preset, the output follows this structure:
 
-- Android: `app/assets/android/images`
-- iPhone: `app/assets/iphone/images`
+- Android: `<base>/app/assets/android/images`
+- iPhone: `<base>/app/assets/iphone/images`
 
-You only need to specify the relative subfolder (without leading or trailing slashes, e.g. `thumbs/baby`) as the `output` in the preset or CLI. The script will generate the correct structure for each density:
+**Output directory precedence:**
+
+| Priority | Condition                               | Output base (`<base>`)                            |
+| -------- | --------------------------------------- | ------------------------------------------------- |
+| 1        | `-o /path/to/project` specified         | `/path/to/project`                                |
+| 2        | `tiapp.xml` exists in current directory | Current working directory (Titanium project root) |
+| 3        | No `-o` and no `tiapp.xml` in CWD       | Same directory as the input file                  |
+
+**Examples:**
+
+```bash
+# Inside a Titanium project (tiapp.xml exists in CWD)
+cd ~/Developer/my-titanium-app
+imgconvert ~/Desktop/logo.png -p alloy
+# Output: ~/Developer/my-titanium-app/app/assets/android/images/...
+
+# With explicit output directory
+imgconvert ~/Desktop/logo.png -p alloy -o ~/Developer/my-titanium-app
+# Output: ~/Developer/my-titanium-app/app/assets/android/images/...
+
+# Outside a Titanium project, no -o flag
+cd ~/Downloads
+imgconvert ~/Desktop/logo.png -p alloy
+# Output: ~/Desktop/app/assets/android/images/...
+```
+
+You only need to specify the relative subfolder (without leading or trailing slashes, e.g. `thumbs/baby`) as the `output` in the preset configuration. The script will generate the correct structure for each density:
 
 **Correct usage:**
 
@@ -778,12 +789,11 @@ app/assets/iphone/images/thumbs/baby/logo@3x.png
 
 You do **not** need to specify the full output path, just the subfolder as shown above. The script will handle the rest.
 
-### Using Preset Source Folders
+### Preset source folders
 
-The alloy preset supports two configuration formats:
+Two configuration formats are supported:
 
-#### Legacy Format (Single Source per Platform)
-Each platform (android/iphone) has its own source directory:
+#### Legacy format (single source per platform)
 
 ```json
 "presets": {
@@ -800,10 +810,9 @@ Each platform (android/iphone) has its own source directory:
 }
 ```
 
-> **🔒 Note**: Scale factors are immutable and automatically applied based on Titanium standards. The `scales` property is no longer supported.
+> Scale factors are applied automatically. The `scales` property is no longer supported.
 
-#### Multi-Configuration Format (Recommended)
-Multiple configuration groups with independent source/output management:
+#### Multi-configuration format (recommended)
 
 ```json
 "presets": {
@@ -854,25 +863,21 @@ Multiple configuration groups with independent source/output management:
 }
 ```
 
-**Benefits of Multi-Configuration Format:**
-- **Batch Processing**: Process all image groups in one command
-- **Smart Detection**: Tool automatically detects and uses the appropriate format
-- **Workflow Optimization**: Perfect for game development with different asset types
-- **Independent Settings**: Each group can have different quality, format, source, and output
+The tool auto-detects which format you're using. Each group can have its own quality, format, source, and output.
 
-Then you can simply run:
+Then run:
 
 ```bash
 imgconvert -p alloy
 ```
 
-The tool will automatically:
+This will:
 1. Process each configuration group sequentially
 2. Show progress for each configuration and platform
-3. Provide detailed debug information when using `-d` flag
-4. Detect if you're using legacy or multi-configuration format
+3. Show detailed debug info when using `-d`
+4. Auto-detect legacy vs multi-configuration format
 
-**Multi-Configuration Debug Output Example:**
+**Multi-configuration alloy output:**
 ```
 Processing configuration: cards
   Processing android from: originals
@@ -898,9 +903,9 @@ Processing complete! Summary:
   - Duration: 1.24 seconds
 ```
 
-### Practical Example: Game Development Workflow
+### Example: game development workflow
 
-Let's say you're developing a card game and have the following directory structure:
+Say you're building a card game with this directory structure:
 
 ```
 my-game/
@@ -919,7 +924,7 @@ my-game/
 └── .imgconverter.config.json
 ```
 
-With this multi-configuration setup in your `.imgconverter.config.json`:
+With this `.imgconverter.config.json`:
 
 ```json
 {
@@ -972,13 +977,13 @@ With this multi-configuration setup in your `.imgconverter.config.json`:
 }
 ```
 
-Run a single command:
+One command:
 
 ```bash
 imgconvert -p alloy
 ```
 
-And get all these files automatically generated:
+Generates:
 
 ```
 app/
@@ -1021,38 +1026,29 @@ app/
                 └── star@3x.png (3x)
 ```
 
-**Advantages:**
-- ✅ Organized output structure
-- ✅ Perfect for CI/CD pipelines
-- ✅ Process all asset types in one command
-- ✅ Different quality settings for different asset types
-- ✅ Different formats (WebP for cards/thumbs, PNG for icons)
+## Tips for alloy selective processing
 
-## Best Practices for Alloy Selective Processing
-
-### 🎯 Efficient Workflow Strategies
-
-**1. Development Phase:**
+### During development:
 ```bash
 # Test only what you're working on
 imgconvert -p alloy:comics -d    # Enable debug mode to see detailed processing
 ```
 
-**2. Adding New Asset Categories:**
+### Adding new asset categories:
 ```bash
 # First, add your new configuration to .imgconverter.config.json
 # Then process only the new category
 imgconvert -p alloy:new-category
 ```
 
-**3. Quality Testing:**
+### Quality testing:
 ```bash
 # Test different quality settings for specific configurations
 imgconvert -p alloy:comics -q 95          # Higher quality for main assets
 imgconvert -p alloy:thumbs-comics -q 60   # Lower quality for thumbnails
 ```
 
-**4. CI/CD Integration:**
+### CI/CD integration:
 ```bash
 # Process only changed asset categories in your build pipeline
 if [[ "$CHANGED_ASSETS" == *"comics"* ]]; then
@@ -1060,61 +1056,52 @@ if [[ "$CHANGED_ASSETS" == *"comics"* ]]; then
 fi
 ```
 
-### 🚀 Performance Tips
+### Things to keep in mind
 
-- **Use selective processing** during development to save time
-- **Combine with debug mode** (`-d`) to monitor processing details
-- **Process all configurations** (`-p alloy`) only for final builds
-- **Leverage quality overrides** for different use cases without changing config files
-
-### ⚠️ Common Gotchas
-
-- Remember that CLI arguments override preset settings
-- Use consistent naming conventions for your configurations
+- Use selective processing during development, run all configurations (`-p alloy`) for final builds
+- Combine with `-d` to see what's happening
+- CLI arguments override preset settings
+- Use consistent naming for your configurations
 - Test with debug mode first when setting up new configurations
 - Always verify configuration names exist before running automated scripts
 
 ## Configuration File
 
-The configuration file `.imgconverter.config.json` allows you to define global default parameters and custom presets for image processing.
+Global defaults and custom presets live in `.imgconverter.config.json`.
 
-**Quick Start:**
-You can generate a default configuration file at any time by running:
+Generate a default config file with:
 
 ```bash
 imgconvert config
 ```
 
-### Configuration Precedence
+### Configuration precedence
 
-The tool follows a consistent 4-level precedence system for all configuration parameters:
+1. CLI arguments (highest)
+2. Preset settings
+3. Global config (`.imgconverter.config.json`)
+4. Default values (lowest)
 
-1. **CLI Arguments** (highest priority) - Values provided via command line flags
-2. **Preset Settings** - Values defined in the specific preset being used
-3. **Global Config** - Values in the `.imgconverter.config.json` file
-4. **Default Values** (lowest priority) - Built-in fallback values
+This applies to all parameters: `quality`, `format`, `width`, `height`, `output`, `replace-originals`, `background`, `fit`, `position`, and `crop`.
 
-This means CLI arguments always override preset settings, preset settings override global config, and global config overrides defaults. This precedence applies to all parameters: `quality`, `format`, `width`, `height`, `output`, `replace-originals`, `background`, `fit`, `position`, and `crop`.
+### Parameters
 
-### Configuration Parameters
+- **width** / **height**: Default dimensions for resizing.
+- **format**: Default output format.
+- **quality**: Default compression quality (1-100).
+- **fit**: Resize strategy (`cover`, `contain`, `fill`, `inside`, `outside`).
+- **position**: Crop/letterbox position (`center`, `top`, `bottom`, `left`, `right`, corners).
+- **crop**: Crop coordinates as `left,top,width,height`.
+- **canvas**: If true, extends canvas instead of scaling the image.
+- **replace-originals**: If true, overwrites the original files.
+- **source**: Default input folder (used when no path is given on the CLI).
+- **output**: Default output directory. If `null`, creates a `converted` folder next to the source.
+- **background**: Background color for transparency-to-opaque conversions (e.g., PNG to JPEG). PNG/WebP outputs keep transparency by default.
+- **presets**: Custom preset definitions. Each preset can override any of the above parameters.
 
-- **width**: Default width for image resizing.
-- **height**: Default height for image resizing.
-- **format**: Default format for image conversion.
-- **quality**: Default quality for image compression.
-- **fit**: Default resize strategy (`cover`, `contain`, `fill`, `inside`, `outside`).
-- **position**: Default cropping position for `fit: cover` (`center`, `top`, `bottom`, `left`, `right`, corners).
-- **crop**: Default crop coordinates in format `left,top,width,height`.
-- **canvas**: Default setting for canvas resize mode (maintains original image, adds padding instead of scaling).
-- **replace-originals**: Default setting for replacing original files.
-- **source**: Global default source folder for images. If not provided as a CLI argument or in a preset, this will be used as the input folder.
-- **output**: Default output directory for processed images. If `null`, defaults to a `converted` directory at the same level as the source path.
-- **background**: Background color used when resizing images to larger dimensions or when converting from transparent formats (PNG, WebP) to non-transparent formats (JPEG). For PNG and WebP outputs, transparency is preserved by default. Only applies to JPEG conversion or when explicitly specified.
-- **presets**: Define custom presets for different use cases. Each preset can specify its own `format`, `quality`, `width`, `height`, `output`, `source`, `fit`, `position`, and `crop`. All preset configurations follow the precedence system: CLI arguments always override preset values, which override global config values.
+### Default configuration file
 
-### Default Configuration File
-
-#### Legacy Alloy Format:
+#### Legacy alloy format:
 ```json
 {
   "width": null,
@@ -1145,7 +1132,7 @@ This means CLI arguments always override preset settings, preset settings overri
 }
 ```
 
-#### Multi-Configuration Alloy Format (Recommended):
+#### Multi-configuration alloy format (recommended):
 ```json
 {
   "width": null,
@@ -1198,9 +1185,9 @@ This means CLI arguments always override preset settings, preset settings overri
 }
 ```
 
-> **Note for Alloy Preset**: The `output` value should only contain the relative subfolder path (e.g., `"thumbs/baby"`), not the complete path. The base paths (`app/assets/android/images` and `app/assets/iphone/images`) are automatically handled by the tool.
+> For the alloy preset, `output` should only be the relative subfolder (e.g., `"thumbs/baby"`). The base paths (`app/assets/android/images` and `app/assets/iphone/images`) are added automatically.
 
-**Example: How Precedence Works with Multi-Configuration**
+**Precedence example with multi-configuration**
 
 Given this configuration file:
 ```json
@@ -1235,7 +1222,7 @@ Given this configuration file:
 }
 ```
 
-Different command scenarios would result in:
+Results:
 
 - `imgconvert -p alloy` →
   - Cards: Android WebP at 90%, iPhone PNG at 95%
@@ -1246,11 +1233,11 @@ Different command scenarios would result in:
   - Thumbs: Android JPEG at 70%, iPhone JPEG at 75%
 - `imgconvert -p alloy -f webp -q 85` → All platforms and configurations use WebP at 85% (CLI overrides everything)
 
-## Debug Mode
+## Debug mode
 
-When debug mode is enabled with the `-d` or `--debug` option, the tool displays detailed information about the processing, including configuration-specific details for alloy presets.
+Use `-d` or `--debug` to see detailed processing info.
 
-**Sample Debug Output (Standard Processing):**
+**Standard processing:**
 ```
 Processing complete! Summary:
   - Processed files: 5
@@ -1286,24 +1273,21 @@ Processing complete! Summary:
   - Duration: 1.24 seconds
 ```
 
-This information can be useful for troubleshooting and optimizing the image processing workflow.
-
 ## Dependencies
 
-- **sharp**: A high-performance image processing library for Node.js. It handles the compression, conversion, and background color application for images.
-  - *Note: Sharp internally uses 'jpeg' format specification, but imgconvert-cli preserves user-friendly '.jpg' extensions in output filenames.*
-- **minimist**: A library for parsing command-line arguments, allowing for flexible and named options.
-- **chalk**: A library for styling terminal strings, used for colored output in the console.
+- **sharp** - Image processing (compression, conversion, resizing). Note: Sharp uses 'jpeg' internally, but imgconvert preserves '.jpg' extensions in filenames.
+- **minimist** - CLI argument parsing.
+- **chalk** - Colored terminal output.
 
-## Error Handling
+## Error handling
 
-- If the source path is not specified, the tool will display an error message and exit.
-- If an unsupported format is specified, the tool will default to retaining the original format.
-- Non-image files and directories are skipped with a log message.
+- Missing source path shows an error and exits.
+- Unsupported formats fall back to the original format.
+- Non-image files are skipped with a log message.
 
 ## Troubleshooting
 
-### Common Issues
+### Common issues
 
 **Q: Why did my `.jpg` file become `.jpeg` in older versions?**
 A: This was an issue in versions prior to 1.1.4. Update to the latest version where original extensions are preserved when no format conversion is specified.
@@ -1346,19 +1330,11 @@ node --max-old-space-size=4096 $(which imgconvert) large-folder
 A: Ensure source images are high enough resolution. For Alloy preset, use 4x resolution source images for best results.
 
 **Q: Alloy preset not generating expected output structure**
-A: Verify your configuration file format and ensure output paths don't include leading/trailing slashes (use `"thumbs/baby"` not `"/thumbs/baby/"`)
+A: Verify your configuration file format and ensure output paths don't include leading/trailing slashes (use `"thumbs/baby"` not `"/thumbs/baby/"`). If files are not appearing where expected, check the output precedence: the `-o` flag takes priority, then the tool checks for `tiapp.xml` in the current directory (Titanium project detection), and finally falls back to the input file's directory.
 
 ## Contributing
 
-We welcome contributions! Here's how you can help improve imgconvert-cli:
-
-### Quick Contributions
-- 💡 Suggest new features
-- 📖 Improve documentation
-- 🐛 Report bugs or issues
-- ⭐ Star the repository if you find it useful
-
-### Development Setup
+### Development setup
 
 1. **Fork the repository**
    ```bash
@@ -1424,16 +1400,14 @@ We welcome contributions! Here's how you can help improve imgconvert-cli:
       ```
 
 
-### PR Best Practices
+### PR guidelines
 
-- **Title**: Use a clear, descriptive title (e.g., "Add WebP optimization for mobile preset")
-- **Description**: Explain what you changed and why
-- **Breaking Changes**: Clearly mark any breaking changes
-- **Screenshots**: Include before/after images for UI changes
-- **Testing**: Mention what tests you ran
+- Use a clear title (e.g., "Add WebP optimization for mobile preset")
+- Explain what you changed and why
+- Mark any breaking changes
+- Mention what tests you ran
 
-
-### Example PR Description Template:
+### PR description template:
 ```
 ## What does this PR do?
 Brief description of the changes
@@ -1450,50 +1424,30 @@ Steps to verify the changes work
 - [ ] No breaking changes (or clearly documented)
 ```
 
-### Development Guidelines
+### Guidelines
 
-- **Commits**: Use clear, descriptive commit messages
-- **Issues**: Reference relevant issues in your PR description
-- **Code Style**: Follow the existing code style and use ESLint
-- **Tests**: Add tests for new features and ensure all tests pass
-- **Documentation**: Update README.md if you change functionality
+- Use clear commit messages
+- Reference issues in your PR
+- Follow existing code style (ESLint)
+- Add tests for new features
+- Update README if you change functionality
 
-### Areas for Contribution
+## Roadmap
 
-- 📚 **Documentation** examples and tutorials
-- 🧪 **Testing improvements** and edge case coverage
-- 🔧 **CLI improvements** and user experience enhancements
-- 📱 **Additional mobile frameworks** support beyond Titanium
-- 🚀 **Performance optimizations** for large batch processing
-- 🎨 **New presets** for specific use cases (social media, print, etc.)
+- [ ] Progress bars for large batch operations
+- [ ] CLI wizard for preset configuration
+- [ ] Parallel processing for faster batch conversion
+- [ ] Plugin system for custom transformations
+- [ ] Docker support
+- [ ] Integration with build tools (Webpack, Vite)
 
-## Roadmap / Future Features
-
-### Near Term (v2.x)
-- [ ] **Progress bars** for large batch operations
-- [ ] **CLI wizard** for preset configuration setup
-- [ ] **Parallel processing** for faster batch conversion
-- [ ] **Image optimization analysis** with recommendations
-
-### Medium Term (v3.x)
-- [ ] **Web UI** for visual configuration
-- [ ] **Plugin system** for custom transformations
-- [ ] **Docker support** for containerized workflows
-- [ ] **Cloud storage integration** (AWS S3, Google Cloud)
-
-### Long Term (v4.x+)
-- [ ] **Batch undo/rollback** functionality
-- [ ] **AI-powered optimization** suggestions
-- [ ] **Advanced filtering** and conditional processing
-- [ ] **Integration** with popular build tools (Webpack, Vite, etc.)
-
-> 💡 **Have an idea?** Open an issue to discuss new features or improvements!
+Have an idea? [Open an issue](https://github.com/macCesar/imgconvert-cli/issues).
 
 ## License
 
 This project is licensed under the MIT License.
 
-**Copyright (c) 2025 César Estrada**
+**Copyright (c) 2026 César Estrada**
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

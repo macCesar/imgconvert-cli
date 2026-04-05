@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.8] - 2026-04-04
+
+### Added
+- Show help when running `imgconvert` without any arguments
+
+### Fixed
+- Alloy preset output was relative to CWD, now it's relative to the input file
+- Alloy preset ignored the `-o` flag
+- Alloy preset detects Titanium projects (`tiapp.xml` in CWD) and writes to `app/assets/` automatically
+
+### Changed
+- Alloy output directory precedence: `-o` flag > Titanium project root (CWD with `tiapp.xml`) > input file's directory
+
 ## [1.7.7] - 2025-01-21
 
 ### Fixed
@@ -18,19 +31,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.7.5] - 2025-07-08
 
 ### Added
-- Auto-trim functionality with `--trim` flag to automatically remove transparent borders
-- Enhanced debug mode with colored output, emojis, and better formatting
-- Canvas resize functionality now properly extends canvas without scaling the image
+- `--trim` flag to remove transparent borders
+- Debug mode now has colored output and visual indicators
+- Canvas resize extends the canvas without scaling the image
 
 ### Fixed
-- Fixed canvas mode to use Sharp's `extend()` instead of `resize()` for proper canvas extension
-- Improved position validation to handle undefined positions gracefully
-- Enhanced debug logger with cyan color and emoji support for better readability
+- Canvas mode was using Sharp's `resize()` instead of `extend()`
+- Position validation crashed on undefined positions
+- Debug logger readability (cyan color, emoji indicators)
 
 ### Changed
-- Debug mode now shows processing steps with visual indicators (📂, ✂️, 🖼️, 📏)
-- Removed [DEBUG] prefix from debug output for cleaner console experience
-- Updated help documentation to include new `--trim` option and examples
+- Debug output uses visual step indicators (📂, ✂️, 🖼️, 📏) instead of [DEBUG] prefix
+- Help documentation updated for `--trim`
 
 ## [1.7.4] - 2025-06-10
 
@@ -38,14 +50,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Position control for canvas mode: `--canvas --position top/bottom/left/right` now works
 
 ### Fixed
-- Fixed position parameter not working due to incorrect Sharp gravity mapping
-- Fixed transparent background not applied by default for `--fit contain` operations on PNG/WebP/AVIF
+- Position parameter didn't work (incorrect Sharp gravity mapping)
+- `--fit contain` on PNG/WebP/AVIF wasn't applying transparent background by default
 
 ## [1.7.3] - 2025-06-05
 
 ### Fixed
-- Fixed cryptic error when using invalid command-line options
-- Invalid options now show clear error message with suggestion to run `--help`
+- Invalid CLI options gave a cryptic error; now shows a clear message with `--help` suggestion
 
 ## [1.7.2] - 2025-06-05
 
@@ -75,14 +86,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.5.0] - 2025-06-01
 
 ### Changed
-- Enhanced test coverage with optimized test assets
-- Complete CLI restructure with modular architecture
+- More test coverage with smaller test assets
+- CLI restructured into modular architecture
 
 ## [1.4.1] - 2025-06-01
 
 ### Fixed
-- Fixed temporary file naming conflicts during batch processing
-- Multiple image processing with format flag now works correctly
+- Temporary file naming conflicts during batch processing
+- Multiple images with `-f` flag weren't all getting converted
 
 ## [1.4.0] - 2025-06-01
 
@@ -94,8 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.1] - 2025-05-31
 
 ### Added
-- Selective configuration processing for alloy preset using `alloy:configName` syntax
-- Enhanced error handling with configuration validation
+- Selective configuration processing for alloy preset: `alloy:configName` syntax
+- Better error messages when configuration is invalid
 
 ## [1.3.0] - 2025-05-31
 
@@ -107,8 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.1] - 2025-05-31
 
 ### Improved
-- Enhanced alloy preset handling with multiple sources support
-- Added warnings when width/height parameters are used with alloy preset
+- Alloy preset handles multiple sources per platform
+- Warning when width/height are used with alloy preset (they're ignored)
 
 ## [1.2.0] - 2025-05-31
 
