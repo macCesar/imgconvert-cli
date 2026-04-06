@@ -154,25 +154,25 @@ imgconvert <source_path>
 ## Options
 
 
-| Option                | Alias | Description                                                                             | Default                                    |
-| --------------------- | ----- | --------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `--format`            | `-f`  | Output format: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, `all`                      | Original format                            |
-| `--quality`           | `-q`  | Quality (1-100)                                                                         | 85                                         |
-| `--background`        | `-b`  | Background color when converting from transparent formats to non-transparent formats    | Transparent for PNG/WebP, #ffffff for JPEG |
-| `--width`             | `-w`  | Output width in pixels                                                                  | -                                          |
-| `--height`            | `-h`  | Output height in pixels                                                                 | -                                          |
-| `--output`            | `-o`  | Output directory                                                                        | Same as source                             |
-| `--preset`            | `-p`  | Apply preset: `web`, `print`, `thumbnail`, `alloy`                                      | -                                          |
-| `--fit`               | -     | Resize strategy: `cover`, `contain`, `fill`, `inside`, `outside`                        | `contain`                                  |
-| `--position`          | -     | Crop position: `center`, `top`, `bottom`, `left`, `right`, corners                      | `center`                                   |
-| `--crop`              | -     | Manual crop coordinates: `left,top,width,height`                                        | -                                          |
-| `--canvas`            | -     | Resize canvas instead of image (maintains original, adds padding)                       | `false`                                    |
-| `--name`              | `-n`  | Custom filename for single file processing                                              | -                                          |
-| `--rename`            | -     | Batch rename strategy: `enumerate`, `lowercase`, `replace-spaces`, `prefix:`, `suffix:` | -                                          |
-| `--replace-originals` | -     | Replace original files                                                                  | `false`                                    |
-| `--debug`             | `-d`  | Enable debug mode                                                                       | `false`                                    |
-| `--version`           | `-v`  | Show version                                                                            | -                                          |
-| `--help`              | `-H`  | Show help message                                                                       | -                                          |
+| Option                | Alias | Description                                                                                 | Default                                    |
+| --------------------- | ----- | ------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `--format`            | `-f`  | Output format: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, `all`                          | Original format                            |
+| `--quality`           | `-q`  | Quality (1-100)                                                                             | 85                                         |
+| `--background`        | `-b`  | Background color when converting from transparent formats to non-transparent formats        | Transparent for PNG/WebP, #ffffff for JPEG |
+| `--width`             | `-w`  | Output width in pixels                                                                      | -                                          |
+| `--height`            | `-h`  | Output height in pixels                                                                     | -                                          |
+| `--output`            | `-o`  | Output directory (relative paths resolve next to the source, absolute paths are used as-is) | `<source>-converted`                       |
+| `--preset`            | `-p`  | Apply preset: `web`, `print`, `thumbnail`, `alloy`                                          | -                                          |
+| `--fit`               | -     | Resize strategy: `cover`, `contain`, `fill`, `inside`, `outside`                            | `contain`                                  |
+| `--position`          | -     | Crop position: `center`, `top`, `bottom`, `left`, `right`, corners                          | `center`                                   |
+| `--crop`              | -     | Manual crop coordinates: `left,top,width,height`                                            | -                                          |
+| `--canvas`            | -     | Resize canvas instead of image (maintains original, adds padding)                           | `false`                                    |
+| `--name`              | `-n`  | Custom filename for single file processing                                                  | -                                          |
+| `--rename`            | -     | Batch rename strategy: `enumerate`, `lowercase`, `replace-spaces`, `prefix:`, `suffix:`     | -                                          |
+| `--replace-originals` | -     | Replace original files                                                                      | `false`                                    |
+| `--debug`             | `-d`  | Enable debug mode                                                                           | `false`                                    |
+| `--version`           | `-v`  | Show version                                                                                | -                                          |
+| `--help`              | `-H`  | Show help message                                                                           | -                                          |
 
 ## Advanced resize and crop control
 
@@ -514,7 +514,11 @@ Strategies are applied left to right, so the result matches the order you write 
 
 18. **Specify a custom output directory:**
     ```bash
-    imgconvert source_folder -o custom_output_directory
+    # Relative name — creates "custom_output" next to source_folder
+    imgconvert source_folder -o custom_output
+
+    # Absolute path — uses it as-is
+    imgconvert source_folder -o /tmp/processed
     ```
 
 19. **Enable debug mode:**
@@ -734,20 +738,25 @@ When using the `alloy` preset, the output follows this structure:
 
 | Priority | Condition                               | Output base (`<base>`)                            |
 | -------- | --------------------------------------- | ------------------------------------------------- |
-| 1        | `-o /path/to/project` specified         | `/path/to/project`                                |
-| 2        | `tiapp.xml` exists in current directory | Current working directory (Titanium project root) |
-| 3        | No `-o` and no `tiapp.xml` in CWD       | Same directory as the input file                  |
+| 1        | `-o /absolute/path` specified           | `/absolute/path`                                  |
+| 2        | `-o relative-name` specified            | Resolved next to the input file's directory       |
+| 3        | `tiapp.xml` exists in current directory | Current working directory (Titanium project root) |
+| 4        | No `-o` and no `tiapp.xml` in CWD       | Same directory as the input file                  |
 
 **Examples:**
 
 ```bash
+# With absolute output path
+imgconvert ~/Desktop/logo.png -p alloy -o ~/Developer/my-titanium-app
+# Output: ~/Developer/my-titanium-app/app/assets/android/images/...
+
+# With relative output name — resolves next to the input file
+imgconvert ~/Desktop/logo.png -p alloy -o my-project
+# Output: ~/Desktop/my-project/app/assets/android/images/...
+
 # Inside a Titanium project (tiapp.xml exists in CWD)
 cd ~/Developer/my-titanium-app
 imgconvert ~/Desktop/logo.png -p alloy
-# Output: ~/Developer/my-titanium-app/app/assets/android/images/...
-
-# With explicit output directory
-imgconvert ~/Desktop/logo.png -p alloy -o ~/Developer/my-titanium-app
 # Output: ~/Developer/my-titanium-app/app/assets/android/images/...
 
 # Outside a Titanium project, no -o flag
@@ -1330,7 +1339,7 @@ node --max-old-space-size=4096 $(which imgconvert) large-folder
 A: Ensure source images are high enough resolution. For Alloy preset, use 4x resolution source images for best results.
 
 **Q: Alloy preset not generating expected output structure**
-A: Verify your configuration file format and ensure output paths don't include leading/trailing slashes (use `"thumbs/baby"` not `"/thumbs/baby/"`). If files are not appearing where expected, check the output precedence: the `-o` flag takes priority, then the tool checks for `tiapp.xml` in the current directory (Titanium project detection), and finally falls back to the input file's directory.
+A: Verify your configuration file format and ensure output paths don't include leading/trailing slashes (use `"thumbs/baby"` not `"/thumbs/baby/"`). If files are not appearing where expected, check the output precedence: an absolute `-o` path is used as-is, a relative `-o` name resolves next to the input file, then the tool checks for `tiapp.xml` in the current directory (Titanium project detection), and finally falls back to the input file's directory.
 
 ## Contributing
 

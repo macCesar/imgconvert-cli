@@ -135,6 +135,15 @@ function validateOutputDirectory(outputDir, shouldCreate = true) {
  */
 function determineOutputDirectory(args, config, inputPath) {
   if (args.output) {
+    if (path.isAbsolute(args.output)) {
+      return args.output;
+    }
+    // Relative output paths resolve next to the input source
+    if (inputPath) {
+      const isDirectory = fs.lstatSync(inputPath).isDirectory();
+      const baseDir = isDirectory ? path.dirname(inputPath) : path.dirname(inputPath);
+      return path.join(baseDir, args.output);
+    }
     return args.output;
   } else if (config.output) {
     return config.output;

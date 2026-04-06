@@ -200,7 +200,7 @@ async function processAlloyPlatform(subPresetName, subPresetConfig, configGroupN
       // Determine output base: CLI -o flag > Titanium project root (CWD with tiapp.xml) > input file's directory
       let outputBase;
       if (args.output) {
-        outputBase = args.output;
+        outputBase = path.isAbsolute(args.output) ? args.output : path.resolve(path.dirname(inputFile), args.output);
       } else if (fs.existsSync(path.join(process.cwd(), 'tiapp.xml'))) {
         outputBase = process.cwd();
       } else {
