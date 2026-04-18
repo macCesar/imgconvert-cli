@@ -5,6 +5,79 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-04-18
+
+### Added — Modern Titanium branding pipeline (Alloy + Classic)
+
+Introduces a new `ti-branding` preset (and extends `--preset alloy --modern` as
+a backward-compatible alias) — a complete modern branding generator for
+Titanium SDK 13.x projects that works on both Alloy and Classic layouts. Pairs
+with any of the new flags below to emit a full asset set from a single SVG or
+PNG master, matching what `titanium` / `alloy new` ships out of the box plus
+everything a production app needs on Android.
+
+The preset name matches the [TiTools `ti-branding` skill](https://github.com/macCesar/titools/tree/main/skills/ti-branding)
+so Claude Code users and npm CLI users converge on the same feature name.
+Auto-detects `app/` (Alloy) vs `Resources/` (Classic) layout and adjusts the
+Android output paths automatically (`app/platform/android/res/...` vs
+`platform/android/res/...`).
+
+- `-p ti-branding` — new preset name, preferred over `-p alloy --modern`. Always routes to the modern pipeline; no sub-flags defaults to kitchen-sink (adaptive + marketplace + notification + splash).
+- `--modern` — kitchen-sink flow when used with `-p alloy` (backward-compatible alias for `-p ti-branding`)
+- `--adaptive` — Android adaptive icon triplet (foreground + background + monochrome) × 5 densities + legacy `ic_launcher.png` × 5 + `mipmap-anydpi-v26/ic_launcher.xml` binder
+- `--marketplace` — `iTunesConnect.png` (1024²) + `MarketplaceArtwork.png` (512²), both with alpha preserved (matches Titanium defaults)
+- `--notification` — Android notification icons (white on transparent) × 5 densities at `drawable-*/ic_stat_notify.png`
+- `--splash` — Android 12+ SplashScreen API icons × 5 densities
+- `--bg-color <hex>` — background for Android adaptive + iOS alpha flatten (default `#FFFFFF`). **New behavior:** when explicitly provided, also flattens `iTunesConnect.png` + `MarketplaceArtwork.png` on the given color (prevents dark-mode muddy appearance on Play Store / macOS App Store when the master logo has transparent areas). When NOT provided, the two marketplace files keep alpha to match `ti create` default.
+- `--monochrome-master <path>` — optional dedicated silhouette master for `ic_launcher_monochrome.png` (Android 13+ themed icons) and `ic_stat_notify.png` (notification status bar). When provided, these two outputs use the dedicated master instead of naively whitening the colored main master. Useful for logos with multi-color detail (e.g. a painter's palette with 4 color dots) where a color→white flatten produces a featureless blob — you design a monochrome variant with cutout holes / negative space, and the detail survives in themed icons and notification.
+- `--padding <pct>` — Android safe-zone padding per side (default `20`). Material Design spec floor is 19.44% (108dp canvas with 66dp keyline grid); the default of 20 sits just above the spec floor for a tiny buffer while keeping the logo visibly prominent. Previous pre-release drafts used 22%, which produced noticeably smaller logos (~6% less width at xxxhdpi) without real justification — the 2.5% "safety" margin didn't save any real-world logos from masking. 20% is the new recommended balance.
+- `--ios-padding <pct>` — iOS / marketplace aesthetic padding per side (default `8`)
+- `--cleanup-legacy` — context-aware cleanup using `tiapp.xml` analysis. Categorizes targets into SAFE, CONDITIONAL, and AGGRESSIVE buckets. Always prints the plan before deleting. Can run standalone (without a master) to just clean.
+- `--aggressive` — includes ldpi density folders in cleanup (<1% global market)
+- `--project <path>` — Titanium project root (default: cwd)
+- `--in-place` — skip the default `.ti-branding/` staging directory and write files directly into the project root (overwrites existing icons). Pairs well with a fresh `ti create` project where you want to immediately replace the default Titanium/Alloy icons in one command, without the manual copy step. Prints an explicit warning and recommends committing first. `--output` takes precedence over `--in-place` when both are passed.
+- `--notes` — opt-in to print the full tiapp.xml snippets, padding tuning guide, and platform-specific configuration reminders (iOS launch storyboard, Android launcher wiring, Android 12+ splash theme, FCM notification tint) after a successful run. Default output is a compact one-screen summary (~27 lines) with a pointer to `--notes`. Before this flag the full output (~100+ lines) was always printed, which buried the most important "next steps" information under reference-style documentation.
+- `--dry-run` — show plan without writing files
+
+Root-level icons emitted when a master is provided:
+- `DefaultIcon.png` (1024², alpha preserved) — universal / Android
+- `DefaultIcon-ios.png` (1024², alpha flattened on bg-color) — iOS (Apple rejects alpha)
+
+This matches the output of a fresh `ti create` + `alloy new` project — alpha is
+kept on `DefaultIcon.png`, `iTunesConnect.png`, and `MarketplaceArtwork.png`, and
+only stripped on `DefaultIcon-ios.png`.
+
+Auto-detects Alloy (`app/` directory) vs Classic (`Resources/`) project layouts.
+
+### Changed
+- `src/processors/alloy.js` is now a thin router that delegates to either
+  `alloy-legacy.js` (the v1.x multi-scale 1x/2x/3x behavior) or
+  `alloy-modern/` (the new pipeline), based on the presence of any modern flag.
+
+### Backward compatibility
+- `imgconvert --preset alloy` without any modern flag continues to emit the
+  legacy 1x/2x/3x (iPhone) + mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi (Android) output
+  exactly as v1.x did. **Not deprecated** — this is a distinct multi-scale
+  feature with no modern replacement.
+
+### Deprecated
+- `--preset alloy` combined with any modern flag (`--modern`, `--adaptive`,
+  `--marketplace`, `--notification`, `--splash`, `--cleanup-legacy`) prints
+  a deprecation warning and will be removed in v3.0.0. Use
+  `--preset ti-branding` instead — it's an exact drop-in replacement and
+  the name accurately describes scope (works on both Alloy and Classic).
+  Plain `--preset alloy` with no modern flags stays supported indefinitely.
+
+### Dependencies
+- Added `fast-xml-parser` (~18KB, no native bindings) for `tiapp.xml` parsing.
+  Used only on the modern cleanup path; regex fallback kicks in if the dep is
+  unavailable.
+
+### Tests
+- 36 new tests covering prepare-master, all generators, tiapp-reader,
+  cleanup-legacy buckets, and CLI integration (kitchen sink + dry-run +
+  sub-flag isolation).
+
 ## [1.7.9] - 2026-04-06
 
 ### Fixed

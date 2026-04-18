@@ -58,8 +58,17 @@ async function main() {
       process.exit(1);
     }
 
-    // Process based on preset
-    if (finalArgs.preset === 'alloy' || (finalArgs.preset && finalArgs.preset.startsWith('alloy:'))) {
+    // Process based on preset. `ti-branding` is the new preferred name for the
+    // modern Titanium branding pipeline (works on both Alloy and Classic). The
+    // old `alloy` name still works and continues to cover both the legacy
+    // multi-scale path (v1.x) and the modern path (when modern flags are set)
+    // for backward compatibility.
+    const preset = finalArgs.preset;
+    const isBrandingPreset =
+      preset === 'alloy' || (preset && preset.startsWith('alloy:')) ||
+      preset === 'ti-branding' || (preset && preset.startsWith('ti-branding:'));
+
+    if (isBrandingPreset) {
       await processAlloyPreset(finalArgs, config);
     } else {
       await processImages(finalArgs, config);

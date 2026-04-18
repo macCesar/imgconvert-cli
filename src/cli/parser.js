@@ -27,8 +27,17 @@ function parseArguments(argv) {
       n: 'name',
       d: 'debug'
     },
-    boolean: ['replace-originals', 'debug', 'help', 'version', 'canvas', 'trim'],
-    string: ['crop', 'fit', 'position', 'rename'],
+    boolean: [
+      'replace-originals', 'debug', 'help', 'version', 'canvas', 'trim',
+      // Modern Alloy branding flags
+      'modern', 'adaptive', 'marketplace', 'notification', 'splash',
+      'cleanup-legacy', 'aggressive', 'dry-run', 'in-place', 'notes'
+    ],
+    string: [
+      'crop', 'fit', 'position', 'rename',
+      // Modern Alloy branding flags
+      'bg-color', 'padding', 'ios-padding', 'project', 'monochrome-master'
+    ],
     unknown: (arg) => {
       if (arg.startsWith('-')) {
         // Allow negative numbers (they will be validated later)
@@ -64,6 +73,22 @@ function parseArguments(argv) {
     position: userArgs.position || null,
     background: userArgs.background || null,
     'replace-originals': userArgs['replace-originals'] || false,
+    // Modern Alloy branding flags — passthrough to the alloy router
+    modern: userArgs.modern || false,
+    adaptive: userArgs.adaptive || false,
+    marketplace: userArgs.marketplace || false,
+    notification: userArgs.notification || false,
+    splash: userArgs.splash || false,
+    'cleanup-legacy': userArgs['cleanup-legacy'] || false,
+    aggressive: userArgs.aggressive || false,
+    'dry-run': userArgs['dry-run'] || false,
+    'in-place': userArgs['in-place'] || false,
+    notes: userArgs.notes || false,
+    'bg-color': userArgs['bg-color'] || null,
+    padding: userArgs.padding || null,
+    'ios-padding': userArgs['ios-padding'] || null,
+    project: userArgs.project || null,
+    'monochrome-master': userArgs['monochrome-master'] || null,
   };
 
   // Validate numeric arguments

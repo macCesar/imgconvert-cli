@@ -6,7 +6,7 @@
   ![Node.js Version](https://img.shields.io/node/v/imgconvert-cli)
   ![downloads](https://img.shields.io/npm/dm/imgconvert-cli)
   ![license](https://img.shields.io/npm/l/imgconvert-cli)
-  ![test coverage](https://img.shields.io/badge/tests-74%20passing-brightgreen)
+  ![test coverage](https://img.shields.io/badge/tests-96%20passing-brightgreen)
   ![GitHub Stars](https://img.shields.io/github/stars/macCesar/imgconvert-cli)
 
 </div>
@@ -1034,6 +1034,123 @@ app/
                 ├── star@2x.png (2x)
                 └── star@3x.png (3x)
 ```
+
+## Titanium — Modern branding (SDK 13.x, Alloy + Classic)
+
+For Titanium SDK 13.x projects (both Alloy and Classic), `--preset ti-branding` generates a full modern branding asset set from a single SVG or PNG master — matching what `titanium` / `alloy new` ships out of the box, plus everything a production app actually needs on Android (adaptive icons, notification icons, splash icons) and for marketplace submission.
+
+Auto-detects project layout: `app/` → Alloy, `Resources/` → Classic. The generated Android paths adjust automatically (`app/platform/android/res/...` vs `platform/android/res/...`). Root-level icons (`DefaultIcon.png`, `DefaultIcon-ios.png`, `iTunesConnect.png`, `MarketplaceArtwork.png`) land at the project root in both cases.
+
+**Preset name:** `ti-branding` is the preferred name going forward (matches the [TiTools `ti-branding` skill](https://github.com/macCesar/titools/tree/main/skills/ti-branding) for Claude Code users). The older `--preset alloy --modern` spelling is kept as a backward-compatible alias — both invocations route to the same pipeline.
+
+**Backward compatibility:** `--preset alloy` without any modern flag continues to emit the legacy 1x/2x/3x (iPhone) + mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi (Android) output exactly as v1.x did. No existing scripts need to change.
+
+### What gets generated
+
+Root-level icons (when a master is provided):
+
+| File                      | Size    | Alpha      | Purpose                                                   |
+| ------------------------- | ------- | ---------- | --------------------------------------------------------- |
+| `DefaultIcon.png`         | 1024²   | preserved  | Universal / Android source — matches `ti create` default  |
+| `DefaultIcon-ios.png`     | 1024²   | flattened  | iOS-specific (Apple rejects alpha on icons)               |
+
+Marketplace (`--marketplace` or `--modern`):
+
+| File                      | Size    | Alpha      | Purpose                         |
+| ------------------------- | ------- | ---------- | ------------------------------- |
+| `iTunesConnect.png`       | 1024²   | preserved  | App Store artwork               |
+| `MarketplaceArtwork.png`  | 512²    | preserved  | Google Play artwork             |
+
+Android adaptive icons (`--adaptive` or `--modern`) — 5 densities × 3 layers:
+
+| Density   | Canvas | Files                                                                            |
+| --------- | ------ | -------------------------------------------------------------------------------- |
+| mdpi      | 108²   | `ic_launcher_foreground.png`, `ic_launcher_background.png`, `ic_launcher_monochrome.png` |
+| hdpi      | 162²   | ″                                                                                |
+| xhdpi     | 216²   | ″                                                                                |
+| xxhdpi    | 324²   | ″                                                                                |
+| xxxhdpi   | 432²   | ″                                                                                |
+
+Plus `mipmap-anydpi-v26/ic_launcher.xml` (adaptive binder) and legacy `ic_launcher.png` at 48/72/96/144/192 for API 21–25 fallback.
+
+Optional — Android notification icons (`--notification`) at `drawable-*/ic_stat_notify.png`, sized 24/36/48/72/96 (white-on-transparent, runtime-tinted).
+
+Optional — Android 12+ splash icons (`--splash`) at `drawable-*/splash_icon.png`, sized 288/432/576/864/1152 per the SplashScreen API spec.
+
+### Flags
+
+| Flag                      | Default     | Purpose                                                                          |
+| ------------------------- | ----------- | -------------------------------------------------------------------------------- |
+| `-p ti-branding`          | —           | Select the modern pipeline (preferred name)                                      |
+| `--modern`                | off         | With `-p alloy`: route to modern pipeline (same as using `-p ti-branding`)       |
+| `--adaptive`              | off         | Android adaptive icon triplet + legacy + XML binder                              |
+| `--marketplace`           | off         | iTunesConnect.png + MarketplaceArtwork.png                                       |
+| `--notification`          | off         | Notification icons × 5 densities                                                 |
+| `--splash`                | off         | Android 12+ splash_icon × 5 densities                                            |
+| `--bg-color <hex>`        | `#FFFFFF`   | Background for Android adaptive layer + iOS alpha flatten                        |
+| `--padding <pct>`         | `20`        | Android safe-zone padding per side (0–40). Material spec floor is 19.44%; default of 20 gives a tiny buffer while keeping the logo visibly prominent |
+| `--ios-padding <pct>`     | `8`         | iOS / marketplace aesthetic padding per side (0–40)                              |
+| `--cleanup-legacy`        | off         | Context-aware cleanup driven by tiapp.xml (prints plan before deleting)          |
+| `--aggressive`            | off         | With `--cleanup-legacy`, also remove ldpi density folders                        |
+| `--project <path>`        | cwd         | Titanium project root                                                            |
+| `--output <path>`         | `<project>/.ti-branding` | Staging directory                                                    |
+| `--in-place`              | off         | Skip staging — write directly into the project (**overwrites existing icons**)   |
+| `--monochrome-master <path>` | —         | Optional dedicated silhouette master for `ic_launcher_monochrome.png` + `ic_stat_notify.png`. Falls back to whitening the main master when not provided. Use when the colored logo has multi-color detail that collapses into a featureless blob when naively converted to white (example: a painter's palette with 4 color dots → design a monochrome variant with 4 cutout holes instead of solid white blobs) |
+| `--notes`                 | off         | Print full tiapp.xml snippets + padding tuning guide (default: compact summary)  |
+| `--dry-run`               | off         | Show what would be generated / deleted without writing                           |
+
+### Examples
+
+```bash
+# Brand a fresh project — overwrites default Titanium icons directly (no staging)
+cd ~/Developer/my-app
+imgconvert logo.svg -p ti-branding --in-place --bg-color "#0B1326"
+
+# Safer: stage to .ti-branding/ first, review, then copy manually (default behavior)
+imgconvert logo.svg -p ti-branding --bg-color "#0B1326" --project ~/Developer/my-app
+
+# Just the Android adaptive icon triplet (no marketplace, no extras)
+imgconvert logo.svg -p ti-branding --adaptive --bg-color "#FDD900" --project ~/Developer/my-app
+
+# Cleanup mode — preview what would be removed from a Titanium project's legacy cruft
+imgconvert -p ti-branding --cleanup-legacy --dry-run --project ~/Developer/my-app
+
+# Cleanup + aggressive (remove ldpi too)
+imgconvert -p ti-branding --cleanup-legacy --aggressive --project ~/Developer/my-app
+
+# Full flow + cleanup in one command, in-place
+imgconvert logo.svg -p ti-branding --in-place --cleanup-legacy --bg-color "#0B1326"
+
+# Backward-compat alias: --preset alloy --modern works identically
+imgconvert logo.svg -p alloy --modern --in-place --bg-color "#0B1326"
+```
+
+### Context-aware cleanup
+
+`--cleanup-legacy` reads your `tiapp.xml` to decide what's safe to delete. Targets are grouped into three buckets:
+
+- **SAFE** — always removed. Universally obsolete artifacts (e.g. `res-long-*/` and `res-notlong-*/` qualifier folders that have been dead since Android 3.0).
+- **CONDITIONAL** — only removed when your project config guarantees they're unused:
+  - iOS `Default-*.png` legacy launch images — removed only when `<enable-launch-screen-storyboard>true</enable-launch-screen-storyboard>` is set.
+  - Android landscape folders (`res-*-land-*`) — removed only when your app is portrait-only.
+  - Legacy `appicon.png` and `default.png` under `app/assets/android/` — removed only when adaptive icons are already in place.
+- **AGGRESSIVE** — behind `--aggressive`. Strongly defensible but has edge cases (currently: ldpi resource folders, which represent <1% of active Android devices in 2026).
+
+The plan is always printed before anything is deleted. Pair with `--dry-run` to preview without touching disk.
+
+### Post-generation notes
+
+After a successful run the tool prints `tiapp.xml` snippets for:
+- iOS launch background (linking your `--bg-color` to the storyboard)
+- Android launcher icon wiring
+- Android 12+ splash theme (if `--splash` was used) — both the native `android:` approach and the `androidx.core:core-splashscreen` library approach
+- FCM notification icon + tint meta-data (if `--notification` was used)
+
+None of the tiapp.xml edits are made automatically — paste only what you need after reviewing.
+
+### Why two icons for iOS (`DefaultIcon.png` + `DefaultIcon-ios.png`)?
+
+A fresh `ti create` project ships both. `DefaultIcon.png` is the universal/Android source (alpha preserved); `DefaultIcon-ios.png` is the iOS-specific file that ships into the app binary, with alpha flattened because Apple rejects alpha channels on App Store submissions. This tool generates both to match that convention.
 
 ## Tips for alloy selective processing
 

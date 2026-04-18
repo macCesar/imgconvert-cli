@@ -26,8 +26,10 @@ function validateInput(args, config) {
     if (args.presetSource) {
       inputPath = args.presetSource;
       logger.info(`Using source folder from preset or global config: ${inputPath}`);
-    } else if (args.presetName === 'alloy') {
-      // Special case for alloy preset
+    } else if (args.presetName === 'alloy' || args.presetName === 'ti-branding') {
+      // Special case for alloy / ti-branding presets — they either run the
+      // multi-source legacy flow (alloy only) or the modern flow where the
+      // master image is optional (e.g. --cleanup-legacy alone).
       args.useAlloyMultipleSources = true;
       args.alloySubPreset = args.subPreset;
       return { valid: true, inputPath: null };
@@ -98,9 +100,9 @@ function validateInput(args, config) {
     };
   }
 
-  // Warning for alloy preset with width/height
-  if (args.presetName === 'alloy' && (args.width || args.height)) {
-    logger.warning('Warning: Width and height parameters are ignored when using the alloy preset. Images are scaled based on predefined factors.');
+  // Warning for branding presets with width/height
+  if ((args.presetName === 'alloy' || args.presetName === 'ti-branding') && (args.width || args.height)) {
+    logger.warning(`Warning: Width and height parameters are ignored when using the ${args.presetName} preset. Images are scaled based on predefined factors.`);
   }
 
   return { valid: true, inputPath };

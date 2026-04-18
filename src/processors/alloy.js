@@ -1,331 +1,123 @@
 /**
- * Alloy preset processor
- * Handles Titanium Alloy specific image processing
+ * Branding preset router — handles `-p alloy` and `-p ti-branding`.
+ *
+ * Two preset names, both handled here:
+ *
+ *   `-p ti-branding`  → always runs the modern Titanium SDK 13.x branding
+ *                       pipeline. Works on Alloy AND Classic projects
+ *                       (auto-detected). Preferred name going forward.
+ *
+ *   `-p alloy`        → two modes based on flags:
+ *                         • no modern flags → v1.x multi-scale 1x/2x/3x +
+ *                           mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi pipeline
+ *                           (Alloy-specific). Preserved for backward compat.
+ *                         • any modern flag (--modern, --adaptive,
+ *                           --marketplace, --notification, --splash,
+ *                           --cleanup-legacy) → same as ti-branding.
+ *
+ * The modern pipeline emits: DefaultIcon.png (alpha) + DefaultIcon-ios.png
+ * (flattened), Android adaptive triplet × 5 densities, marketplace artwork,
+ * notification icons, splash icons, context-aware legacy cleanup.
  */
 
-const fs = require('fs');
-const path = require('path');
+const { processAlloyLegacy } = require('./alloy-legacy');
+const { runModern } = require('./alloy-modern');
 const { logger } = require('../utils/logger');
-const { naturalSort } = require('../utils/sorting');
-const { getMergedPresets } = require('../config/loader');
-const { processImageWithScaling } = require('./scaling');
-const { applyConfigPrecedence } = require('../cli/parser');
-const { ALLOY_SCALES, SUPPORTED_FORMATS } = require('../config/defaults');
 
 /**
- * Process images using Alloy preset
- * @param {Object} args - Command line arguments
- * @param {Object} config - Configuration object
- * @returns {Promise<void>}
+ * Whether any modern-mode flag was requested.
+ */
+function isModernRequested(args) {
+  return Boolean(
+    args.modern ||
+    args.adaptive ||
+    args.marketplace ||
+    args.notification ||
+    args.splash ||
+    args['cleanup-legacy']
+  );
+}
+
+/**
+ * Whether the invocation is using the `ti-branding` preset name.
+ * The `ti-branding` preset always implies modern mode — there is no legacy
+ * path for it. If no sub-flags are passed, it defaults to kitchen sink
+ * (adaptive + marketplace + notification + splash).
+ */
+function isTiBrandingPreset(args) {
+  return args.presetName === 'ti-branding';
+}
+
+/**
+ * Process images using the Alloy / ti-branding preset. Delegates to legacy
+ * or modern based on the preset name and which flags are present.
+ * @param {Object} args - Parsed CLI arguments
+ * @param {Object} config - Loaded configuration
  */
 async function processAlloyPreset(args, config) {
-  const presets = getMergedPresets(config);
-  args = applyConfigPrecedence(args, config, presets);
+  const tiBranding = isTiBrandingPreset(args);
+  const modernRequested = isModernRequested(args);
 
-  // Check if we have the new multiple configurations format
-  const alloyPreset = presets.alloy;
-  const isLegacyFormat = alloyPreset.android && alloyPreset.iphone &&
-    !Object.keys(alloyPreset).some(key =>
-      key !== 'android' && key !== 'iphone' &&
-      typeof alloyPreset[key] === 'object' &&
-      alloyPreset[key].android && alloyPreset[key].iphone
-    );
-
-  if (!isLegacyFormat) {
-    // New multi-configuration format
-    return await processAlloyMultipleConfigurations(args, alloyPreset);
-  } else {
-    // Legacy format
-    return await processAlloyLegacyFormat(args, alloyPreset);
-  }
-}
-
-/**
- * Process Alloy preset with multiple configurations
- * @param {Object} args - Command line arguments
- * @param {Object} alloyPreset - Alloy preset configuration
- */
-async function processAlloyMultipleConfigurations(args, alloyPreset) {
-  let totalNewSize = 0;
-  let processedCount = 0;
-  let totalOriginalSize = 0;
-  const startTime = Date.now();
-  const processedFilesInfo = [];
-
-  // Get all configuration groups
-  let configGroups = Object.keys(alloyPreset);
-
-  // Filter to specific subpreset if requested
-  if (args.alloySubPreset) {
-    if (alloyPreset[args.alloySubPreset]) {
-      configGroups = [args.alloySubPreset];
-      logger.info(`Processing only configuration: ${args.alloySubPreset}`);
-    } else {
-      logger.error(`Error: Configuration "${args.alloySubPreset}" not found in alloy preset.`);
-      logger.warning(`Available configurations: ${Object.keys(alloyPreset).join(', ')}`);
-      process.exit(1);
-    }
-  } else {
-    logger.info(`Processing all alloy configurations: ${configGroups.join(', ')}`);
-  }
-
-  for (const configGroupName of configGroups) {
-    const configGroup = alloyPreset[configGroupName];
-
-    logger.info(`\nProcessing configuration: ${configGroupName}`);
-
-    // Process each platform within the configuration group
-    for (const [subPresetName, subPresetConfig] of Object.entries(configGroup)) {
-      if (subPresetName !== 'android' && subPresetName !== 'iphone') {
-        continue; // Skip non-platform keys like quality, format, etc.
-      }
-
-      const result = await processAlloyPlatform(
-        subPresetName,
-        subPresetConfig,
-        configGroupName,
-        args,
-        alloyPreset
+  // `-p ti-branding` always runs modern. `-p alloy` runs modern only when
+  // modern flags are present; otherwise it stays on the legacy multi-scale
+  // path for backward compatibility with v1.x.
+  if (tiBranding || modernRequested) {
+    // Print deprecation warning if the user opted into modern via the old
+    // `-p alloy` spelling instead of `-p ti-branding`. This alias is kept
+    // for backward compat with early v2.0.0 docs and will be removed in a
+    // future major version (v3.0.0). `-p alloy` WITHOUT modern flags stays
+    // supported indefinitely — it's a separate legacy multi-scale feature.
+    if (!tiBranding && modernRequested) {
+      logger.warning(
+        'Deprecation: `-p alloy` with modern flags (--modern, --adaptive, --marketplace, --notification, --splash, --cleanup-legacy) is deprecated and will be removed in v3.0.0. Use `-p ti-branding` instead.'
       );
-
-      if (result) {
-        processedFilesInfo.push(...result.processedFilesInfo);
-        totalOriginalSize += result.totalOriginalSize;
-        totalNewSize += result.totalNewSize;
-        processedCount += result.processedCount;
-      }
-    }
-  }
-
-  // Log summary
-  logAlloyProcessingSummary(
-    processedCount,
-    totalOriginalSize,
-    totalNewSize,
-    startTime,
-    args.debug ? processedFilesInfo : null
-  );
-}
-
-/**
- * Process Alloy legacy format
- * @param {Object} args - Command line arguments
- * @param {Object} alloyPreset - Alloy preset configuration
- */
-async function processAlloyLegacyFormat(args, alloyPreset) {
-  let totalNewSize = 0;
-  let processedCount = 0;
-  let totalOriginalSize = 0;
-  const startTime = Date.now();
-  const processedFilesInfo = [];
-
-  // Process each platform separately
-  for (const [subPresetName, subPresetConfig] of Object.entries(alloyPreset)) {
-    if (subPresetName !== 'android' && subPresetName !== 'iphone') {
-      continue;
     }
 
-    const result = await processAlloyPlatform(
-      subPresetName,
-      subPresetConfig,
-      null,
-      args,
-      alloyPreset
-    );
+    // Kitchen-sink rules:
+    //   -p ti-branding (no sub-flags)           → all four
+    //   -p alloy --modern (no sub-flags)        → all four
+    //   anything with explicit sub-flags        → only those sub-flags
+    const anySubFlag = args.adaptive || args.marketplace || args.notification || args.splash;
+    const kitchenSink = (tiBranding || args.modern) && !anySubFlag;
 
-    if (result) {
-      processedFilesInfo.push(...result.processedFilesInfo);
-      totalOriginalSize += result.totalOriginalSize;
-      totalNewSize += result.totalNewSize;
-      processedCount += result.processedCount;
-    }
-  }
-
-  // Log summary
-  logAlloyProcessingSummary(
-    processedCount,
-    totalOriginalSize,
-    totalNewSize,
-    startTime,
-    args.debug ? processedFilesInfo : null
-  );
-}
-
-/**
- * Process a single Alloy platform configuration
- * @param {string} subPresetName - Platform name (android/iphone)
- * @param {Object} subPresetConfig - Platform configuration
- * @param {string} configGroupName - Configuration group name
- * @param {Object} args - Command line arguments
- * @param {Object} alloyPreset - Full alloy preset
- * @returns {Promise<Object>} Processing results
- */
-async function processAlloyPlatform(subPresetName, subPresetConfig, configGroupName, args, alloyPreset) {
-  // Use source from config, or fallback to the input path from command line
-  const sourceFolder = subPresetConfig.source || args._[0];
-
-  if (!sourceFolder) {
-    logger.warning(`Warning: No source folder defined for ${configGroupName ? `${configGroupName}.` : ''}${subPresetName}, skipping...`);
-    return null;
-  }
-
-  if (!fs.existsSync(sourceFolder)) {
-    logger.warning(`Warning: Source folder "${sourceFolder}" for ${configGroupName ? `${configGroupName}.` : ''}${subPresetName} does not exist, skipping...`);
-    return null;
-  }
-
-  logger.clearProgress();
-  logger.info(`  Processing ${subPresetName} from: ${sourceFolder}`);
-
-  const isDirectory = fs.lstatSync(sourceFolder).isDirectory();
-  const inputDir = isDirectory ? sourceFolder : path.dirname(sourceFolder);
-  const files = isDirectory ? fs.readdirSync(sourceFolder).sort(naturalSort) : [path.basename(sourceFolder)];
-
-  let processedCount = 0;
-  let totalOriginalSize = 0;
-  let totalNewSize = 0;
-  const processedFilesInfo = [];
-
-  const tasks = files.map(async (file) => {
-    const inputFile = path.join(inputDir, file);
-    const fileExtension = path.extname(file).toLowerCase().slice(1);
-
-    if (SUPPORTED_FORMATS.includes(fileExtension) && fs.lstatSync(inputFile).isFile()) {
-      const scales = ALLOY_SCALES[subPresetName];
-      const outputSubfolder = subPresetConfig.output || '';
-      const isIPhone = subPresetName === 'iphone';
-      const effectiveQuality = getEffectiveQuality(subPresetName, subPresetConfig, configGroupName, args, alloyPreset);
-      const effectiveFormat = getEffectiveFormat(subPresetName, subPresetConfig, path.extname(inputFile), configGroupName, args, alloyPreset);
-
-      // Determine output base: CLI -o flag > Titanium project root (CWD with tiapp.xml) > input file's directory
-      let outputBase;
-      if (args.output) {
-        outputBase = path.isAbsolute(args.output) ? args.output : path.resolve(path.dirname(inputFile), args.output);
-      } else if (fs.existsSync(path.join(process.cwd(), 'tiapp.xml'))) {
-        outputBase = process.cwd();
-      } else {
-        outputBase = path.dirname(inputFile);
-      }
-
-      const result = await processImageWithScaling(
-        inputFile,
-        scales,
-        outputSubfolder,
-        isIPhone,
-        effectiveQuality,
-        effectiveFormat,
-        outputBase
-      );
-
-      if (result) {
-        result.processedFiles.forEach(f => {
-          processedFilesInfo.push({
-            ...f,
-            configGroup: configGroupName,
-            platform: subPresetName
-          });
-        });
-        totalOriginalSize += result.originalSize;
-        totalNewSize += result.newSize;
-        processedCount++;
-      }
-      return result;
-    }
-    return null;
-  });
-
-  await Promise.all(tasks);
-
-  logger.clearProgress();
-
-  return {
-    processedCount,
-    totalOriginalSize,
-    totalNewSize,
-    processedFilesInfo
-  };
-}
-
-/**
- * Get effective quality for Alloy processing
- * @param {string} subPresetName - Platform name
- * @param {Object} subPresetConfig - Platform configuration
- * @param {string} configGroupName - Configuration group name
- * @param {Object} args - Command line arguments
- * @param {Object} alloyPreset - Full alloy preset
- * @returns {number} Effective quality value
- */
-function getEffectiveQuality(subPresetName, subPresetConfig, configGroupName, args, alloyPreset) {
-  // CLI flag always wins
-  if (args._userArgs.quality) return parseInt(args._userArgs.quality, 10);
-  // Subpreset (android/iphone) quality
-  if (subPresetConfig && subPresetConfig.quality) return parseInt(subPresetConfig.quality, 10);
-  // Configuration group quality
-  if (configGroupName && alloyPreset[configGroupName] && alloyPreset[configGroupName].quality) {
-    return parseInt(alloyPreset[configGroupName].quality, 10);
-  }
-  // Alloy preset quality
-  if (alloyPreset.quality) return parseInt(alloyPreset.quality, 10);
-  // Default from args (which includes config defaults)
-  return args.quality;
-}
-
-/**
- * Get effective format for Alloy processing
- * @param {string} subPresetName - Platform name
- * @param {Object} subPresetConfig - Platform configuration
- * @param {string} originalExt - Original file extension
- * @param {string} configGroupName - Configuration group name
- * @param {Object} args - Command line arguments
- * @param {Object} alloyPreset - Full alloy preset
- * @returns {string} Effective format
- */
-function getEffectiveFormat(subPresetName, subPresetConfig, originalExt, configGroupName, args, alloyPreset) {
-  // CLI flag always wins
-  if (args._userArgs.format) return args._userArgs.format;
-  // Subpreset (android/iphone) format
-  if (subPresetConfig && subPresetConfig.format) return subPresetConfig.format;
-  // Configuration group format
-  if (configGroupName && alloyPreset[configGroupName] && alloyPreset[configGroupName].format) {
-    return alloyPreset[configGroupName].format;
-  }
-  // Alloy preset format
-  if (alloyPreset.format) return alloyPreset.format;
-  // Default from args or preserve original
-  return args.format || originalExt.slice(1).toLowerCase();
-}
-
-/**
- * Log Alloy processing summary
- * @param {number} processedCount - Number of processed files
- * @param {number} totalOriginalSize - Total original size in bytes
- * @param {number} totalNewSize - Total new size in bytes
- * @param {number} startTime - Start time in milliseconds
- * @param {Array} processedFilesInfo - Optional array of processed files for debug
- */
-function logAlloyProcessingSummary(processedCount, totalOriginalSize, totalNewSize, startTime, processedFilesInfo) {
-  // Log processed files info in debug mode
-  if (processedFilesInfo) {
-    logger.debug(`Processed files:`);
-    processedFilesInfo.forEach(fileInfo => {
-      const configInfo = fileInfo.configGroup ? `config: ${fileInfo.configGroup}, ` : '';
-      logger.debug(` - ${fileInfo.path} (${configInfo}platform: ${fileInfo.platform}, scale: ${fileInfo.scaleName})`);
+    await runModern({
+      master: args._[0],
+      monochromeMaster: args['monochrome-master'] || null,
+      bgColor: args['bg-color'] || '#FFFFFF',
+      bgColorExplicit: Boolean(args['bg-color']),
+      padding: parseIntOr(args.padding, 20),
+      iosPadding: parseIntOr(args['ios-padding'], 8),
+      adaptive: kitchenSink ? true : Boolean(args.adaptive),
+      marketplace: kitchenSink ? true : Boolean(args.marketplace),
+      notification: kitchenSink ? true : Boolean(args.notification),
+      splash: kitchenSink ? true : Boolean(args.splash),
+      cleanupLegacy: Boolean(args['cleanup-legacy']),
+      aggressive: Boolean(args.aggressive),
+      projectRoot: args.project ? resolveProject(args.project) : process.cwd(),
+      output: args.output || null,
+      dryRun: Boolean(args['dry-run']),
+      inPlace: Boolean(args['in-place']),
+      notes: Boolean(args.notes)
     });
+    return;
   }
 
-  // Calculate duration
-  const endTime = Date.now();
-  const duration = ((endTime - startTime) / 1000).toFixed(2);
+  // Legacy path (v1.x behavior)
+  return processAlloyLegacy(args, config);
+}
 
-  // Show summary
-  logger.summary({
-    processedCount,
-    totalOriginalSize,
-    totalNewSize,
-    duration
-  });
+function parseIntOr(value, fallback) {
+  if (value === undefined || value === null || value === '') return fallback;
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function resolveProject(value) {
+  const path = require('path');
+  return path.isAbsolute(value) ? value : path.resolve(process.cwd(), value);
 }
 
 module.exports = {
-  processAlloyPreset
+  processAlloyPreset,
+  isModernRequested
 };

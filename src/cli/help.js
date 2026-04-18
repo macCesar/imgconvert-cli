@@ -32,8 +32,9 @@ Options:
                             ${chalk.yellow('prefix:<text>')} - Add prefix to all files (e.g., prefix:thumb_)
                             ${chalk.yellow('suffix:<text>')} - Add suffix before extension (e.g., suffix:_optimized)
                             Multiple strategies can be combined with commas
-  ${chalk.green('-p, --preset')}           Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy')})
-                            ${chalk.yellow('alloy')} preset is for Titanium SDK development, generates multi-resolution images for Android/iOS
+  ${chalk.green('-p, --preset')}           Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy, ti-branding')})
+                            ${chalk.yellow('alloy')} preset: legacy Titanium Alloy multi-scale 1x/2x/3x + mdpi→xxxhdpi pipeline
+                            ${chalk.yellow('ti-branding')} preset: modern Titanium SDK 13.x branding (Alloy + Classic, DefaultIcon + adaptive + marketplace)
   ${chalk.green('--fit')}                  Set resize strategy (${chalk.yellow('cover, contain, fill, inside, outside; default: contain')})
   ${chalk.green('--position')}             Set crop position when using fit: cover (${chalk.yellow('center, top, bottom, left, right, "top left", etc.')})
   ${chalk.green('--crop')}                 Manual crop coordinates (${chalk.yellow('format: left,top,width,height')})
@@ -44,6 +45,30 @@ Options:
   ${chalk.green('-d, --debug')}            Enable debug mode to show detailed information
 
   ${chalk.green('<source_path>')}          The path to the image file or directory to process (${chalk.yellow('required')})
+
+${chalk.bold('Titanium — Modern branding (SDK 13.x, Alloy + Classic)')}
+  Use ${chalk.yellow('--preset ti-branding')} (preferred) or ${chalk.yellow('--preset alloy')} with ${chalk.yellow('--modern')} to
+  generate a full modern branding set from a single SVG/PNG master: DefaultIcon.png,
+  DefaultIcon-ios.png, Android adaptive icons × 5 densities, marketplace artwork,
+  notification icons, splash icons. Auto-detects Alloy (app/) vs Classic
+  (Resources/) layout.
+
+  ${chalk.green('--modern')}                  Kitchen-sink modern flow (adaptive + marketplace)
+  ${chalk.green('--adaptive')}                Android adaptive icon triplet + legacy + XML × 5
+  ${chalk.green('--marketplace')}             iTunesConnect.png (1024²) + MarketplaceArtwork.png (512²)
+  ${chalk.green('--notification')}            Notification icons × 5 densities (white on transparent)
+  ${chalk.green('--splash')}                  Android 12+ splash_icon × 5 densities
+  ${chalk.green('--bg-color <hex>')}          Background for Android adaptive + iOS flatten (${chalk.yellow('default: #FFFFFF')})
+  ${chalk.green('--padding <pct>')}           Android safe-zone padding per side 0-40 (${chalk.yellow('default: 20')}; spec floor: 19.44)
+  ${chalk.green('--ios-padding <pct>')}       iOS / marketplace padding per side 0-40 (${chalk.yellow('default: 8')})
+  ${chalk.green('--cleanup-legacy')}          Context-aware cleanup using tiapp.xml (prints plan first)
+  ${chalk.green('--aggressive')}              Cleanup also removes ldpi density folders
+  ${chalk.green('--project <path>')}          Titanium project root (${chalk.yellow('default: cwd')})
+  ${chalk.green('--in-place')}                Write directly into the project (OVERWRITES existing icons)
+  ${chalk.green('--monochrome-master <path>')} Optional dedicated master for ic_launcher_monochrome.png + ic_stat_notify.png
+                            (useful for complex logos where a naive color→white would lose detail)
+  ${chalk.green('--notes')}                   Print full tiapp.xml snippets + padding tuning guide (default: compact summary)
+  ${chalk.green('--dry-run')}                 Show plan without writing files
 
 Examples:
   ${chalk.green('imgconvert image.jpg')}                                 Compress image (preserves original format)
@@ -56,6 +81,9 @@ Examples:
   ${chalk.green('imgconvert images -f webp -q 80')}                      Convert folder to WebP with 80% quality
   ${chalk.green('imgconvert images --rename enumerate')}                 Convert folder and number files (001, 002...)
   ${chalk.green('imgconvert images --rename "prefix:thumb_,lowercase"')} Add prefix and lowercase filenames
+  ${chalk.green('imgconvert logo.svg -p ti-branding --bg-color "#0B1326"')}   Modern Titanium branding from SVG (stages to .ti-branding/)
+  ${chalk.green('imgconvert logo.svg -p ti-branding --in-place')}           Brand a fresh project — overwrites default Titanium icons
+  ${chalk.green('imgconvert -p ti-branding --cleanup-legacy --dry-run')}     Preview cleanup of legacy branding artifacts
 `));
 }
 

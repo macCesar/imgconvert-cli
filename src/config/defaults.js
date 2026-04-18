@@ -73,7 +73,12 @@ const defaultPresets = {
       source: null,
       output: null
     }
-  }
+  },
+  // Modern Titanium branding pipeline — works on Alloy AND Classic projects.
+  // All knobs are CLI-only (--bg-color, --padding, --ios-padding, --adaptive,
+  // --marketplace, --notification, --splash, --cleanup-legacy, --in-place,
+  // --dry-run, --project, --output), so the preset entry stays empty.
+  'ti-branding': {}
 };
 
 // Supported image formats
