@@ -86,7 +86,7 @@ async function processAlloyPreset(args, config) {
       bgColor: args['bg-color'] || '#FFFFFF',
       bgColorExplicit: Boolean(args['bg-color']),
       padding: parseIntOr(args.padding, 20),
-      iosPadding: parseIntOr(args['ios-padding'], 8),
+      iosPadding: parseIntOr(args['ios-padding'], 4),
       adaptive: kitchenSink ? true : Boolean(args.adaptive),
       marketplace: kitchenSink ? true : Boolean(args.marketplace),
       notification: kitchenSink ? true : Boolean(args.notification),

@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-04-18
+
+### Fixed — post-gen Android splash guidance
+
+The `--notes` output previously said:
+> ⚠ CRITICAL: NEVER set android:theme="..." on `<application>` or any `<activity>`.
+
+This was overly absolute. The rule is narrower: don't inherit from
+`@android:style/Theme.DeviceDefault.NoActionBar` (that strips the ActionBar).
+Inheriting from a Titanium parent theme (`Theme.Titanium.Light`,
+`.Light.NoTitle`, `.Light.Fullscreen`, plus Dark variants) keeps the ActionBar
+and IS the recommended approach to prevent the end-of-splash flicker that
+happens when Android's SplashScreen API transitions to Titanium's activity
+with a mismatched background color.
+
+The `--notes` output now:
+- Explains the flicker cause (color mismatch between system splash and Ti activity)
+- Recommends the Titanium-parent-theme approach as the primary fix
+- Lists the available Titanium parent themes
+- Keeps the narrower warning (don't inherit from Android's NoActionBar parent)
+
+Reference: the production app "LM - La Baraja" uses this exact pattern
+(`Theme.Titanium.Light.Fullscreen` parent + `windowSplashScreenBackground`
+matching the activity background) with zero flicker on Android 12+.
+
+### Changed — default `--ios-padding` lowered from 8% to 4%
+
+Per Apple's HIG and production app measurements (La Baraja, Mail, Safari,
+WhatsApp, most popular apps), iOS app icons typically fill 92-97% of the
+canvas. Our previous default of 8% per side (84% fill) was noticeably more
+conservative than industry standard. iOS icons have no launcher mask, so
+there's no cropping risk — the padding is purely aesthetic breathing room.
+
+New default 4% per side → 92% fill matches Apple's own apps. Override with
+`--ios-padding 2` (aggressive, matches La Baraja's 1.6%) or `--ios-padding 8`
+(previous default) when needed.
+
+This change affects: DefaultIcon.png, DefaultIcon-ios.png, iTunesConnect.png,
+MarketplaceArtwork.png. Android adaptive padding (`--padding`) stays at 20%
+(Material spec, unchanged).
+
 ## [2.0.0] - 2026-04-18
 
 ### Added — Modern Titanium branding pipeline (Alloy + Classic)

@@ -1089,7 +1089,7 @@ Optional — Android 12+ splash icons (`--splash`) at `drawable-*/splash_icon.pn
 | `--splash`                | off         | Android 12+ splash_icon × 5 densities                                            |
 | `--bg-color <hex>`        | `#FFFFFF`   | Background for Android adaptive layer + iOS alpha flatten                        |
 | `--padding <pct>`         | `20`        | Android safe-zone padding per side (0–40). Material spec floor is 19.44%; default of 20 gives a tiny buffer while keeping the logo visibly prominent |
-| `--ios-padding <pct>`     | `8`         | iOS / marketplace aesthetic padding per side (0–40)                              |
+| `--ios-padding <pct>`     | `4`         | iOS / marketplace aesthetic padding per side (0–40). Apple's HIG + production apps (Mail, Safari, La Baraja, etc.) typically use 2-6% per side. iOS icons have no launcher mask so there's no cropping risk — the padding is purely aesthetic breathing room |
 | `--cleanup-legacy`        | off         | Context-aware cleanup driven by tiapp.xml (prints plan before deleting)          |
 | `--aggressive`            | off         | With `--cleanup-legacy`, also remove ldpi density folders                        |
 | `--project <path>`        | cwd         | Titanium project root                                                            |

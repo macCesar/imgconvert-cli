@@ -93,7 +93,7 @@ function printFullNotes(opts) {
   console.log();
   console.log('  If the logo looks too small: re-run with lower padding');
   console.log('      --padding 19          (Android spec floor)');
-  console.log('      --ios-padding 4-6     (iOS)');
+  console.log('      --ios-padding 2-3     (matches first-party apps like Mail, Safari)');
 
   console.log();
   console.log('Configuration reminders');
@@ -122,40 +122,49 @@ function printFullNotes(opts) {
 
   if (withSplash) {
     const splashDir = projectType === 'classic'
-      ? 'platform/android/res/values-v31'
-      : 'app/platform/android/res/values-v31';
+      ? 'platform/android/res/values'
+      : 'app/platform/android/res/values';
 
     console.log();
-    console.log('  3. Android 12+ splash screen — READ FIRST');
+    console.log('  3. Android 12+ splash screen — RECOMMENDED: match Titanium activity theme');
     console.log();
-    console.log('     Titanium SDK 13.x already generates a splash screen automatically');
-    console.log('     from your launcher icon + <default-background-color>. For most apps,');
-    console.log('     the default is GOOD. splash_icon.png × 5 were generated for ADVANCED');
-    console.log('     users who want a custom splash icon distinct from the launcher.');
+    console.log('     Titanium SDK 13.x shows a system splash using your launcher icon on');
+    console.log('     Android 12+. If the system splash background does NOT match your first');
+    console.log('     Titanium activity background, you get a visible FLICKER at the end of');
+    console.log('     the splash (navy → white → content) right before index.js renders.');
     console.log();
-    console.log('     Option A — Native platform (API 31+ only, no lib needed)');
+    console.log('     Fix: define a custom theme that INHERITS from a Titanium parent theme');
+    console.log('     and applies to the whole application. This keeps the ActionBar intact');
+    console.log('     while synchronizing the splash background with the activity background.');
+    console.log();
     console.log(`     Create ${splashDir}/splash_theme.xml:`);
     console.log('       <?xml version="1.0" encoding="utf-8"?>');
     console.log('       <resources>');
-    console.log('         <style name="Theme.App.SplashScreen" parent="@android:style/Theme.DeviceDefault.NoActionBar">');
+    console.log('         <style name="Theme.App.Splash" parent="@style/Theme.Titanium.Light.NoTitle">');
     console.log(`           <item name="android:windowSplashScreenBackground">${bgColor}</item>`);
-    console.log('           <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>');
+    console.log('           <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>');
     console.log('         </style>');
     console.log('       </resources>');
     console.log();
-    console.log('     Option B — androidx.core:core-splashscreen (works API 21+)');
-    console.log('     Requires adding a Gradle dep in app/platform/android/build.gradle:');
-    console.log('       dependencies {');
-    console.log("         implementation 'androidx.core:core-splashscreen:1.0.1'");
-    console.log('       }');
+    console.log('     Then in tiapp.xml under <android><manifest>:');
+    console.log('       <application android:icon="@mipmap/ic_launcher"');
+    console.log('                    android:theme="@style/Theme.App.Splash"');
+    console.log('                    android:usesCleartextTraffic="false"/>');
     console.log();
-    console.log('     Either option needs this meta-data under <application> in tiapp.xml:');
-    console.log('       <meta-data android:name="io.tidev.titanium.splash.theme"');
-    console.log('                  android:value="@style/Theme.App.SplashScreen"/>');
+    console.log('     Parent theme options (pick per your ActionBar needs):');
+    console.log('       @style/Theme.Titanium.Light            — ActionBar + title bar');
+    console.log('       @style/Theme.Titanium.Light.NoTitle    — ActionBar, no title (common)');
+    console.log('       @style/Theme.Titanium.Light.Fullscreen — no ActionBar, no status bar');
+    console.log('       (plus Dark variants)');
     console.log();
-    console.log('     ⚠  CRITICAL: NEVER set android:theme="@style/Theme.App.SplashScreen"');
-    console.log('        on <application> or any <activity>. That breaks the ActionBar.');
-    console.log('        The meta-data above is the ONLY correct way to register it.');
+    console.log('     ⚠  Inherit ONLY from Titanium parents (Theme.Titanium.*). Do NOT');
+    console.log('        inherit from @android:style/Theme.DeviceDefault.NoActionBar on');
+    console.log('        <application> — that strips the ActionBar from every screen.');
+    console.log();
+    console.log('     The splash_icon.png × 5 files generated in drawable-* are OPTIONAL —');
+    console.log('     the theme above points windowSplashScreenAnimatedIcon at the launcher');
+    console.log('     icon, which is usually what you want. Point it at @drawable/splash_icon');
+    console.log('     only if you designed a distinct custom splash icon.');
   }
 
   if (withNotification) {

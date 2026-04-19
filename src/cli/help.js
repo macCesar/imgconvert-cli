@@ -60,7 +60,7 @@ ${chalk.bold('Titanium — Modern branding (SDK 13.x, Alloy + Classic)')}
   ${chalk.green('--splash')}                  Android 12+ splash_icon × 5 densities
   ${chalk.green('--bg-color <hex>')}          Background for Android adaptive + iOS flatten (${chalk.yellow('default: #FFFFFF')})
   ${chalk.green('--padding <pct>')}           Android safe-zone padding per side 0-40 (${chalk.yellow('default: 20')}; spec floor: 19.44)
-  ${chalk.green('--ios-padding <pct>')}       iOS / marketplace padding per side 0-40 (${chalk.yellow('default: 8')})
+  ${chalk.green('--ios-padding <pct>')}       iOS / marketplace padding per side 0-40 (${chalk.yellow('default: 4')})
   ${chalk.green('--cleanup-legacy')}          Context-aware cleanup using tiapp.xml (prints plan first)
   ${chalk.green('--aggressive')}              Cleanup also removes ldpi density folders
   ${chalk.green('--project <path>')}          Titanium project root (${chalk.yellow('default: cwd')})

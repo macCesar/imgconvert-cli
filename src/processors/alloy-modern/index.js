@@ -56,7 +56,7 @@ async function runModern(opts) {
     bgColor = '#FFFFFF',
     bgColorExplicit = false,
     padding = 20,
-    iosPadding = 8,
+    iosPadding = 4,
     adaptive = false,
     marketplace = false,
     notification = false,
