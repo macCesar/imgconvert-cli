@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-04-18
+
+### Fixed — v2.0.1 Android splash guidance was still too prescriptive
+
+v2.0.1 swung the pendulum the other way: it recommended the
+`android:theme="@style/Theme.App.Splash"` approach as THE fix for the
+end-of-splash flicker, with a concrete snippet that inherited from
+`@style/Theme.Titanium.Light.NoTitle`. Two problems with that:
+
+1. **Not every Titanium SDK exposes that parent theme.** Titanium SDK 13.1.1,
+   for example, does NOT have `Theme.Titanium.Light.NoTitle`. Users who
+   copy-pasted the v2.0.1 snippet got a build failure:
+   `resource style/Theme.Titanium.Light.NoTitle not found`.
+
+2. **`android:theme` on `<application>` is invasive.** It overrides whatever
+   theme the project was using and affects every activity. If a project
+   already has its own theme setup, the snippet stomps over it.
+
+v2.0.2 reframes the --notes guidance:
+
+- Splash theme section is now marked **"OPTIONAL, advanced"** instead of
+  "RECOMMENDED"
+- Leads with "for most apps the default is enough — do nothing"
+- Only mentions the theme approach as a flicker troubleshooting step
+- Uses a placeholder `@style/YOUR_APP_PARENT_THEME` in the template with
+  clear "verify this exists in your SDK" guidance
+- Lists `@style/Theme.Titanium.Light.Fullscreen` as a **known-working**
+  parent (confirmed in Titanium SDK 13.2.0) — but emphasizes the user must
+  verify for their own SDK
+- Adds explicit pre-flight checklist: (a) verify parent theme exists,
+  (b) check whether your project already has a custom theme (extend, don't
+  override), (c) test the build before committing tiapp.xml
+
+The `--ios-padding` 4% default from v2.0.1 is preserved.
+
 ## [2.0.1] - 2026-04-18
 
 ### Fixed — post-gen Android splash guidance
