@@ -14,7 +14,7 @@ const { processImages } = require('./processors/image');
 const { processAlloyPreset } = require('./processors/alloy');
 const { version } = require('../package.json');
 const { getMergedPresets } = require('./config/loader');
-const { applyConfigPrecedence } = require('./cli/parser');
+const { applyConfigPrecedence } = require('./config/precedence');
 
 async function main() {
   try {

@@ -14,7 +14,7 @@ const { logger } = require('../utils/logger');
 const { naturalSort } = require('../utils/sorting');
 const { getMergedPresets } = require('../config/loader');
 const { processImageWithScaling } = require('./scaling');
-const { applyConfigPrecedence } = require('../cli/parser');
+const { applyConfigPrecedence } = require('../config/precedence');
 const { ALLOY_SCALES, SUPPORTED_FORMATS } = require('../config/defaults');
 
 /**
