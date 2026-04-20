@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-04-20
+
+### Breaking Changes
+
+| v2.x | v3.0 |
+|------|------|
+| `-h <n>` (height) | `--height <n>` |
+| `-H, --help` | `-h, --help` (standard) |
+| `-p ti-branding [--adaptive …]` | `imgconvert brand <master> [--adaptive …]` |
+| `-p alloy --modern` | removed; use `brand` subcommand |
+| `-p alloy` (legacy multi-scale) | `imgconvert alloy <source>` |
+| `imgconvert config` | `imgconvert config init` |
+| `--replace-originals` | `--replace` (old name kept as hidden alias) |
+
+### New Features
+
+- **Commander.js subcommands**: `brand`, `alloy`, `config`, `help` as first-class subcommands
+- **Per-subcommand `--help`**: `imgconvert brand --help` shows only brand flags
+- **Topic-based help**: `imgconvert help <topic>` for `crop`, `resize`, `rename`, `presets`, `brand`, `alloy`
+- **Shell completions**: `imgconvert --completions bash|zsh|fish`
+- **Typo suggestions**: Unknown commands suggest the closest match
+- **Update notifications**: Notified when a newer version is available (respects `IMGCONVERT_NO_UPDATE_CHECK=1`)
+- **Standard `-h` for help**: Follows CLI conventions (was height in v2)
+- **`InvalidArgumentError`**: Clean error messages for invalid `--width`, `--height`, `--quality`
+
 ## [2.0.3] - 2026-04-18
 
 ### Fixed — `--in-place` no longer litters project root with temp files
