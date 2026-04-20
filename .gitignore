@@ -4,3 +4,4 @@ todo/
 node_modules/
 
 # Core components
+.worktrees/
