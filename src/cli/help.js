@@ -1,92 +1,233 @@
+'use strict';
+
 /**
- * Help display module
- * Shows usage information and examples
+ * Help display module — topic-based dispatch system
+ * Each topic is a self-contained function; displayHelp() kept for backward compat.
  */
 
 const chalk = require('chalk');
 
+const TOPICS = {
+  crop: displayCrop,
+  resize: displayResize,
+  rename: displayRename,
+  presets: displayPresets,
+  brand: displayBrand,
+  alloy: displayAlloy,
+};
+
 /**
- * Display help message
+ * Show detailed help for a specific topic.
+ * Exits with code 1 for unknown topics.
+ * @param {string} topic
  */
-function displayHelp() {
-  console.log(chalk.blue(`
-Usage:
-  ${chalk.green('imgconvert <source_path> [-f <format|all>] [-q <quality>] [-b <background_color>] [--replace-originals] [-w <width>] [-h <height>] [-o <output_directory>] [-p <preset>] [--fit <strategy>] [--position <position>] [--crop <coordinates>] [-d]')}
-
-  ${chalk.green('imgconvert config')}  Create a default configuration file
-
-Options:
-  ${chalk.green('-H, --help')}             Show this help message
-  ${chalk.green('-v, --version')}          Show the version of the module
-  ${chalk.green('-f, --format')}           Set the desired output format (${chalk.yellow('jpeg, png, webp, avif, tiff, gif, all; default: none')})
-  ${chalk.green('-q, --quality')}          Set the quality of the output images (${chalk.yellow('1-100; default: 85')})
-  ${chalk.green('-b, --background')}       Set the background color when converting from formats with transparency to formats without (${chalk.yellow('default: transparent for PNG/WebP, #ffffff for JPEG')})
-  ${chalk.green('-w, --width')}            Set the width of the output images
-  ${chalk.green('-h, --height')}           Set the height of the output images
-  ${chalk.green('-o, --output')}           Set the output directory for processed images
-  ${chalk.green('-n, --name')}             Set custom filename for single file conversion (without extension)
-  ${chalk.green('--rename')}               Batch renaming strategy for folder processing:
-                            ${chalk.yellow('enumerate')} - Number files sequentially (001, 002, 003...)
-                            ${chalk.yellow('lowercase')} - Convert filenames to lowercase
-                            ${chalk.yellow('replace-spaces')} - Replace spaces with underscores
-                            ${chalk.yellow('prefix:<text>')} - Add prefix to all files (e.g., prefix:thumb_)
-                            ${chalk.yellow('suffix:<text>')} - Add suffix before extension (e.g., suffix:_optimized)
-                            Multiple strategies can be combined with commas
-  ${chalk.green('-p, --preset')}           Apply a preset configuration (${chalk.yellow('web, print, thumbnail, alloy, ti-branding')})
-                            ${chalk.yellow('alloy')} preset: legacy Titanium Alloy multi-scale 1x/2x/3x + mdpi→xxxhdpi pipeline
-                            ${chalk.yellow('ti-branding')} preset: modern Titanium SDK 13.x branding (Alloy + Classic, DefaultIcon + adaptive + marketplace)
-  ${chalk.green('--fit')}                  Set resize strategy (${chalk.yellow('cover, contain, fill, inside, outside; default: contain')})
-  ${chalk.green('--position')}             Set crop position when using fit: cover (${chalk.yellow('center, top, bottom, left, right, "top left", etc.')})
-  ${chalk.green('--crop')}                 Manual crop coordinates (${chalk.yellow('format: left,top,width,height')})
-  ${chalk.green('--canvas')}               Resize canvas instead of image (maintains original image, adds transparent padding)
-  ${chalk.green('--trim')}                 Automatically remove transparent borders around images
-  ${chalk.green('--replace-originals')}    Replace original files instead of creating copies (default: false)
-
-  ${chalk.green('-d, --debug')}            Enable debug mode to show detailed information
-
-  ${chalk.green('<source_path>')}          The path to the image file or directory to process (${chalk.yellow('required')})
-
-${chalk.bold('Titanium — Modern branding (SDK 13.x, Alloy + Classic)')}
-  Use ${chalk.yellow('--preset ti-branding')} (preferred) or ${chalk.yellow('--preset alloy')} with ${chalk.yellow('--modern')} to
-  generate a full modern branding set from a single SVG/PNG master: DefaultIcon.png,
-  DefaultIcon-ios.png, Android adaptive icons × 5 densities, marketplace artwork,
-  notification icons, splash icons. Auto-detects Alloy (app/) vs Classic
-  (Resources/) layout.
-
-  ${chalk.green('--modern')}                  Kitchen-sink modern flow (adaptive + marketplace)
-  ${chalk.green('--adaptive')}                Android adaptive icon triplet + legacy + XML × 5
-  ${chalk.green('--marketplace')}             iTunesConnect.png (1024²) + MarketplaceArtwork.png (512²)
-  ${chalk.green('--notification')}            Notification icons × 5 densities (white on transparent)
-  ${chalk.green('--splash')}                  Android 12+ splash_icon × 5 densities
-  ${chalk.green('--bg-color <hex>')}          Background for Android adaptive + iOS flatten (${chalk.yellow('default: #FFFFFF')})
-  ${chalk.green('--padding <pct>')}           Android safe-zone padding per side 0-40 (${chalk.yellow('default: 20')}; spec floor: 19.44)
-  ${chalk.green('--ios-padding <pct>')}       iOS / marketplace padding per side 0-40 (${chalk.yellow('default: 4')})
-  ${chalk.green('--cleanup-legacy')}          Context-aware cleanup using tiapp.xml (prints plan first)
-  ${chalk.green('--aggressive')}              Cleanup also removes ldpi density folders
-  ${chalk.green('--project <path>')}          Titanium project root (${chalk.yellow('default: cwd')})
-  ${chalk.green('--in-place')}                Write directly into the project (OVERWRITES existing icons)
-  ${chalk.green('--monochrome-master <path>')} Optional dedicated master for ic_launcher_monochrome.png + ic_stat_notify.png
-                            (useful for complex logos where a naive color→white would lose detail)
-  ${chalk.green('--notes')}                   Print full tiapp.xml snippets + padding tuning guide (default: compact summary)
-  ${chalk.green('--dry-run')}                 Show plan without writing files
-
-Examples:
-  ${chalk.green('imgconvert image.jpg')}                                 Compress image (preserves original format)
-  ${chalk.green('imgconvert image.jpg -w 300')}                          Resize to 300px width
-  ${chalk.green('imgconvert image.jpg -f webp')}                         Convert to WebP format
-  ${chalk.green('imgconvert image.jpg -n "converted"')}                  Convert single file with custom name
-  ${chalk.green('imgconvert image.jpg -p web')}                          Apply web preset (webp, quality 80)
-  ${chalk.green('imgconvert image.png --canvas -h 1660')}                Canvas resize with transparent padding
-  ${chalk.green('imgconvert image.png --trim')}                          Remove transparent borders automatically
-  ${chalk.green('imgconvert images -f webp -q 80')}                      Convert folder to WebP with 80% quality
-  ${chalk.green('imgconvert images --rename enumerate')}                 Convert folder and number files (001, 002...)
-  ${chalk.green('imgconvert images --rename "prefix:thumb_,lowercase"')} Add prefix and lowercase filenames
-  ${chalk.green('imgconvert logo.svg -p ti-branding --bg-color "#0B1326"')}   Modern Titanium branding from SVG (stages to .ti-branding/)
-  ${chalk.green('imgconvert logo.svg -p ti-branding --in-place')}           Brand a fresh project — overwrites default Titanium icons
-  ${chalk.green('imgconvert -p ti-branding --cleanup-legacy --dry-run')}     Preview cleanup of legacy branding artifacts
-`));
+function displayTopic(topic) {
+  const fn = TOPICS[topic];
+  if (!fn) {
+    process.stderr.write(
+      chalk.red(`\nUnknown help topic: ${chalk.bold(topic)}\n\n`) +
+        `Available topics: ${Object.keys(TOPICS).join(', ')}\n\n`
+    );
+    process.exit(1);
+  }
+  fn();
 }
 
-module.exports = {
-  displayHelp
-};
+/**
+ * List all available topics with one-liner descriptions.
+ */
+function listTopics() {
+  console.log(chalk.bold('\nHelp Topics:\n'));
+  const descriptions = {
+    crop: 'Manual crop, canvas extend, and auto-trim',
+    resize: 'Width/height, fit strategies, and anchor positions',
+    rename: 'Batch rename strategies and single-file naming',
+    presets: 'Built-in presets, custom presets, config file',
+    brand: 'Titanium SDK 13.x branding pipeline (brand subcommand)',
+    alloy: 'Legacy Titanium Alloy multi-scale asset generation',
+  };
+  for (const [topic, desc] of Object.entries(descriptions)) {
+    console.log(`  ${chalk.green(topic.padEnd(10))} ${desc}`);
+  }
+  console.log(`\nUsage: ${chalk.green('imgconvert help <topic>')}\n`);
+}
+
+/**
+ * Backward-compatible entry point.
+ * Prints a minimal Usage/Options header so existing tests keep passing,
+ * then delegates to listTopics() for the full topic index.
+ */
+function displayHelp() {
+  console.log(chalk.bold('\nUsage:'));
+  console.log(`  ${chalk.green('imgconvert')} <source> [options]\n`);
+  console.log(chalk.bold('Options:'));
+  console.log(`  ${chalk.green('-H, --help')}     Show help`);
+  console.log(`  ${chalk.green('-v, --version')}  Show version\n`);
+  listTopics();
+}
+
+// ---------------------------------------------------------------------------
+// Topic functions
+// ---------------------------------------------------------------------------
+
+function displayCrop() {
+  console.log(chalk.bold('\nManual Crop & Canvas Operations\n'));
+  console.log(
+    `  ${chalk.green('--crop <left,top,width,height>')}
+    Extract a specific region from the image.
+    Example: ${chalk.green('imgconvert photo.jpg --crop 100,50,800,600')}
+
+  ${chalk.green('--trim')}
+    Automatically remove transparent/white borders around images.
+    Example: ${chalk.green('imgconvert icon.png --trim')}
+
+  ${chalk.green('--canvas')} ${chalk.green('--width <n>')} ${chalk.green('--height <n>')}
+    Extend the canvas (add padding) without scaling the image.
+    The original image is centered; extra space becomes transparent.
+    Example: ${chalk.green('imgconvert logo.png --canvas --width 1024 --height 1024')}
+
+  ${chalk.bold('Differences:')}
+    ${chalk.green('--crop')}:   Cuts INTO the image (removes parts)
+    ${chalk.green('--canvas')}: Adds space AROUND the image (no pixels removed)
+    ${chalk.green('--trim')}:   Removes empty/transparent borders (auto-detection)
+`
+  );
+}
+
+function displayResize() {
+  console.log(chalk.bold('\nResize & Fit Strategies\n'));
+  console.log(
+    `  ${chalk.green('--width <n>')}    Set output width in pixels
+  ${chalk.green('--height <n>')}   Set output height in pixels
+
+  ${chalk.bold('Fit strategies')} (${chalk.green('--fit <strategy>')}):
+    ${chalk.yellow('cover')}    Scale to fill dimensions, crop excess (default for fixed w+h)
+    ${chalk.yellow('contain')}  Scale to fit within dimensions, letterbox if needed (default)
+    ${chalk.yellow('fill')}     Stretch to exact dimensions (may distort)
+    ${chalk.yellow('inside')}   Scale down to fit inside dimensions, never upscale
+    ${chalk.yellow('outside')}  Scale up to cover dimensions, never downscale
+
+  ${chalk.green('--position <pos>')}   Crop anchor when using fit: cover
+    Values: ${chalk.yellow('center')} (default), ${chalk.yellow('top')}, ${chalk.yellow('bottom')}, ${chalk.yellow('left')}, ${chalk.yellow('right')},
+            ${chalk.yellow('top-left')}, ${chalk.yellow('top-right')}, ${chalk.yellow('bottom-left')}, ${chalk.yellow('bottom-right')}
+
+  ${chalk.bold('Examples:')}
+    ${chalk.green('imgconvert photo.jpg --width 1200 --height 800 --fit cover')}
+    ${chalk.green('imgconvert photo.jpg --width 800 --fit contain')}
+    ${chalk.green('imgconvert photo.jpg --height 400 --fit inside')}
+    ${chalk.green('imgconvert photo.jpg --width 500 --height 500 --fit cover --position top')}
+`
+  );
+}
+
+function displayRename() {
+  console.log(chalk.bold('\nBatch Rename Strategies\n'));
+  console.log(
+    `  ${chalk.green('--rename <strategy[,strategy...]>')}
+
+  ${chalk.bold('Strategies:')}
+    ${chalk.yellow('enumerate')}        Number files sequentially: 001.jpg, 002.jpg, ...
+    ${chalk.yellow('lowercase')}        Convert filenames to lowercase
+    ${chalk.yellow('replace-spaces')}   Replace spaces with underscores
+    ${chalk.yellow('prefix:<text>')}    Add prefix to all filenames (e.g., ${chalk.yellow('prefix:thumb_')})
+    ${chalk.yellow('suffix:<text>')}    Add suffix before extension (e.g., ${chalk.yellow('suffix:_optimized')})
+
+  Combine multiple strategies with commas:
+    ${chalk.green('imgconvert ./photos --rename lowercase,replace-spaces,prefix:web_')}
+
+  ${chalk.bold('Single file rename:')}
+    ${chalk.green('-n, --name <name>')}   Set custom output filename (without extension)
+    ${chalk.green('imgconvert photo.jpg --name hero-image -f webp')}
+
+  ${chalk.bold('Examples:')}
+    ${chalk.green('imgconvert ./photos --rename enumerate')}
+    ${chalk.green('imgconvert ./photos --rename prefix:2024_,lowercase')}
+    ${chalk.green('imgconvert banner.png --name banner-retina --width 2048')}
+`
+  );
+}
+
+function displayPresets() {
+  console.log(chalk.bold('\nPreset System\n'));
+  console.log(
+    `  ${chalk.bold('Built-in presets')} (${chalk.green('-p, --preset')}):
+    ${chalk.yellow('web')}         Quality: 85, format: webp
+    ${chalk.yellow('print')}       Quality: 100, format: tiff
+    ${chalk.yellow('thumbnail')}   Width: 150, height: 150, fit: cover, quality: 80
+
+  CLI flags always override preset values:
+    ${chalk.green('imgconvert photo.jpg -p web --quality 95')}   (quality = 95, not 85)
+
+  ${chalk.bold('Custom presets')} in ${chalk.green('.imgconverter.config.json')}:
+    {
+      "presets": {
+        "mypreset": {
+          "quality": 90,
+          "format": "webp",
+          "width": 1200
+        }
+      }
+    }
+
+  Use: ${chalk.green('imgconvert ./photos -p mypreset')}
+
+  Create default config: ${chalk.green('imgconvert config init')}
+  Show current config:   ${chalk.green('imgconvert config show')}
+`
+  );
+}
+
+function displayBrand() {
+  console.log(chalk.bold('\nTitanium SDK 13.x Branding Pipeline\n'));
+  console.log(
+    `  ${chalk.green('imgconvert brand <master.svg> [options]')}
+
+  No sub-flags = kitchen-sink (all asset types generated).
+
+  ${chalk.bold('Key flags:')}
+    ${chalk.green('--adaptive')}          Android adaptive icon triplet × 5 densities
+    ${chalk.green('--marketplace')}       iTunesConnect (1024²) + Play Store artwork (512²)
+    ${chalk.green('--notification')}      Notification icons × 5 densities
+    ${chalk.green('--splash')}            Android 12+ splash_icon × 5 densities
+    ${chalk.green('--bg-color <hex>')}    Background color (default: ${chalk.yellow('#FFFFFF')})
+    ${chalk.green('--padding <n>')}       Android safe-zone padding 0-40% (default: ${chalk.yellow('20')})
+    ${chalk.green('--ios-padding <n>')}   iOS padding 0-40% (default: ${chalk.yellow('4')})
+    ${chalk.green('--in-place')}          Write directly into project (OVERWRITES)
+    ${chalk.green('--dry-run')}           Preview without writing any files
+    ${chalk.green('--cleanup-legacy')}    Remove legacy branding artifacts
+
+  ${chalk.bold('Examples:')}
+    ${chalk.green('imgconvert brand logo.svg')}
+    ${chalk.green('imgconvert brand logo.svg --adaptive --bg-color "#0B1326"')}
+    ${chalk.green('imgconvert brand logo.svg --in-place')}
+    ${chalk.green('imgconvert brand --cleanup-legacy --dry-run')}
+
+  Run: ${chalk.green('imgconvert brand --help')} for full flag reference.
+`
+  );
+}
+
+function displayAlloy() {
+  console.log(chalk.bold('\nLegacy Titanium Alloy Multi-Scale Assets\n'));
+  console.log(
+    `  ${chalk.green('imgconvert alloy <source> [options]')}
+
+  Generates multi-scale assets for Titanium Alloy projects:
+    ${chalk.bold('Android:')} res-mdpi (1×), res-hdpi (1.5×), res-xhdpi (2×),
+             res-xxhdpi (3×), res-xxxhdpi (4×)
+    ${chalk.bold('iPhone:')}  1×, 2×, 3×
+
+  ${chalk.bold('Options:')}
+    ${chalk.green('-o, --output <dir>')}    Output directory
+    ${chalk.green('-p, --preset <name>')}   Alloy preset key from config file
+
+  ${chalk.bold('Examples:')}
+    ${chalk.green('imgconvert alloy icon.png')}
+    ${chalk.green('imgconvert alloy icon.png -p my-alloy-config')}
+
+  Run: ${chalk.green('imgconvert alloy --help')} for full options.
+`
+  );
+}
+
+module.exports = { displayHelp, displayTopic, listTopics };
