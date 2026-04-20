@@ -11,6 +11,7 @@ function parseIntArg(val) {
 }
 
 const program = new Command();
+program.enablePositionalOptions();
 
 program
   .name('imgconvert')

@@ -177,7 +177,7 @@ describe('Alloy modern branding pipeline', function () {
     it('emits ic_stat_notify.png × 5 at 24..96', async () => {
       const { tight } = await prepareMaster(masterSvg, path.join(testRoot, '_master'));
       const resRoot = path.join(testRoot, 'res');
-      await genNotification(tight, 22, resRoot);
+      await genNotification(tight, resRoot);
 
       const sharp = require('sharp');
       for (const { name, size } of NOTIFICATION_DENSITIES) {
@@ -226,16 +226,15 @@ describe('Alloy modern branding pipeline', function () {
     });
   });
 
-  describe('CLI integration — kitchen sink (--modern)', () => {
+  describe('CLI integration — brand subcommand (v3)', () => {
     beforeEach(() => {
       fs.mkdirSync(path.join(testRoot, 'app'), { recursive: true });
     });
 
     it('generates the full modern asset set via CLI', () => {
       runCli([
+        'brand',
         masterSvg,
-        '--preset', 'alloy',
-        '--modern',
         '--bg-color', '#0B1326',
         '--project', testRoot,
         '--output', stagingDir
@@ -260,9 +259,8 @@ describe('Alloy modern branding pipeline', function () {
 
     it('honors --dry-run (no files written)', () => {
       runCli([
+        'brand',
         masterSvg,
-        '--preset', 'alloy',
-        '--modern',
         '--project', testRoot,
         '--output', stagingDir,
         '--dry-run'
@@ -273,8 +271,8 @@ describe('Alloy modern branding pipeline', function () {
 
     it('--adaptive alone skips marketplace and extras', () => {
       runCli([
+        'brand',
         masterSvg,
-        '--preset', 'alloy',
         '--adaptive',
         '--project', testRoot,
         '--output', stagingDir
