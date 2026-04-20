@@ -10,7 +10,7 @@ const sharp = require('sharp');
 const { logger } = require('../utils/logger');
 const { naturalSort } = require('../utils/sorting');
 const { getMergedPresets } = require('../config/loader');
-const { applyConfigPrecedence } = require('../cli/parser');
+const { applyConfigPrecedence } = require('../config/precedence');
 const { SUPPORTED_FORMATS, CONSTANTS } = require('../config/defaults');
 const { determineOutputDirectory, validateOutputDirectory } = require('../utils/validation');
 

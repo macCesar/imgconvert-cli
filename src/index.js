@@ -1,90 +1,16 @@
-/**
- * Main orchestrator for imgconvert-cli
- * Coordinates all modules and handles the main application flow
- */
+'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const { parseArguments } = require('./cli/parser');
-const { displayHelp } = require('./cli/help');
-const { loadConfig, createDefaultConfig } = require('./config/loader');
-const { validateInput } = require('./utils/validation');
-const { logger } = require('./utils/logger');
-const { processImages } = require('./processors/image');
-const { processAlloyPreset } = require('./processors/alloy');
-const { version } = require('../package.json');
-const { getMergedPresets } = require('./config/loader');
-const { applyConfigPrecedence } = require('./config/precedence');
+const { checkForUpdate } = require('./cli/update-check');
+const program = require('./cli/program');
 
-async function main() {
-  try {
-    // Parse command line arguments
-    const args = parseArguments(process.argv.slice(2));
-
-    // Handle help (explicit flag or no arguments at all)
-    if (args.help || (args._.length === 0 && !args.version && !args.preset)) {
-      displayHelp();
-      process.exit(0);
-    }
-
-    // Handle version
-    if (args.version) {
-      logger.info(`imgconvert-cli version: ${version}`);
-      process.exit(0);
-    }
-
-    // Handle config creation
-    if (args._[0] === 'config') {
-      createDefaultConfig();
-      process.exit(0);
-    }
-
-    // Load configuration
-    const config = loadConfig();
-
-    // Apply configuration precedence BEFORE validation
-    const presets = getMergedPresets(config);
-    const finalArgs = applyConfigPrecedence(args, config, presets);
-
-    // Set debug mode if enabled
-    if (finalArgs.debug) {
-      logger.setDebugMode(true);
-    }
-
-    // Validate input
-    const validation = validateInput(finalArgs, config);
-    if (!validation.valid) {
-      logger.error(validation.error);
-      process.exit(1);
-    }
-
-    // Process based on preset. `ti-branding` is the new preferred name for the
-    // modern Titanium branding pipeline (works on both Alloy and Classic). The
-    // old `alloy` name still works and continues to cover both the legacy
-    // multi-scale path (v1.x) and the modern path (when modern flags are set)
-    // for backward compatibility.
-    const preset = finalArgs.preset;
-    const isBrandingPreset =
-      preset === 'alloy' || (preset && preset.startsWith('alloy:')) ||
-      preset === 'ti-branding' || (preset && preset.startsWith('ti-branding:'));
-
-    if (isBrandingPreset) {
-      await processAlloyPreset(finalArgs, config);
-    } else {
-      await processImages(finalArgs, config);
-    }
-
-  } catch (error) {
-    logger.error(`Unexpected error: ${error.message}`);
-    // Check for debug mode from finalArgs or process.argv as fallback
-    const isDebugMode = (typeof finalArgs !== 'undefined' && finalArgs.debug) || 
-                        process.argv.includes('-d') || process.argv.includes('--debug');
-    if (isDebugMode) {
-      console.error(error.stack);
-    }
-    process.exit(1);
-  }
+if (process.env.NO_COLOR) {
+  const chalk = require('chalk');
+  chalk.level = 0;
 }
 
-// Start the application
-main();
+checkForUpdate();
+program.parse(process.argv);
+
+if (!process.argv.slice(2).length) {
+  program.help();
+}
