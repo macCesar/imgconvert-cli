@@ -78,12 +78,14 @@ async function runModern(opts) {
   const isInPlace = inPlace && !output;
   const stagingRoot = output || (isInPlace ? projectRoot : path.join(projectRoot, '.ti-branding'));
 
-  logger.info(`Project:    ${projectRoot} (${projectType})`);
+  console.log();
+  logger.property('Project:    ', `${projectRoot} (${projectType})`);
   if (master) {
-    logger.info(`Master:     ${master}`);
-    logger.info(`Background: ${bgColor}`);
-    logger.info(`Padding:    Android ${padding}% / iOS ${iosPadding}% per side`);
-    logger.info(isInPlace ? `Writing IN PLACE to: ${projectRoot}` : `Staging:    ${stagingRoot}`);
+    logger.property('Master:     ', master);
+    logger.property('Background: ', bgColor);
+    logger.property('Padding:    ', `Android ${padding}% / iOS ${iosPadding}% per side`);
+    console.log();
+    logger.property(isInPlace ? 'Writing IN PLACE to: ' : 'Staging:    ', isInPlace ? projectRoot : stagingRoot);
   }
   if (isInPlace && !dryRun) {
     logger.warning('⚠  --in-place mode: files in your project will be OVERWRITTEN. Commit first if you want a rollback.');
@@ -133,8 +135,24 @@ async function runModern(opts) {
   }
 
   // ---- Prepare masters ----------------------------------------------------
-  logger.info('Preparing dual masters (square + tight)');
-  const masterBase = path.join(stagingRoot, '_master');
+  // In --in-place mode, intermediate _master_*.png files would land directly
+  // in the project root alongside the real branded assets, polluting it
+  // visibly during the run. Route them through a dedicated temp dir
+  // (<projectRoot>/.ti-branding/) that gets cleaned up at the end. In staged
+  // modes, masters live alongside the final assets inside the staging dir.
+  //
+  // Ownership tracking: if .ti-branding/ already exists (from a prior staged
+  // run, for example), we do NOT blow it away at the end — only remove the
+  // _master_*.png files we created. If we created .ti-branding/ ourselves,
+  // we remove it entirely to leave no trace.
+  const tempDir = isInPlace ? path.join(projectRoot, '.ti-branding') : stagingRoot;
+  const weCreatedTempDir = isInPlace && !fs.existsSync(tempDir);
+  if (weCreatedTempDir) fs.mkdirSync(tempDir, { recursive: true });
+
+  // ---- Section: Masters ---------------------------------------------------
+  logger.section('Masters');
+  logger.bullet('Dual masters (square + tight)');
+  const masterBase = path.join(tempDir, '_master');
   const { tight } = await prepareMaster(master, masterBase);
 
   // Optional monochrome master — if provided, used for the monochrome adaptive
@@ -146,23 +164,23 @@ async function runModern(opts) {
     if (!fs.existsSync(monochromeMaster)) {
       throw new Error(`Monochrome master not found: ${monochromeMaster}`);
     }
-    logger.info(`Preparing monochrome master: ${monochromeMaster}`);
-    const monoBase = path.join(stagingRoot, '_master_mono');
+    logger.bullet(`Monochrome master: ${monochromeMaster}`);
+    const monoBase = path.join(tempDir, '_master_mono');
     const monoResult = await prepareMaster(monochromeMaster, monoBase);
     monoTight = monoResult.tight;
   }
 
-  // ---- iOS (root-level DefaultIcon.png + DefaultIcon-ios.png) ------------
-  logger.info('Generating DefaultIcon.png (alpha) + DefaultIcon-ios.png (flattened)');
+  // ---- Section: iOS & marketplace ----------------------------------------
+  logger.section('iOS & marketplace');
+  logger.bullet('DefaultIcon.png (alpha) + DefaultIcon-ios.png (flattened)');
   const ios = await genIos(tight, bgColor, iosPadding, stagingRoot);
   generated.push(ios.defaultIcon, ios.defaultIconIos);
 
-  // ---- Marketplace -------------------------------------------------------
   if (marketplace) {
     const alphaMode = bgColorExplicit
       ? `flattened on ${bgColor}`
       : 'alpha preserved';
-    logger.info(`Generating marketplace artwork (iTunesConnect.png + MarketplaceArtwork.png, ${alphaMode})`);
+    logger.bullet(`iTunesConnect.png + MarketplaceArtwork.png (${alphaMode})`);
     const mkt = await genMarketplace(tight, iosPadding, stagingRoot, {
       flatten: bgColorExplicit,
       bgColor
@@ -170,35 +188,37 @@ async function runModern(opts) {
     generated.push(mkt.itunesConnect, mkt.marketplaceArtwork);
   }
 
-  // ---- Android adaptive + legacy + XML -----------------------------------
-  if (adaptive) {
-    const monoLabel = monoTight ? ', monochrome from --monochrome-master' : '';
-    logger.info(`Generating Android adaptive icons (foreground + background + monochrome${monoLabel}) × 5`);
-    const adaptiveFiles = await genAndroidAdaptive(tight, bgColor, padding, androidResStaging, { monoTight });
-    generated.push(...adaptiveFiles);
+  // ---- Section: Android --------------------------------------------------
+  if (adaptive || notification || splash) {
+    logger.section('Android');
 
-    logger.info('Generating Android legacy ic_launcher.png × 5');
-    const legacyFiles = await genAndroidLegacy(tight, bgColor, padding, androidResStaging);
-    generated.push(...legacyFiles);
+    if (adaptive) {
+      const monoLabel = monoTight ? ', monochrome from --monochrome-master' : '';
+      logger.bullet(`Adaptive icons (foreground + background + monochrome${monoLabel}) × 5`);
+      const adaptiveFiles = await genAndroidAdaptive(tight, bgColor, padding, androidResStaging, { monoTight });
+      generated.push(...adaptiveFiles);
 
-    const xmlPath = genIcLauncherXml(androidResStaging);
-    generated.push(xmlPath);
-    logger.success(`Adaptive icon XML: ${xmlPath}`);
-  }
+      logger.bullet('Legacy ic_launcher.png × 5');
+      const legacyFiles = await genAndroidLegacy(tight, bgColor, padding, androidResStaging);
+      generated.push(...legacyFiles);
 
-  // ---- Notification ------------------------------------------------------
-  if (notification) {
-    const monoLabel = monoTight ? ' from --monochrome-master' : ' whitened from master';
-    logger.info(`Generating notification icons (white+alpha, edge-to-edge${monoLabel}) × 5`);
-    const notifFiles = await genNotification(monoTight || tight, androidResStaging);
-    generated.push(...notifFiles);
-  }
+      const xmlPath = genIcLauncherXml(androidResStaging);
+      generated.push(xmlPath);
+      logger.bullet(`Adaptive icon XML: ${xmlPath}`);
+    }
 
-  // ---- Splash ------------------------------------------------------------
-  if (splash) {
-    logger.info('Generating Android 12+ splash icons × 5');
-    const splashFiles = await genSplash(tight, androidResStaging);
-    generated.push(...splashFiles);
+    if (notification) {
+      const monoLabel = monoTight ? ' from --monochrome-master' : ' whitened from master';
+      logger.bullet(`Notification icons (white+alpha, edge-to-edge${monoLabel}) × 5`);
+      const notifFiles = await genNotification(monoTight || tight, androidResStaging);
+      generated.push(...notifFiles);
+    }
+
+    if (splash) {
+      logger.bullet('Android 12+ splash icons × 5');
+      const splashFiles = await genSplash(tight, androidResStaging);
+      generated.push(...splashFiles);
+    }
   }
 
   // ---- Cleanup -----------------------------------------------------------
@@ -207,21 +227,27 @@ async function runModern(opts) {
     await cleanupLegacy({ projectRoot, projectType, aggressive, dryRun });
   }
 
-  // In --in-place mode, intermediate master files (_master_*.png) land
-  // directly in the project root. Clean them up so the user is only left
-  // with the real branded assets.
+  // In --in-place mode, clean up the temp dir used for intermediate master
+  // files. If we created .ti-branding/ ourselves, remove it entirely. If it
+  // existed before the run, only remove our own _master_*.png files inside.
   if (isInPlace) {
-    const tmpFiles = [
-      path.join(stagingRoot, '_master_square.png'),
-      path.join(stagingRoot, '_master_tight.png'),
-      path.join(stagingRoot, '_master_mono_square.png'),
-      path.join(stagingRoot, '_master_mono_tight.png')
-    ];
-    for (const tmp of tmpFiles) {
-      if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
+    if (weCreatedTempDir) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } else {
+      const tmpFiles = [
+        path.join(tempDir, '_master_square.png'),
+        path.join(tempDir, '_master_tight.png'),
+        path.join(tempDir, '_master_mono_square.png'),
+        path.join(tempDir, '_master_mono_tight.png')
+      ];
+      for (const tmp of tmpFiles) {
+        if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
+      }
     }
+    logger.info('');
     logger.success(`All assets written IN PLACE at: ${projectRoot}`);
   } else {
+    logger.info('');
     logger.success(`All assets staged at: ${stagingRoot}`);
   }
 

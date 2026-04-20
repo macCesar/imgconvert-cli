@@ -18,6 +18,19 @@ class Logger {
     console.log(chalk.blue(message));
   }
 
+  section(name) {
+    console.log();
+    console.log(chalk.cyan(`▸ ${name}`));
+  }
+
+  bullet(message) {
+    console.log(`  ${chalk.cyan('•')} ${message}`);
+  }
+
+  property(label, value) {
+    console.log(`${chalk.blue(label)}${value}`);
+  }
+
   success(message) {
     console.log(chalk.green(message));
   }

@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-04-18
+
+### Fixed — `--in-place` no longer litters project root with temp files
+
+Previous `--in-place` behavior wrote the intermediate master files
+(`_master_square.png`, `_master_tight.png`, plus `_master_mono_*` when
+using `--monochrome-master`) directly into the project root alongside the
+final branded icons. They were cleaned up at the end of a successful run,
+but:
+
+- They were visible in the project root DURING the run (IDE file watchers,
+  git status, `ls` all showed them as unwanted noise)
+- If the run failed mid-way (validation error, master-file issue, Ctrl+C),
+  the files were left behind permanently
+- The skill bash version's cleanup list was incomplete — it did not remove
+  the `_master_mono_*` variants, leaving them orphaned forever
+
+New behavior routes temp files through `<projectRoot>/.ti-branding/` even
+in `--in-place` mode:
+
+- Temp files are created inside `.ti-branding/` (hidden, tidy)
+- If `.ti-branding/` did NOT exist before the run, the whole directory is
+  removed at the end — no trace at all
+- If `.ti-branding/` DID exist (user was mid-staging or had it from a prior
+  run), only the specific `_master_*.png` files we created are removed —
+  user's own content inside `.ti-branding/` is untouched
+- Project root never sees temp files, before or after the run
+
+This affects only `--in-place`. Staged mode behavior is unchanged (temp
+files stay in `.ti-branding/` alongside the final assets for review).
+
 ## [2.0.2] - 2026-04-18
 
 ### Fixed — v2.0.1 Android splash guidance was still too prescriptive
