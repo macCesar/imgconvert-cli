@@ -100,6 +100,24 @@ function validateInput(args, config) {
     };
   }
 
+  // Validate rename strategy
+  if (args.rename) {
+    const validStrategies = ['enumerate', 'lowercase', 'replace-spaces'];
+    const strategies = args.rename.split(',').map(s => s.trim());
+    for (const strategy of strategies) {
+      if (
+        !validStrategies.includes(strategy) &&
+        !strategy.startsWith('prefix:') &&
+        !strategy.startsWith('suffix:')
+      ) {
+        return {
+          valid: false,
+          error: `Error: Invalid rename strategy '${strategy}'. Valid strategies are: ${validStrategies.join(', ')}, prefix:<text>, suffix:<text>`
+        };
+      }
+    }
+  }
+
   // Warning for branding presets with width/height
   if ((args.presetName === 'alloy' || args.presetName === 'ti-branding') && (args.width || args.height)) {
     logger.warning(`Warning: Width and height parameters are ignored when using the ${args.presetName} preset. Images are scaled based on predefined factors.`);
