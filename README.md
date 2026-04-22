@@ -137,6 +137,48 @@ yarn global add imgconvert-cli
 imgconvert --version
 ```
 
+### Shell completions (optional)
+
+`imgconvert` ships TAB completion for **bash**, **zsh**, and **fish**. The quickest path is the interactive installer — it detects your shell from `$SHELL` and handles file creation and rc-file wiring for you:
+
+```bash
+imgconvert completions
+```
+
+Prefer to be explicit? Pass the shell directly:
+
+```bash
+imgconvert completions zsh      # or: bash, fish
+```
+
+#### What gets installed
+
+| Shell | Completion file                                         | RC file touched |
+| ----- | ------------------------------------------------------- | --------------- |
+| zsh   | `~/.zsh/completions/_imgconvert`                        | `~/.zshrc` (adds `fpath` + `compinit`, idempotent) |
+| bash  | `~/.local/share/bash-completion/completions/imgconvert` | none (bash-completion auto-discovers) |
+| fish  | `~/.config/fish/completions/imgconvert.fish`            | none (fish auto-loads) |
+
+The block added to `~/.zshrc` is guarded by marker comments (`# >>> imgconvert completions >>>` / `# <<< imgconvert completions <<<`), so re-running the installer never duplicates it.
+
+After installing, open a new terminal (or `source` your rc file) and try `imgconvert <TAB>` — you should see all subcommands with descriptions.
+
+#### Uninstall
+
+Removes every installed completion file and the `~/.zshrc` block:
+
+```bash
+imgconvert completions uninstall
+```
+
+#### Scripts, Dockerfiles, custom paths
+
+Pipe the raw script to wherever you want:
+
+```bash
+imgconvert completions print zsh > /path/of/your/choice/_imgconvert
+```
+
 ## Basic Usage
 
 ```bash
