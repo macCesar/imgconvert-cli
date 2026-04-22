@@ -24,7 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Commander.js subcommands**: `brand`, `alloy`, `config`, `help` as first-class subcommands
 - **Per-subcommand `--help`**: `imgconvert brand --help` shows only brand flags
 - **Topic-based help**: `imgconvert help <topic>` for `crop`, `resize`, `rename`, `presets`, `brand`, `alloy`
-- **Shell completions**: `imgconvert --completions bash|zsh|fish`
+- **Shell completions** (bash / zsh / fish) via `imgconvert completions` subcommand:
+  - `imgconvert completions` — interactive install (auto-detects shell from `$SHELL`)
+  - `imgconvert completions <shell>` — direct install for `bash`, `zsh`, or `fish`
+  - `imgconvert completions uninstall` — removes every installed completion file and the rc-file block it added
+  - `imgconvert completions print <shell>` — prints the script to stdout (for scripts / CI / custom install paths)
+  - Installs are idempotent (no duplicate `fpath` block on re-runs), guarded by marker comments in `~/.zshrc`.
+  - zsh output uses `_describe` under the group header `imgconvert commands`, so subcommands render in column format with descriptions.
 - **Typo suggestions**: Unknown commands suggest the closest match
 - **Update notifications**: Notified when a newer version is available (respects `IMGCONVERT_NO_UPDATE_CHECK=1`)
 - **Standard `-h` for help**: Follows CLI conventions (was height in v2)
