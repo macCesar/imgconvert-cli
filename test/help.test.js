@@ -81,18 +81,5 @@ describe('imgconvert help system', function() {
     expect(res.status).to.equal(1);
   });
 
-  it('should print bash completions', () => {
-    const result = runCLI('--completions bash');
-    expect(result).to.include('imgconvert');
-  });
-
-  it('should print zsh completions', () => {
-    const result = runCLI('--completions zsh');
-    expect(result).to.include('imgconvert');
-  });
-
-  it('should print fish completions', () => {
-    const result = runCLI('--completions fish');
-    expect(result).to.include('imgconvert');
-  });
+  // Shell completion tests moved to test/completions.test.js
 });

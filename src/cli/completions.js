@@ -1,10 +1,12 @@
 'use strict';
 
-const COMMANDS = ['brand', 'alloy', 'config', 'help'];
+const COMMANDS = ['alloy', 'brand', 'completions', 'config', 'help'];
 const FORMATS = ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif', 'all'];
 const FIT = ['cover', 'contain', 'fill', 'inside', 'outside'];
 const HELP_TOPICS = ['crop', 'resize', 'rename', 'presets', 'brand', 'alloy'];
 const CONFIG_CMDS = ['init', 'show'];
+const COMPLETION_SHELLS = ['bash', 'zsh', 'fish'];
+const COMPLETION_CMDS = [...COMPLETION_SHELLS, 'uninstall', 'print'];
 
 function bashCompletion() {
   return `# imgconvert bash completion
@@ -13,16 +15,18 @@ _imgconvert_completions() {
   _init_completion || return
   case "$prev" in
     imgconvert)
-      COMPREPLY=( $(compgen -W "${COMMANDS.join(' ')} --help --version --completions" -- "$cur") )
+      COMPREPLY=( $(compgen -W "${COMMANDS.join(' ')} --help --version" -- "$cur") )
       return ;;
     brand) COMPREPLY=( $(compgen -W "--adaptive --marketplace --notification --splash --bg-color --padding --ios-padding --monochrome-master --project --output --in-place --notes --dry-run --cleanup-legacy --aggressive --debug --help" -- "$cur") ); return ;;
     alloy) COMPREPLY=( $(compgen -W "--output --preset --debug --help" -- "$cur") ); return ;;
     config) COMPREPLY=( $(compgen -W "${CONFIG_CMDS.join(' ')} --help" -- "$cur") ); return ;;
+    completions) COMPREPLY=( $(compgen -W "${COMPLETION_CMDS.join(' ')} --help" -- "$cur") ); return ;;
+    print) COMPREPLY=( $(compgen -W "${COMPLETION_SHELLS.join(' ')}" -- "$cur") ); return ;;
     help) COMPREPLY=( $(compgen -W "${HELP_TOPICS.join(' ')}" -- "$cur") ); return ;;
     --format|-f) COMPREPLY=( $(compgen -W "${FORMATS.join(' ')}" -- "$cur") ); return ;;
     --fit) COMPREPLY=( $(compgen -W "${FIT.join(' ')}" -- "$cur") ); return ;;
   esac
-  COMPREPLY=( $(compgen -W "--format --quality --background --width --height --fit --position --crop --canvas --trim --rename --name --output --replace --preset --debug --version --help --completions" -- "$cur") )
+  COMPREPLY=( $(compgen -W "--format --quality --background --width --height --fit --position --crop --canvas --trim --rename --name --output --replace --preset --debug --version --help" -- "$cur") )
 }
 complete -F _imgconvert_completions imgconvert
 `;
@@ -36,8 +40,9 @@ function zshCompletion() {
 _imgconvert() {
   local -a commands
   commands=(
-    'brand:Generate Titanium SDK 13.x app icons and branding assets'
     'alloy:Generate legacy Titanium Alloy multi-scale assets'
+    'brand:Generate Titanium SDK 13.x app icons and branding assets'
+    'completions:Install shell completion (bash|zsh|fish)'
     'config:Manage .imgconverter.config.json'
     'help:Detailed help on a specific topic'
   )
@@ -47,11 +52,13 @@ _imgconvert() {
     '(-f --format)'{-f,--format}'[Output format]:format:(${formats})' \\
     '(-q --quality)'{-q,--quality}'[Quality 1-100]:quality' \\
     '--fit[Resize strategy]:fit:(${fit})' \\
-    '--completions[Print completion script]:shell:(bash zsh fish)' \\
     '1: :->command_or_source' \\
     '*:: :->args'
   case $state in
-    command_or_source) _alternative 'commands:command:(\${commands[@]})' 'files:file:_files' ;;
+    command_or_source)
+      _describe -t commands 'imgconvert commands' commands
+      _files
+      ;;
   esac
 }
 _imgconvert
@@ -67,10 +74,14 @@ function fishCompletion() {
     `set -l help_topics ${HELP_TOPICS.join(' ')}`,
     '',
     '# Subcommands',
-    'complete -c imgconvert -f -n "__fish_use_subcommand" -a brand -d "Generate Titanium branding assets"',
     'complete -c imgconvert -f -n "__fish_use_subcommand" -a alloy -d "Generate legacy Alloy multi-scale assets"',
+    'complete -c imgconvert -f -n "__fish_use_subcommand" -a brand -d "Generate Titanium branding assets"',
+    'complete -c imgconvert -f -n "__fish_use_subcommand" -a completions -d "Install shell completion"',
     'complete -c imgconvert -f -n "__fish_use_subcommand" -a config -d "Manage config file"',
     'complete -c imgconvert -f -n "__fish_use_subcommand" -a help -d "Topic-specific help"',
+    '',
+    '# completions sub-subcommands',
+    'complete -c imgconvert -f -n "__fish_seen_subcommand_from completions" -a "bash zsh fish uninstall print"',
     '',
     '# Global options',
     'complete -c imgconvert -s f -l format -d "Output format" -a "$formats"',
@@ -78,7 +89,6 @@ function fishCompletion() {
     'complete -c imgconvert -l width -d "Output width in pixels"',
     'complete -c imgconvert -l height -d "Output height in pixels"',
     'complete -c imgconvert -l fit -d "Resize strategy" -a "$fit_strategies"',
-    'complete -c imgconvert -l completions -d "Print completion script" -a "bash zsh fish"',
     'complete -c imgconvert -s h -l help -d "Show help"',
     'complete -c imgconvert -s v -l version -d "Show version"',
   ];
@@ -96,4 +106,4 @@ function print(shell) {
   }
 }
 
-module.exports = { print };
+module.exports = { print, bashCompletion, zshCompletion, fishCompletion };

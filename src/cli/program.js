@@ -40,14 +40,6 @@ program
   .option('-p, --preset <name>',       'Apply preset: web|print|thumbnail (or custom from config)')
   // Global
   .option('-d, --debug',               'Debug mode')
-  .option('--completions <shell>',     'Print shell completion script: bash|zsh|fish')
-  .hook('preAction', (cmd) => {
-    const shell = cmd.opts().completions;
-    if (shell) {
-      require('./completions').print(shell);
-      process.exit(0);
-    }
-  })
   .action(require('./commands/general'));
 
 // Custom grouped help for the root command only.
@@ -66,31 +58,44 @@ program.configureHelp({
 program
   .command('brand')
   .argument('[master]', 'SVG or PNG master (min 1024x1024); optional if using --cleanup-legacy alone')
-  .description('Generate Titanium SDK 13.x app icons and branding assets')
+  .description('Generate mobile app icons and branding assets from a master SVG/PNG')
   .option('--adaptive',                    'Android adaptive icon triplet × 5 densities')
   .option('--marketplace',                 'iTunesConnect (1024²) + Play Store artwork (512²)')
   .option('--notification',                'Notification icons × 5 densities (white on transparent)')
   .option('--splash',                      'Android 12+ splash_icon × 5 densities')
   .option('--bg-color <hex>',              'Background color (default: #FFFFFF)')
-  .option('--padding <n>',                 'Android safe-zone padding 0-40 (default: 20)', parseIntArg)
+  .option('--padding <n>',                 'Android safe-zone % (range 12-20, default: 15)', parseIntArg)
   .option('--ios-padding <n>',             'iOS padding 0-40 (default: 4)', parseIntArg)
   .option('--monochrome-master <path>',    'Dedicated master for monochrome icon + notification icons')
-  .option('--project <path>',              'Titanium project root (default: cwd)')
+  .option('--project <path>',              'Project root (default: cwd)')
   .option('-o, --output <dir>',            'Staging directory (default: .ti-branding/)')
   .option('--in-place',                    'Write directly into project (OVERWRITES existing icons)')
   .option('--notes',                       'Print full tiapp.xml snippets + tuning guide')
   .option('--dry-run',                     'Preview without writing any files')
   .option('--cleanup-legacy',              'Remove legacy branding artifacts (reads tiapp.xml)')
   .option('--aggressive',                  'With --cleanup-legacy: also remove ldpi folders')
+  .option('--sdk <target>',                'Target SDK: android|kotlin|react-native|flutter (required)')
   .option('-d, --debug',                   'Debug mode')
-  .addHelpText('before', '\n  Generate a complete Titanium branding set from a single SVG or PNG master.\n  No sub-flags = kitchen-sink (all asset types generated).\n')
+  .addHelpText('before', '\n  Generate a mobile branding set (Android res/ + marketplace artwork) from a single SVG or PNG master.\n  --sdk is required. No sub-flags = kitchen-sink (adaptive + marketplace + notification + splash).\n')
   .addHelpText('after', `
+SDK targets (required):
+  android       Android project — app/src/main/res/mipmap-*/
+  kotlin        Alias for android
+  react-native  React Native — android/app/src/main/res/ (iOS xcassets: coming soon)
+  flutter       Flutter — android/app/src/main/res/ (iOS xcassets: coming soon)
+
+Android dark mode:
+  Handled automatically via ic_launcher_monochrome.png (part of --adaptive).
+  Android 13+ tints the monochrome layer from wallpaper + theme.
+
 Examples:
-  imgconvert brand logo.svg
-  imgconvert brand logo.svg --adaptive --notification --bg-color "#0B1326"
-  imgconvert brand logo.svg --in-place
+  imgconvert brand logo.svg --sdk android
+  imgconvert brand logo.svg --sdk kotlin --bg-color "#0B1326"
+  imgconvert brand logo.svg --sdk react-native --adaptive --notification
+  imgconvert brand logo.svg --sdk flutter --adaptive --bg-color "#0B1326"
+  imgconvert brand logo.svg --sdk android --in-place
   imgconvert brand --cleanup-legacy --dry-run
-  imgconvert brand logo.svg --dry-run --notes
+  imgconvert brand logo.svg --sdk android --dry-run
 `)
   .action(require('./commands/brand'));
 
@@ -127,6 +132,40 @@ configCmd
 
 configCmd.action(() => configCmd.help());
 
+// ─── completions subcommand ──────────────────────────────────────────────────
+const completionsCmd = program
+  .command('completions')
+  .argument('[shell]', 'Shell to install for: bash|zsh|fish (auto-detect if omitted)')
+  .description('Install shell completion (bash|zsh|fish)')
+  .addHelpText('after', `
+Examples:
+  imgconvert completions              Interactive install (auto-detects shell)
+  imgconvert completions zsh          Install for zsh
+  imgconvert completions bash         Install for bash
+  imgconvert completions fish         Install for fish
+  imgconvert completions uninstall    Remove installed completions
+  imgconvert completions print zsh    Print completion script to stdout (for scripts/CI)
+`)
+  .action(async (shell) => {
+    const handler = require('./commands/completions');
+    if (shell) handler.install(shell);
+    else await handler.interactive();
+  });
+
+completionsCmd
+  .command('print <shell>')
+  .description('Print completion script to stdout (for scripts/CI)')
+  .action((shell) => {
+    require('./commands/completions').printScript(shell);
+  });
+
+completionsCmd
+  .command('uninstall')
+  .description('Remove installed completions from all shells')
+  .action(() => {
+    require('./commands/completions').uninstall();
+  });
+
 // ─── help topic subcommand ────────────────────────────────────────────────────
 program
   .command('help [topic]')
@@ -162,6 +201,7 @@ function buildMainHelp() {
     `  ${g('imgconvert brand')} <master.svg> [options]`,
     `  ${g('imgconvert alloy')} <source> [options]`,
     `  ${g('imgconvert config')} init|show`,
+    `  ${g('imgconvert completions')} [shell]`,
     `  ${g('imgconvert help')} [topic]`,
     '',
     `${b('FORMAT & QUALITY')}`,
@@ -193,7 +233,11 @@ function buildMainHelp() {
     `  ${g('-d, --debug')}               Debug mode`,
     `  ${g('-v, --version')}             Show version`,
     `  ${g('-h, --help')}                Show this help`,
-    `  ${g('--completions <shell>')}     Print shell completion: ${y('bash|zsh|fish')}`,
+    '',
+    `${b('SHELL INTEGRATION')}`,
+    `  ${g('imgconvert completions')}              Interactive install (auto-detects shell)`,
+    `  ${g('imgconvert completions')} ${y('bash|zsh|fish')}  Install for a specific shell`,
+    `  ${g('imgconvert completions uninstall')}    Remove installed completions`,
     '',
     `${b('EXAMPLES')}`,
     `  ${g('imgconvert')} ./photos -f webp -q 85`,
