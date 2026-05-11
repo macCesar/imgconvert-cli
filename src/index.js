@@ -1,6 +1,7 @@
 'use strict';
 
 const { checkForUpdate } = require('./cli/update-check');
+const { applyLegacyShims } = require('./cli/legacy-shims');
 const program = require('./cli/program');
 
 if (process.env.NO_COLOR) {
@@ -8,6 +9,7 @@ if (process.env.NO_COLOR) {
   chalk.level = 0;
 }
 
+applyLegacyShims(process.argv);
 checkForUpdate();
 program.parse(process.argv);
 

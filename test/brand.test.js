@@ -103,3 +103,42 @@ describe('imgconvert brand subcommand', function() {
     });
   }
 });
+
+describe('legacy shims', function() {
+  this.timeout(30000);
+
+  it('should rewrite `-h <n>` to `--height <n>` with a deprecation warning', () => {
+    const imagesDir = path.join(__dirname, '..', 'images');
+    const png = fs.readdirSync(imagesDir).find(f => f.endsWith('.png') || f.endsWith('.jpg'));
+    if (!png) return;
+    const srcFile = path.join(imagesDir, png);
+    const outputDir = path.join(__dirname, '..', 'test-output-legacy-h');
+    if (fs.existsSync(outputDir)) fs.rmSync(outputDir, { recursive: true, force: true });
+
+    const result = execSync(
+      `node index.js "${srcFile}" -h 100 -o "${outputDir}" 2>&1`,
+      { encoding: 'utf8', stdio: 'pipe', shell: '/bin/bash' }
+    );
+    expect(result).to.match(/deprecated|--height/i);
+
+    if (fs.existsSync(outputDir)) fs.rmSync(outputDir, { recursive: true, force: true });
+  });
+
+  it('should rewrite bare `config` to `config init` with a warning', () => {
+    const configFile = path.join(process.cwd(), '.imgconverter.config.json');
+    const backup = fs.existsSync(configFile)
+      ? fs.readFileSync(configFile, 'utf8')
+      : null;
+    if (fs.existsSync(configFile)) fs.unlinkSync(configFile);
+
+    const result = execSync(
+      `node index.js config 2>&1`,
+      { encoding: 'utf8', stdio: 'pipe', shell: '/bin/bash' }
+    );
+    expect(result).to.match(/deprecated|config init/i);
+    expect(fs.existsSync(configFile)).to.be.true;
+
+    if (backup !== null) fs.writeFileSync(configFile, backup);
+    else if (fs.existsSync(configFile)) fs.unlinkSync(configFile);
+  });
+});
