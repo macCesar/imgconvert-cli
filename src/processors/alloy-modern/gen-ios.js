@@ -20,18 +20,39 @@ const CANVAS = 1024;
 
 /**
  * Generate DefaultIcon.png (alpha) + DefaultIcon-ios.png (flattened).
+ *
+ * Two distinct paddings — `DefaultIcon.png` is the universal fallback (iOS +
+ * Android when no adaptive icons exist), so it uses the Android safe-zone
+ * padding to stay inside launcher masks. `DefaultIcon-ios.png` is iOS-only
+ * (no launcher mask), so it uses the looser aesthetic iOS padding.
+ *
  * @param {string} tightMaster - Path to tight master (aspect-preserved, transparent)
  * @param {string} bgColor - Hex color used for iOS alpha flatten
- * @param {number} paddingPct - Padding per side (0-40)
+ * @param {number} androidPadding - Padding % for DefaultIcon.png (Android safe-zone)
+ * @param {number} iosPadding - Padding % for DefaultIcon-ios.png (iOS aesthetic)
  * @param {string} outRoot - Output directory
  * @returns {Promise<{defaultIcon: string, defaultIconIos: string}>}
  */
-async function genIos(tightMaster, bgColor, paddingPct, outRoot) {
+async function genIos(tightMaster, bgColor, androidPadding, iosPadding, outRoot) {
   fs.mkdirSync(outRoot, { recursive: true });
 
-  const inner = Math.floor((CANVAS * (100 - 2 * paddingPct)) / 100);
   const defaultIconPath = path.join(outRoot, 'DefaultIcon.png');
   const defaultIconIosPath = path.join(outRoot, 'DefaultIcon-ios.png');
+
+  // DefaultIcon.png — alpha preserved, uses the Android safe-zone padding so
+  // it stays launcher-mask-safe when Android falls back to it (projects
+  // without adaptive icons in app/platform/android/res/mipmap-*/).
+  await renderSquare(tightMaster, androidPadding, null, defaultIconPath);
+
+  // DefaultIcon-ios.png — flattened on bg-color (Apple rejects alpha).
+  // Uses the iOS aesthetic padding (tighter — no launcher mask on iOS).
+  await renderSquare(tightMaster, iosPadding, bgColor, defaultIconIosPath);
+
+  return { defaultIcon: defaultIconPath, defaultIconIos: defaultIconIosPath };
+}
+
+async function renderSquare(tightMaster, paddingPct, flattenBg, outPath) {
+  const inner = Math.floor((CANVAS * (100 - 2 * paddingPct)) / 100);
 
   const resized = await sharp(tightMaster)
     .resize({
@@ -42,38 +63,20 @@ async function genIos(tightMaster, bgColor, paddingPct, outRoot) {
     })
     .toBuffer();
 
-  // DefaultIcon.png — alpha preserved (matches `ti create` default)
-  await sharp({
+  const pipeline = sharp({
     create: {
       width: CANVAS,
       height: CANVAS,
       channels: 4,
       background: { r: 0, g: 0, b: 0, alpha: 0 }
     }
-  })
-    .composite([{ input: resized, gravity: 'center' }])
-    .png({ compressionLevel: 9 })
-    .toFile(defaultIconPath);
+  }).composite([{ input: resized, gravity: 'center' }]);
 
-  // DefaultIcon-ios.png — flattened on bg-color (Apple rejects alpha)
-  // Sharp's .flatten() merges alpha into the background but may still emit
-  // an alpha channel in PNG output — follow with .removeAlpha() to guarantee
-  // the output has no alpha channel at all.
-  await sharp({
-    create: {
-      width: CANVAS,
-      height: CANVAS,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 }
-    }
-  })
-    .composite([{ input: resized, gravity: 'center' }])
-    .flatten({ background: bgColor })
-    .removeAlpha()
-    .png({ compressionLevel: 9 })
-    .toFile(defaultIconIosPath);
-
-  return { defaultIcon: defaultIconPath, defaultIconIos: defaultIconIosPath };
+  if (flattenBg) {
+    await pipeline.flatten({ background: flattenBg }).removeAlpha().png({ compressionLevel: 9 }).toFile(outPath);
+  } else {
+    await pipeline.png({ compressionLevel: 9 }).toFile(outPath);
+  }
 }
 
 module.exports = { genIos };

@@ -19,6 +19,8 @@ const path = require('path');
 const { logger } = require('../../utils/logger');
 const { prepareMaster } = require('./prepare-master');
 const { genIos } = require('./gen-ios');
+const { genIosDark } = require('./gen-ios-dark');
+const { genIosTinted } = require('./gen-ios-tinted');
 const { genAndroidAdaptive } = require('./gen-android-adaptive');
 const { genAndroidLegacy } = require('./gen-android-legacy');
 const { genMarketplace } = require('./gen-marketplace');
@@ -33,6 +35,10 @@ const { printPostGenNotes } = require('./post-gen-notes');
  * Run the modern Alloy pipeline.
  * @param {Object} opts
  * @param {string} [opts.master] - Path to master image (optional in cleanup-only mode)
+ * @param {string} [opts.darkMaster] - Alternate master for iOS 18+ dark icon
+ * @param {string} [opts.darkBgColor] - Hex color for dark icon (triggers generation)
+ * @param {boolean} [opts.withTinted] - Generate iOS 18+ tinted icon
+ * @param {string} [opts.tintedMaster] - Alternate master for iOS 18+ tinted icon
  * @param {string} opts.bgColor - Hex color (default #FFFFFF)
  * @param {number} opts.padding - Android safe-zone padding % (default 22)
  * @param {number} opts.iosPadding - iOS aesthetic padding % (default 8)
@@ -53,9 +59,14 @@ async function runModern(opts) {
   const {
     master,
     monochromeMaster = null,
+    darkMaster = null,
+    darkBgColor = null,
+    withDark = false,
+    withTinted = false,
+    tintedMaster = null,
     bgColor = '#FFFFFF',
     bgColorExplicit = false,
-    padding = 20,
+    padding = 15,
     iosPadding = 4,
     adaptive = false,
     marketplace = false,
@@ -67,10 +78,13 @@ async function runModern(opts) {
     output,
     dryRun = false,
     inPlace = false,
-    notes = false
+    notes = false,
+    sdk = 'titanium',
   } = opts;
 
-  validateOptions({ master, bgColor, padding, iosPadding, cleanupLegacy: runCleanup });
+  const isTitanium = sdk === 'titanium';
+
+  validateOptions({ master, bgColor, darkBgColor, padding, iosPadding, cleanupLegacy: runCleanup });
 
   const projectType = detectProjectType(projectRoot);
   // --in-place writes directly into the project root (overwrite mode).
@@ -80,6 +94,7 @@ async function runModern(opts) {
 
   console.log();
   logger.property('Project:    ', `${projectRoot} (${projectType})`);
+  if (sdk !== 'titanium') logger.property('SDK:        ', sdk);
   if (master) {
     logger.property('Master:     ', master);
     logger.property('Background: ', bgColor);
@@ -115,11 +130,22 @@ async function runModern(opts) {
   }
 
   // Resolve Android res root inside staging
-  const androidResStaging = getStagingAndroidResRoot(stagingRoot, projectType);
+  const androidResStaging = getStagingAndroidResRoot(stagingRoot, projectType, sdk);
 
   if (dryRun) {
     logger.info('[dry-run] Would generate:');
-    logger.info(`  - ${stagingRoot}/DefaultIcon.png + DefaultIcon-ios.png`);
+    if (isTitanium) logger.info(`  - ${stagingRoot}/DefaultIcon.png + DefaultIcon-ios.png`);
+    else logger.info(`  - (iOS assets skipped for --sdk ${sdk})`);
+    if (isTitanium && withDark) {
+      const darkSrc = darkMaster
+        ? `from ${darkMaster}`
+        : (darkBgColor ? `opaque bg ${darkBgColor}` : 'transparent per Apple HIG');
+      logger.info(`  - ${stagingRoot}/DefaultIcon-Dark.png (${darkSrc})`);
+    }
+    if (isTitanium && withTinted) {
+      const tintedSrc = tintedMaster ? `from ${tintedMaster}` : 'grayscale of master, flattened on black';
+      logger.info(`  - ${stagingRoot}/DefaultIcon-Tinted.png (${tintedSrc})`);
+    }
     if (marketplace) logger.info(`  - ${stagingRoot}/iTunesConnect.png + MarketplaceArtwork.png`);
     if (adaptive) {
       logger.info(`  - ${androidResStaging}/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher_{foreground,background,monochrome}.png`);
@@ -172,9 +198,52 @@ async function runModern(opts) {
 
   // ---- Section: iOS & marketplace ----------------------------------------
   logger.section('iOS & marketplace');
-  logger.bullet('DefaultIcon.png (alpha) + DefaultIcon-ios.png (flattened)');
-  const ios = await genIos(tight, bgColor, iosPadding, stagingRoot);
-  generated.push(ios.defaultIcon, ios.defaultIconIos);
+  if (isTitanium) {
+    logger.bullet(`DefaultIcon.png (Android-safe padding ${padding}%) + DefaultIcon-ios.png (iOS padding ${iosPadding}%)`);
+    const ios = await genIos(tight, bgColor, padding, iosPadding, stagingRoot);
+    generated.push(ios.defaultIcon, ios.defaultIconIos);
+
+    // iOS 18+ Dark variant — kitchen-sink default for --sdk titanium.
+    // Default per Apple HIG: transparent background (system paints its own
+    // dark gradient). Opt into opaque flatten with --dark-bg-color <hex>.
+    if (withDark) {
+      let darkSource = tight;
+      if (darkMaster) {
+        if (!fs.existsSync(darkMaster)) {
+          throw new Error(`Dark master not found: ${darkMaster}`);
+        }
+        const darkBase = path.join(tempDir, '_master_dark');
+        const darkResult = await prepareMaster(darkMaster, darkBase);
+        darkSource = darkResult.tight;
+      }
+      const darkSrcLabel = darkMaster ? 'from --dark-master, ' : '';
+      const darkBgLabel = darkBgColor ? `opaque bg ${darkBgColor}` : 'transparent per Apple HIG';
+      logger.bullet(`DefaultIcon-Dark.png (${darkSrcLabel}${darkBgLabel})`);
+      const darkPath = await genIosDark(darkSource, darkBgColor, iosPadding, stagingRoot);
+      generated.push(darkPath);
+    }
+
+    // iOS 18+ Tinted variant — kitchen-sink default for --sdk titanium.
+    // Per Apple HIG: grayscale flattened on BLACK. iOS paints its own gradient
+    // and applies the accent color over the luminance at render time.
+    if (withTinted) {
+      let tintedSource = tight;
+      if (tintedMaster) {
+        if (!fs.existsSync(tintedMaster)) {
+          throw new Error(`Tinted master not found: ${tintedMaster}`);
+        }
+        const tintedBase = path.join(tempDir, '_master_tinted');
+        const tintedResult = await prepareMaster(tintedMaster, tintedBase);
+        tintedSource = tintedResult.tight;
+      }
+      const tintedSrcLabel = tintedMaster ? 'from --tinted-master' : 'grayscale of master';
+      logger.bullet(`DefaultIcon-Tinted.png (${tintedSrcLabel}, flattened on black)`);
+      const tintedPath = await genIosTinted(tintedSource, iosPadding, stagingRoot);
+      generated.push(tintedPath);
+    }
+  } else {
+    logger.bullet(`iOS assets not applicable for --sdk ${sdk}`);
+  }
 
   if (marketplace) {
     const alphaMode = bgColorExplicit
@@ -238,7 +307,11 @@ async function runModern(opts) {
         path.join(tempDir, '_master_square.png'),
         path.join(tempDir, '_master_tight.png'),
         path.join(tempDir, '_master_mono_square.png'),
-        path.join(tempDir, '_master_mono_tight.png')
+        path.join(tempDir, '_master_mono_tight.png'),
+        path.join(tempDir, '_master_dark_square.png'),
+        path.join(tempDir, '_master_dark_tight.png'),
+        path.join(tempDir, '_master_tinted_square.png'),
+        path.join(tempDir, '_master_tinted_tight.png')
       ];
       for (const tmp of tmpFiles) {
         if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
@@ -268,18 +341,30 @@ async function runModern(opts) {
   return { stagingRoot, generated };
 }
 
-function getStagingAndroidResRoot(stagingRoot, projectType) {
+const SDK_ANDROID_RES = {
+  'titanium': null,                                  // resolved per projectType below
+  'android':  path.join('app', 'src', 'main', 'res'),
+};
+
+function getStagingAndroidResRoot(stagingRoot, projectType, sdk) {
+  if (sdk && sdk !== 'titanium') {
+    const rel = SDK_ANDROID_RES[sdk];
+    return rel ? path.join(stagingRoot, rel) : path.join(stagingRoot, 'res');
+  }
   if (projectType === 'alloy') return path.join(stagingRoot, 'app', 'platform', 'android', 'res');
   if (projectType === 'classic') return path.join(stagingRoot, 'platform', 'android', 'res');
   return path.join(stagingRoot, 'standalone', 'platform', 'android', 'res');
 }
 
-function validateOptions({ master, bgColor, padding, iosPadding, cleanupLegacy }) {
+function validateOptions({ master, bgColor, darkBgColor, padding, iosPadding, cleanupLegacy }) {
   if (!master && !cleanupLegacy) {
     throw new Error('Master image path is required (unless using --cleanup-legacy alone).');
   }
   if (!/^#[0-9A-Fa-f]{6}$/.test(bgColor)) {
     throw new Error(`--bg-color must be a 6-digit hex like #0B1326 (got: ${bgColor}).`);
+  }
+  if (darkBgColor && !/^#[0-9A-Fa-f]{6}$/.test(darkBgColor)) {
+    throw new Error(`--dark-bg-color must be a 6-digit hex like #1C1C1E (got: ${darkBgColor}).`);
   }
   if (padding < 0 || padding > 40) {
     throw new Error(`--padding must be between 0 and 40 (got: ${padding}).`);

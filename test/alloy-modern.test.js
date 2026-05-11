@@ -88,7 +88,7 @@ describe('Alloy modern branding pipeline', function () {
 
     it('emits DefaultIcon.png (with alpha) and DefaultIcon-ios.png (no alpha)', async () => {
       const { tight } = await prepareMaster(masterSvg, path.join(testRoot, '_master'));
-      const { defaultIcon, defaultIconIos } = await genIos(tight, '#0B1326', 8, testRoot);
+      const { defaultIcon, defaultIconIos } = await genIos(tight, '#0B1326', 20, 8, testRoot);
 
       const sharp = require('sharp');
       const metaAlpha = await sharp(defaultIcon).metadata();
@@ -231,29 +231,35 @@ describe('Alloy modern branding pipeline', function () {
       fs.mkdirSync(path.join(testRoot, 'app'), { recursive: true });
     });
 
-    it('generates the full modern asset set via CLI', () => {
+    it('generates the full Android + marketplace asset set via CLI', () => {
       runCli([
         'brand',
         masterSvg,
+        '--sdk', 'android',
         '--bg-color', '#0B1326',
         '--project', testRoot,
         '--output', stagingDir
       ]);
 
-      for (const f of ['DefaultIcon.png', 'DefaultIcon-ios.png', 'iTunesConnect.png', 'MarketplaceArtwork.png']) {
+      // Marketplace artwork is still produced for non-Titanium SDKs
+      for (const f of ['iTunesConnect.png', 'MarketplaceArtwork.png']) {
         expect(fs.existsSync(path.join(stagingDir, f)), `missing ${f}`).to.equal(true);
       }
+      // Titanium-specific DefaultIcon files should NOT be produced
+      expect(fs.existsSync(path.join(stagingDir, 'DefaultIcon.png'))).to.equal(false);
+      expect(fs.existsSync(path.join(stagingDir, 'DefaultIcon-ios.png'))).to.equal(false);
+      // Android res tree uses the --sdk android layout (app/src/main/res)
       expect(fs.existsSync(
-        path.join(stagingDir, 'app', 'platform', 'android', 'res', 'mipmap-anydpi-v26', 'ic_launcher.xml')
+        path.join(stagingDir, 'app', 'src', 'main', 'res', 'mipmap-anydpi-v26', 'ic_launcher.xml')
       )).to.equal(true);
       expect(fs.existsSync(
-        path.join(stagingDir, 'app', 'platform', 'android', 'res', 'mipmap-xxxhdpi', 'ic_launcher_foreground.png')
+        path.join(stagingDir, 'app', 'src', 'main', 'res', 'mipmap-xxxhdpi', 'ic_launcher_foreground.png')
       )).to.equal(true);
       expect(fs.existsSync(
-        path.join(stagingDir, 'app', 'platform', 'android', 'res', 'drawable-xxxhdpi', 'ic_stat_notify.png')
+        path.join(stagingDir, 'app', 'src', 'main', 'res', 'drawable-xxxhdpi', 'ic_stat_notify.png')
       )).to.equal(true);
       expect(fs.existsSync(
-        path.join(stagingDir, 'app', 'platform', 'android', 'res', 'drawable-xxxhdpi', 'splash_icon.png')
+        path.join(stagingDir, 'app', 'src', 'main', 'res', 'drawable-xxxhdpi', 'splash_icon.png')
       )).to.equal(true);
     });
 
@@ -261,6 +267,7 @@ describe('Alloy modern branding pipeline', function () {
       runCli([
         'brand',
         masterSvg,
+        '--sdk', 'android',
         '--project', testRoot,
         '--output', stagingDir,
         '--dry-run'
@@ -273,16 +280,20 @@ describe('Alloy modern branding pipeline', function () {
       runCli([
         'brand',
         masterSvg,
+        '--sdk', 'android',
         '--adaptive',
         '--project', testRoot,
         '--output', stagingDir
       ]);
 
-      expect(fs.existsSync(path.join(stagingDir, 'DefaultIcon.png'))).to.equal(true);
+      // Only adaptive icons, no marketplace artwork
       expect(fs.existsSync(path.join(stagingDir, 'iTunesConnect.png'))).to.equal(false);
       expect(fs.existsSync(
-        path.join(stagingDir, 'app', 'platform', 'android', 'res', 'drawable-mdpi', 'ic_stat_notify.png')
+        path.join(stagingDir, 'app', 'src', 'main', 'res', 'drawable-mdpi', 'ic_stat_notify.png')
       )).to.equal(false);
+      expect(fs.existsSync(
+        path.join(stagingDir, 'app', 'src', 'main', 'res', 'mipmap-xxxhdpi', 'ic_launcher_foreground.png')
+      )).to.equal(true);
     });
   });
 });

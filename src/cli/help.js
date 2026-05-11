@@ -43,7 +43,7 @@ function listTopics() {
     resize: 'Width/height, fit strategies, and anchor positions',
     rename: 'Batch rename strategies and single-file naming',
     presets: 'Built-in presets, custom presets, config file',
-    brand: 'Titanium SDK 13.x branding pipeline (brand subcommand)',
+    brand: 'Android branding pipeline (mipmap, marketplace, notification, splash)',
     alloy: 'Legacy Titanium Alloy multi-scale asset generation',
   };
   for (const [topic, desc] of Object.entries(descriptions)) {
@@ -178,28 +178,40 @@ function displayPresets() {
 }
 
 function displayBrand() {
-  console.log(chalk.bold('\nTitanium SDK 13.x Branding Pipeline\n'));
+  console.log(chalk.bold('\nAndroid Branding Pipeline\n'));
   console.log(
-    `  ${chalk.green('imgconvert brand <master.svg> [options]')}
+    `  ${chalk.green('imgconvert brand <master.svg> --sdk android [options]')}
 
-  No sub-flags = kitchen-sink (all asset types generated).
+  Generates Android res/ branding assets + marketplace artwork from a single
+  SVG or PNG master (min 1024×1024). ${chalk.yellow('--sdk is required')} — no default.
+  No sub-flags = kitchen-sink (adaptive + marketplace + notification + splash).
+
+  ${chalk.bold('SDK target (--sdk):')}
+    ${chalk.yellow('android')}    Standard Android — ${chalk.dim('app/src/main/res/mipmap-*/')}
+    ${chalk.dim('(kotlin, react-native, flutter planned for a future release)')}
 
   ${chalk.bold('Key flags:')}
-    ${chalk.green('--adaptive')}          Android adaptive icon triplet × 5 densities
-    ${chalk.green('--marketplace')}       iTunesConnect (1024²) + Play Store artwork (512²)
-    ${chalk.green('--notification')}      Notification icons × 5 densities
-    ${chalk.green('--splash')}            Android 12+ splash_icon × 5 densities
-    ${chalk.green('--bg-color <hex>')}    Background color (default: ${chalk.yellow('#FFFFFF')})
-    ${chalk.green('--padding <n>')}       Android safe-zone padding 0-40% (default: ${chalk.yellow('20')})
-    ${chalk.green('--ios-padding <n>')}   iOS padding 0-40% (default: ${chalk.yellow('4')})
-    ${chalk.green('--in-place')}          Write directly into project (OVERWRITES)
-    ${chalk.green('--dry-run')}           Preview without writing any files
-    ${chalk.green('--cleanup-legacy')}    Remove legacy branding artifacts
+    ${chalk.green('--sdk <target>')}         Target SDK ${chalk.yellow('(required)')}
+    ${chalk.green('--adaptive')}             Android adaptive icon triplet × 5 densities
+    ${chalk.green('--marketplace')}          iTunesConnect (1024²) + Play Store artwork (512²)
+    ${chalk.green('--notification')}         Notification icons × 5 densities
+    ${chalk.green('--splash')}               Android 12+ splash_icon × 5 densities
+    ${chalk.green('--bg-color <hex>')}       Background color (default: ${chalk.yellow('#FFFFFF')})
+    ${chalk.green('--padding <n>')}          Android safe-zone % (range 12-20, default: ${chalk.yellow('15')})
+    ${chalk.green('--in-place')}             Write directly into project (OVERWRITES)
+    ${chalk.green('--dry-run')}              Preview without writing any files
+    ${chalk.green('--cleanup-legacy')}       Remove legacy branding artifacts
+
+  ${chalk.bold('Android dark mode:')}
+    Handled automatically via ${chalk.yellow('ic_launcher_monochrome.png')} (part of --adaptive).
+    Android 13+ tints the monochrome layer based on wallpaper + theme.
+    No separate 'dark' file exists on Android — no extra flags needed.
 
   ${chalk.bold('Examples:')}
-    ${chalk.green('imgconvert brand logo.svg')}
-    ${chalk.green('imgconvert brand logo.svg --adaptive --bg-color "#0B1326"')}
-    ${chalk.green('imgconvert brand logo.svg --in-place')}
+    ${chalk.green('imgconvert brand logo.svg --sdk android')}
+    ${chalk.green('imgconvert brand logo.svg --sdk android --bg-color "#0B1326"')}
+    ${chalk.green('imgconvert brand logo.svg --sdk android --adaptive --notification')}
+    ${chalk.green('imgconvert brand logo.svg --sdk android --in-place')}
     ${chalk.green('imgconvert brand --cleanup-legacy --dry-run')}
 
   Run: ${chalk.green('imgconvert brand --help')} for full flag reference.

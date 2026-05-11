@@ -8,7 +8,6 @@ describe('imgconvert brand subcommand', function() {
   this.timeout(300000);
 
   const imagesDir = path.join(__dirname, '..', 'images');
-  // Find an SVG or fall back to first PNG as master
   const masterFile = (() => {
     const svg = fs.readdirSync(imagesDir).find(f => f.endsWith('.svg'));
     if (svg) return path.join(imagesDir, svg);
@@ -17,12 +16,12 @@ describe('imgconvert brand subcommand', function() {
   })();
 
   after(() => {
-    // Clean up brand output
     if (fs.existsSync('.ti-branding')) fs.rmSync('.ti-branding', { recursive: true, force: true });
   });
 
-  it('should show brand --help with brand-specific flags', () => {
+  it('should show brand --help with the public flags', () => {
     const result = execSync('node index.js brand --help', { encoding: 'utf8', stdio: 'pipe' });
+    expect(result).to.include('--sdk');
     expect(result).to.include('--adaptive');
     expect(result).to.include('--marketplace');
     expect(result).to.include('--notification');
@@ -33,11 +32,9 @@ describe('imgconvert brand subcommand', function() {
     expect(result).to.not.include('--rename');
   });
 
-  it('should run with --cleanup-legacy --dry-run without master', () => {
+  it('should run --cleanup-legacy --dry-run without master or --sdk', () => {
     const result = execSync('node index.js brand --cleanup-legacy --dry-run', { encoding: 'utf8', stdio: 'pipe' });
-    // cleanup-legacy does not require a master and exits 0
     expect(result).to.be.a('string');
-    // Should mention dry run or cleanup
     expect(result).to.match(/dry.?run|cleanup|clean/i);
   });
 
@@ -48,26 +45,61 @@ describe('imgconvert brand subcommand', function() {
     } catch (err) {
       expect(err.status).to.not.equal(0);
       const output = (err.stdout || '') + (err.stderr || '');
-      expect(output).to.match(/required|master/i);
+      expect(output).to.match(/--sdk|master/i);
     }
   });
 
   if (masterFile) {
-    it('should run --dry-run without writing files', () => {
-      if (fs.existsSync('.ti-branding')) fs.rmSync('.ti-branding', { recursive: true, force: true });
-      execSync(`node index.js brand "${masterFile}" --dry-run`, { encoding: 'utf8', stdio: 'pipe' });
-      // In dry-run mode, no actual output staging dir should be written
-      expect(fs.existsSync('.ti-branding')).to.be.false;
+    it('should error when --sdk is missing', () => {
+      try {
+        execSync(`node index.js brand "${masterFile}" --dry-run`, { encoding: 'utf8', stdio: 'pipe' });
+        expect.fail('Should have exited with error');
+      } catch (err) {
+        expect(err.status).to.not.equal(0);
+        const output = (err.stdout || '') + (err.stderr || '');
+        expect(output).to.match(/--sdk/i);
+        expect(output).to.include('android');
+      }
     });
 
-    it('should run with --adaptive --dry-run', () => {
-      const result = execSync(`node index.js brand "${masterFile}" --adaptive --dry-run`, { encoding: 'utf8', stdio: 'pipe' });
-      expect(result).to.be.a('string');
+    it('should error on invalid --sdk value', () => {
+      try {
+        execSync(`node index.js brand "${masterFile}" --sdk bogus --dry-run`, { encoding: 'utf8', stdio: 'pipe' });
+        expect.fail('Should have exited with error');
+      } catch (err) {
+        expect(err.status).to.not.equal(0);
+        const output = (err.stdout || '') + (err.stderr || '');
+        expect(output).to.match(/--sdk|bogus/i);
+      }
     });
 
-    it('should run with --marketplace --dry-run', () => {
-      const result = execSync(`node index.js brand "${masterFile}" --marketplace --dry-run`, { encoding: 'utf8', stdio: 'pipe' });
+    it('should run --dry-run with --sdk android', () => {
+      const result = execSync(
+        `node index.js brand "${masterFile}" --sdk android --dry-run`,
+        { encoding: 'utf8', stdio: 'pipe' }
+      );
       expect(result).to.be.a('string');
+      // imgconvert does NOT emit iOS Dark/Tinted — that's purgetss's territory
+      expect(result).to.not.include('DefaultIcon-Dark.png');
+      expect(result).to.not.include('DefaultIcon-Tinted.png');
+    });
+
+    it('should run with --sdk android --adaptive --dry-run', () => {
+      const result = execSync(
+        `node index.js brand "${masterFile}" --sdk android --adaptive --dry-run`,
+        { encoding: 'utf8', stdio: 'pipe' }
+      );
+      expect(result).to.be.a('string');
+      expect(result).to.match(/mipmap|adaptive/i);
+    });
+
+    it('should run with --sdk android --marketplace --dry-run', () => {
+      const result = execSync(
+        `node index.js brand "${masterFile}" --sdk android --marketplace --dry-run`,
+        { encoding: 'utf8', stdio: 'pipe' }
+      );
+      expect(result).to.be.a('string');
+      expect(result).to.match(/marketplace|iTunesConnect/i);
     });
   }
 });
