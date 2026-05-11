@@ -5,19 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.0] - 2026-04-20
+## [Unreleased]
+
+## [3.0.0] - 2026-05-10
 
 ### Breaking Changes
 
-| v2.x | v3.0 |
-|------|------|
-| `-h <n>` (height) | `--height <n>` |
-| `-H, --help` | `-h, --help` (standard) |
-| `-p ti-branding [--adaptive …]` | `imgconvert brand <master> [--adaptive …]` |
-| `-p alloy --modern` | removed; use `brand` subcommand |
-| `-p alloy` (legacy multi-scale) | `imgconvert alloy <source>` |
-| `imgconvert config` | `imgconvert config init` |
-| `--replace-originals` | `--replace` (old name kept as hidden alias) |
+| v2.x                            | v3.0                                                     |
+| ------------------------------- | -------------------------------------------------------- |
+| `-h <n>` (height)               | `--height <n>`                                           |
+| `-H, --help`                    | `-h, --help` (standard)                                  |
+| `-p ti-branding [--adaptive …]` | `imgconvert brand <master> --sdk android [--adaptive …]` |
+| `-p alloy --modern`             | removed; use `brand` subcommand                          |
+| `-p alloy` (legacy multi-scale) | `imgconvert alloy <source>`                              |
+| `imgconvert config`             | `imgconvert config init`                                 |
+| `--replace-originals`           | `--replace` (old name kept as hidden alias)              |
+
+- **`imgconvert brand` requires `--sdk <target>`** — no more default. Valid target: `android` (kotlin, react-native, flutter planned for a future release). For Titanium projects, use [`purgetss brand`](https://purgetss.com) which has first-class support (master auto-discovery from `./purgetss/brand/`, config file integration, etc.).
+- **`DefaultIcon.png` padding semantics changed** — `imgconvert brand` no longer accepts `--ios-padding`. The universal `DefaultIcon.png` now uses `--padding` (the Android safe-zone) because Android falls back to it when adaptive icons aren't present, keeping the logo launcher-mask-safe.
 
 ### New Features
 
@@ -35,6 +40,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Update notifications**: Notified when a newer version is available (respects `IMGCONVERT_NO_UPDATE_CHECK=1`)
 - **Standard `-h` for help**: Follows CLI conventions (was height in v2)
 - **`InvalidArgumentError`**: Clean error messages for invalid `--width`, `--height`, `--quality`
+- **`--sdk <target>` for `brand`**: Target `android` emits the standard Android `res/` tree at `app/src/main/res/`. More SDK targets (kotlin, react-native, flutter) planned for a future release.
+- **`--canvas` symmetric resize**: pads when the target is larger AND crops when the target is smaller. `--position` controls the anchor in both directions — e.g. `--canvas --height 2688 --position top` keeps the top of the image and drops pixels from the bottom.
+
+### Other
+
+- `gen-ios()` now accepts both `androidPadding` and `iosPadding` so `DefaultIcon.png` and `DefaultIcon-ios.png` can use different values (Android safe-zone vs iOS aesthetic).
+- **Default `--padding` lowered from 20 to 15** (matches real-world apps like Gmail/Chrome; range 12-20). Spec floor is 19.44% but modern launchers are permissive; 15% gives logos better visual presence while staying safe on circular-mask launchers (Pixel, Oppo).
+
+### Legacy-Compatibility Shims
+
+To ease the v2 → v3 transition, two shims rewrite argv and emit a deprecation warning on stderr. Both will be removed in v4.
+
+- `-h <positive-int>` is rewritten to `--height <n>`
+- `imgconvert config` (no subcommand) is rewritten to `imgconvert config init`
 
 ## [2.0.3] - 2026-04-18
 

@@ -1083,6 +1083,8 @@ app/
 
 ## Titanium — Modern branding (SDK 13.x, Alloy + Classic)
 
+> **Note (v3.0):** the modern branding pipeline now also lives behind the `brand` subcommand for non-Titanium projects (currently `--sdk android`). Run `imgconvert brand --help` for the Android-targeted syntax. The `--preset ti-branding` / `--preset alloy --modern` invocations described below remain the Titanium-targeted path.
+
 For Titanium SDK 13.x projects (both Alloy and Classic), `--preset ti-branding` generates a full modern branding asset set from a single SVG or PNG master — matching what `titanium` / `alloy new` ships out of the box, plus the full Android asset set (adaptive icons, notification icons, splash icons) and marketplace artwork.
 
 Auto-detects project layout: `app/` → Alloy, `Resources/` → Classic. The generated Android paths adjust automatically (`app/platform/android/res/...` vs `platform/android/res/...`). Root-level icons (`DefaultIcon.png`, `DefaultIcon-ios.png`, `iTunesConnect.png`, `MarketplaceArtwork.png`) land at the project root in both cases.
