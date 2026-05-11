@@ -1287,4 +1287,64 @@ describe('imgconvert CLI Tests', function () {
       }
     });
   });
+
+  describe('Canvas shrink mode (crop without scaling)', () => {
+    const sharp = require('sharp');
+
+    it('should shrink height by cropping centered when canvas is smaller than image', async () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'canvas-shrink-center');
+      const command = `"${inputFile}" --canvas --height 500 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas shrink centered', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'mountain-lake.png');
+      expect(checkFileExists(outputFile, 'Canvas shrink centered output')).to.be.true;
+
+      const meta = await sharp(outputFile).metadata();
+      expect(meta.width).to.equal(1000);
+      expect(meta.height).to.equal(500);
+    });
+
+    it('should shrink height anchored to top (drops bottom pixels)', async () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'canvas-shrink-top');
+      const command = `"${inputFile}" --canvas --height 500 --position top -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas shrink top', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'mountain-lake.png');
+      const meta = await sharp(outputFile).metadata();
+      expect(meta.height).to.equal(500);
+    });
+
+    it('should handle mixed dimensions: shrink height, extend width', async () => {
+      const inputFile = path.join(testDir, 'mountain-lake.png');
+      const outputDir = path.join(testDir, 'canvas-mixed');
+      const command = `"${inputFile}" --canvas --width 1500 --height 400 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas mixed extend+shrink', result);
+      expect(result).to.include('Processed files: 1');
+
+      const outputFile = path.join(outputDir, 'mountain-lake.png');
+      const meta = await sharp(outputFile).metadata();
+      expect(meta.width).to.equal(1500);
+      expect(meta.height).to.equal(400);
+    });
+
+    it('should process directory with canvas shrink mode', () => {
+      const outputDir = path.join(testDir, 'canvas-shrink-batch');
+      const command = `"${testDir}" --canvas --height 400 -o "${outputDir}"`;
+
+      const result = execCLI(command);
+      logResult('Canvas shrink batch', result);
+      expect(result).to.match(/Processed files: [1-9]\d*/);
+      expect(result).to.not.include('Skipping');
+    });
+  });
 });

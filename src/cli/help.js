@@ -75,6 +75,7 @@ function displayCrop() {
   console.log(
     `  ${chalk.green('--crop <left,top,width,height>')}
     Extract a specific region from the image.
+    This option only accepts numeric coordinates; use --position for anchors.
     Example: ${chalk.green('imgconvert photo.jpg --crop 100,50,800,600')}
 
   ${chalk.green('--trim')}
@@ -82,13 +83,14 @@ function displayCrop() {
     Example: ${chalk.green('imgconvert icon.png --trim')}
 
   ${chalk.green('--canvas')} ${chalk.green('--width <n>')} ${chalk.green('--height <n>')}
-    Extend the canvas (add padding) without scaling the image.
-    The original image is centered; extra space becomes transparent.
+    Resize the canvas without scaling the image. Grows by adding padding,
+    shrinks by cropping. ${chalk.green('--position')} controls the anchor.
     Example: ${chalk.green('imgconvert logo.png --canvas --width 1024 --height 1024')}
+    Example: ${chalk.green('imgconvert shot.png --canvas --height 2688 --position bottom')}
 
   ${chalk.bold('Differences:')}
-    ${chalk.green('--crop')}:   Cuts INTO the image (removes parts)
-    ${chalk.green('--canvas')}: Adds space AROUND the image (no pixels removed)
+    ${chalk.green('--crop')}:   Cuts INTO the image with explicit coordinates
+    ${chalk.green('--canvas')}: Resizes the canvas (pad if larger, crop if smaller)
     ${chalk.green('--trim')}:   Removes empty/transparent borders (auto-detection)
 `
   );
@@ -101,15 +103,16 @@ function displayResize() {
   ${chalk.green('--height <n>')}   Set output height in pixels
 
   ${chalk.bold('Fit strategies')} (${chalk.green('--fit <strategy>')}):
-    ${chalk.yellow('cover')}    Scale to fill dimensions, crop excess (default for fixed w+h)
+    ${chalk.yellow('cover')}    Scale to fill dimensions, crop excess
     ${chalk.yellow('contain')}  Scale to fit within dimensions, letterbox if needed (default)
     ${chalk.yellow('fill')}     Stretch to exact dimensions (may distort)
     ${chalk.yellow('inside')}   Scale down to fit inside dimensions, never upscale
     ${chalk.yellow('outside')}  Scale up to cover dimensions, never downscale
 
-  ${chalk.green('--position <pos>')}   Crop anchor when using fit: cover
+  ${chalk.green('--position <pos>')}   Anchor for --fit cover/contain or --canvas
     Values: ${chalk.yellow('center')} (default), ${chalk.yellow('top')}, ${chalk.yellow('bottom')}, ${chalk.yellow('left')}, ${chalk.yellow('right')},
             ${chalk.yellow('top-left')}, ${chalk.yellow('top-right')}, ${chalk.yellow('bottom-left')}, ${chalk.yellow('bottom-right')}
+            Also accepts spaces: ${chalk.yellow('"top left"')}, ${chalk.yellow('"bottom right"')}
 
   ${chalk.bold('Examples:')}
     ${chalk.green('imgconvert photo.jpg --width 1200 --height 800 --fit cover')}

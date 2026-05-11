@@ -25,9 +25,9 @@ program
   .option('--width <n>',               'Output width in pixels', parseIntArg)
   .option('--height <n>',              'Output height in pixels', parseIntArg)
   .option('--fit <strategy>',          'Resize strategy: cover|contain|fill|inside|outside')
-  .option('--position <pos>',          'Crop anchor: center|top|bottom|left|right|top-left|...')
-  .option('--crop <coords>',           'Manual crop: left,top,width,height')
-  .option('--canvas',                  'Extend canvas instead of resizing (adds padding)')
+  .option('--position <pos>',          'Anchor for --fit cover/contain or --canvas')
+  .option('--crop <coords>',           'Manual crop coordinates: left,top,width,height')
+  .option('--canvas',                  'Resize canvas without scaling (pad if larger, crop if smaller)')
   .option('--trim',                    'Auto-remove transparent borders')
   // Batch & Naming
   .option('--rename <strategy>',       'Batch rename: enumerate|lowercase|replace-spaces|prefix:X|suffix:X')
@@ -213,9 +213,9 @@ function buildMainHelp() {
     `  ${g('--width <n>')}               Output width in pixels`,
     `  ${g('--height <n>')}              Output height in pixels`,
     `  ${g('--fit <strategy>')}          Resize strategy: ${y('cover|contain|fill|inside|outside')}`,
-    `  ${g('--position <pos>')}          Crop anchor: ${y('center|top|bottom|left|right|top-left|...')}`,
-    `  ${g('--crop <coords>')}           Manual crop: ${y('left,top,width,height')}`,
-    `  ${g('--canvas')}                  Extend canvas instead of resizing (adds padding)`,
+    `  ${g('--position <pos>')}          Anchor for ${y('--fit cover/contain')} or ${y('--canvas')}`,
+    `  ${g('--crop <coords>')}           Manual crop coordinates: ${y('left,top,width,height')}`,
+    `  ${g('--canvas')}                  Resize canvas without scaling (pad if larger, crop if smaller)`,
     `  ${g('--trim')}                    Auto-remove transparent borders`,
     '',
     `${b('BATCH & NAMING')}`,

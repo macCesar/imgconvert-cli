@@ -52,7 +52,7 @@ imgconvert -p alloy:another-config
 - Batch convert images to WebP for faster loading
 - Consistent square thumbnails with `--fit cover` and `--position`
 - Crop to exact dimensions with `--crop`, then resize
-- Extend canvas without scaling the image using `--canvas`
+- Resize canvas (extend or shrink) without scaling the image using `--canvas`
 - Resize PNGs without losing transparency
 - Generate multi-resolution assets for iOS/Android with the Titanium Alloy preset
 - Update only specific asset categories with `imgconvert -p alloy:config-name`
@@ -208,7 +208,7 @@ imgconvert <source_path>
 | `--fit`               | -     | Resize strategy: `cover`, `contain`, `fill`, `inside`, `outside`                            | `contain`                                  |
 | `--position`          | -     | Crop position: `center`, `top`, `bottom`, `left`, `right`, corners                          | `center`                                   |
 | `--crop`              | -     | Manual crop coordinates: `left,top,width,height`                                            | -                                          |
-| `--canvas`            | -     | Resize canvas instead of image (maintains original, adds padding)                           | `false`                                    |
+| `--canvas`            | -     | Resize canvas without scaling (pad if larger, crop if smaller)                              | `false`                                    |
 | `--name`              | `-n`  | Custom filename for single file processing                                                  | -                                          |
 | `--rename`            | -     | Batch rename strategy: `enumerate`, `lowercase`, `replace-spaces`, `prefix:`, `suffix:`     | -                                          |
 | `--replace-originals` | -     | Replace original files                                                                      | `false`                                    |
@@ -270,31 +270,35 @@ imgconvert photo.png -h 1660
 
 #### Canvas Resize (`--canvas`)
 - **Use case**: Design layouts, maintaining exact canvas sizes
-- **Behavior**: Maintains original image, adds padding to reach target dimensions
-- **Transparency**: Adds transparent padding for PNG/WebP, white for JPEG
-- **Position Control**: Use `--position` to control where the image is placed within the expanded canvas
+- **Behavior**: Maintains original pixel data, adds padding when target is larger and crops when target is smaller
+- **Transparency**: When padding, adds transparent space for PNG/WebP and white for JPEG
+- **Position Control**: `--position` controls the anchor in both directions
 
 ```bash
 imgconvert photo.png --canvas -h 1660
-# 1024x1536 → 1024x1660 (original image centered + transparent padding)
+# 1024x1536 → 1024x1660 (centered, transparent padding added)
 
 imgconvert photo.png --canvas -h 1660 --position top
-# 1024x1536 → 1024x1660 (original image at top + transparent padding at bottom)
+# 1024x1536 → 1024x1660 (image anchored at top, padding at bottom)
 
 imgconvert photo.png --canvas -h 1660 --position bottom
-# 1024x1536 → 1024x1660 (original image at bottom + transparent padding at top)
+# 1024x1536 → 1024x1660 (image anchored at bottom, padding at top)
+
+imgconvert shot.png --canvas -h 2688 --position top
+# 1242x2699 → 1242x2688 (top preserved, 11px cropped from bottom)
 
 imgconvert photo.png --canvas -h 1660 -b "#ff0000"
 # 1024x1536 → 1024x1660 (original image + red padding)
 ```
 
-| Aspect               | Standard Resize         | Canvas Resize (`--canvas`) |
-| -------------------- | ----------------------- | -------------------------- |
-| **Image scaling**    | ✅ Scales proportionally | ❌ Maintains original size  |
-| **Exact dimensions** | ❌ Respects aspect ratio | ✅ Exact target dimensions  |
-| **Transparency**     | Preserves existing      | ✅ Adds transparent padding |
-| **Position control** | Via `--position`        | ✅ Via `--position` (NEW)   |
-| **Use case**         | Photo resizing          | Design layouts, mockups    |
+| Aspect                | Standard Resize          | Canvas Resize (`--canvas`)        |
+| --------------------- | ------------------------ | --------------------------------- |
+| **Image scaling**     | ✅ Scales proportionally  | ❌ Maintains original pixels       |
+| **Exact dimensions**  | ❌ Respects aspect ratio  | ✅ Exact target dimensions         |
+| **Resize direction**  | Always rescales pixels   | Pads if larger, crops if smaller  |
+| **Transparency**      | Preserves existing       | ✅ Adds transparent padding when growing |
+| **Position control**  | Via `--position`         | ✅ Via `--position` (both axes)    |
+| **Use case**          | Photo resizing           | Design layouts, mockups, fitting screenshots to spec |
 
 ## File naming and batch renaming
 
@@ -400,9 +404,9 @@ Strategies are applied left to right, so the result matches the order you write 
    imgconvert photo.jpg --crop 0,0,500,500 --fit cover -w 300 -h 300 -f webp
    ```
 
-8. **Canvas resizing (maintain original image, add padding):**
+8. **Canvas resizing (maintain original pixels, pad or crop):**
    ```bash
-   # Resize canvas to larger dimensions with transparent padding
+   # Grow canvas with transparent padding
    imgconvert photo.png --canvas -h 1660
    # Original 1024x1536 → Output 1024x1660 with transparent padding (centered)
 
@@ -413,13 +417,17 @@ Strategies are applied left to right, so the result matches the order you write 
    imgconvert photo.png --canvas -h 1660 --position bottom
    # Original 1024x1536 → Output 1024x1660 with image at bottom, transparent padding at top
 
-   # Resize canvas with custom background color
+   # Shrink canvas — drops pixels from the anchor's opposite side
+   imgconvert shot.png --canvas -h 2688 --position top
+   # Original 1242x2699 → Output 1242x2688 (top preserved, 11px cropped from bottom)
+
+   # Resize canvas with custom background color (when padding)
    imgconvert photo.png --canvas -h 1660 -b "#ffffff"
    # Adds white padding instead of transparent
 
-   # Resize canvas to exact dimensions
+   # Resize canvas to exact dimensions (mix of pad and crop per dimension)
    imgconvert image.jpg --canvas -w 800 -h 600 -f png
-   # Maintains original image centered, adds transparent padding to reach 800x600
+   # Maintains original pixels; pads or crops each axis as needed to reach 800x600
    ```
 
 ### File naming and renaming
@@ -1260,7 +1268,7 @@ This applies to all parameters: `quality`, `format`, `width`, `height`, `output`
 - **fit**: Resize strategy (`cover`, `contain`, `fill`, `inside`, `outside`).
 - **position**: Crop/letterbox position (`center`, `top`, `bottom`, `left`, `right`, corners).
 - **crop**: Crop coordinates as `left,top,width,height`.
-- **canvas**: If true, extends canvas instead of scaling the image.
+- **canvas**: If true, resizes the canvas (pad if larger, crop if smaller) instead of scaling the image.
 - **replace-originals**: If true, overwrites the original files.
 - **source**: Default input folder (used when no path is given on the CLI).
 - **output**: Default output directory. If `null`, creates a `converted` folder next to the source.

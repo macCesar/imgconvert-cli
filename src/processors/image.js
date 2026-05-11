@@ -103,7 +103,7 @@ function mapPositionToGravity(position) {
   if (!position) return sharp.gravity.center;
 
   // Normalize position string
-  const normalizedPosition = position.toLowerCase().trim();
+  const normalizedPosition = normalizePositionName(position);
 
   // Map user-friendly positions to Sharp gravity constants
   const positionMap = {
@@ -135,6 +135,14 @@ function mapPositionToGravity(position) {
   };
 
   return positionMap[normalizedPosition] || sharp.gravity.center;
+}
+
+function normalizePositionName(position) {
+  return String(position)
+    .toLowerCase()
+    .trim()
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ');
 }
 
 /**
@@ -239,31 +247,28 @@ async function processImage(inputFile, outputFileBase, format, options) {
     }
   }
 
-  // Handle canvas mode (extend canvas without resizing image)
+  // Handle canvas mode (extend or shrink canvas without resizing image)
   if (options.canvas && (options.width || options.height)) {
     const metadata = await sharpInstance.metadata();
     const currentWidth = metadata.width;
     const currentHeight = metadata.height;
 
-    // Determine target dimensions
     const targetWidth = options.width || currentWidth;
     const targetHeight = options.height || currentHeight;
 
-    // Define valid positions and their mappings
     const positionMap = {
       'center': { horizontal: 'center', vertical: 'center' },
       'top': { horizontal: 'center', vertical: 'top' },
       'bottom': { horizontal: 'center', vertical: 'bottom' },
       'left': { horizontal: 'left', vertical: 'center' },
       'right': { horizontal: 'right', vertical: 'center' },
-      'top-left': { horizontal: 'left', vertical: 'top' },
-      'top-right': { horizontal: 'right', vertical: 'top' },
-      'bottom-left': { horizontal: 'left', vertical: 'bottom' },
-      'bottom-right': { horizontal: 'right', vertical: 'bottom' }
+      'top left': { horizontal: 'left', vertical: 'top' },
+      'top right': { horizontal: 'right', vertical: 'top' },
+      'bottom left': { horizontal: 'left', vertical: 'bottom' },
+      'bottom right': { horizontal: 'right', vertical: 'bottom' }
     };
 
-    // Validate and normalize position
-    const normalizedPosition = options.position || 'center';
+    const normalizedPosition = normalizePositionName(options.position || 'center');
     let positionConfig = positionMap[normalizedPosition];
 
     if (!positionConfig) {
@@ -271,120 +276,108 @@ async function processImage(inputFile, outputFileBase, format, options) {
       positionConfig = positionMap['center'];
     }
 
-    // Check if we need to extend or warn about reduction
-    const needsHorizontalExtension = targetWidth > currentWidth;
-    const needsVerticalExtension = targetHeight > currentHeight;
-    const needsReduction = targetWidth < currentWidth || targetHeight < currentHeight;
+    if (targetWidth !== currentWidth || targetHeight !== currentHeight) {
+      // Step 1: crop dimensions that shrink (extract)
+      if (currentWidth > targetWidth || currentHeight > targetHeight) {
+        const cropWidth = Math.min(currentWidth, targetWidth);
+        const cropHeight = Math.min(currentHeight, targetHeight);
+        let left = 0;
+        let top = 0;
 
-    if (needsReduction) {
-      logger.warning(`Image “${inputFile}” (${currentWidth}x${currentHeight}) is larger than canvas (${targetWidth}x${targetHeight}). Skipping.`);
-      return null; // Skip this image - no cropping for oversized images
-    }
-
-    // Only process if at least one dimension needs extension
-    if (needsHorizontalExtension || needsVerticalExtension || needsReduction) {
-      let extendOptions = { top: 0, bottom: 0, left: 0, right: 0 };
-
-      // Calculate horizontal padding/cropping
-      const horizontalDiff = targetWidth - currentWidth;
-      if (horizontalDiff !== 0) {
-        if (horizontalDiff > 0) {
-          // Extension needed
+        if (currentWidth > targetWidth) {
+          const diff = currentWidth - targetWidth;
           switch (positionConfig.horizontal) {
             case 'left':
-              extendOptions.right = horizontalDiff;
+              left = 0;
               break;
             case 'right':
-              extendOptions.left = horizontalDiff;
+              left = diff;
               break;
             case 'center':
             default:
-              extendOptions.left = Math.floor(horizontalDiff / 2);
-              extendOptions.right = horizontalDiff - extendOptions.left;
+              left = Math.floor(diff / 2);
               break;
           }
-        } else {
-          // Reduction needed (negative values will crop)
-          const cropAmount = Math.abs(horizontalDiff);
+        }
+
+        if (currentHeight > targetHeight) {
+          const diff = currentHeight - targetHeight;
+          switch (positionConfig.vertical) {
+            case 'top':
+              top = 0;
+              break;
+            case 'bottom':
+              top = diff;
+              break;
+            case 'center':
+            default:
+              top = Math.floor(diff / 2);
+              break;
+          }
+        }
+
+        sharpInstance = sharpInstance.extract({ left, top, width: cropWidth, height: cropHeight });
+      }
+
+      // Step 2: pad dimensions that grow (extend)
+      if (targetWidth > currentWidth || targetHeight > currentHeight) {
+        const extendOptions = { top: 0, bottom: 0, left: 0, right: 0 };
+
+        if (targetWidth > currentWidth) {
+          const diff = targetWidth - currentWidth;
           switch (positionConfig.horizontal) {
             case 'left':
-              extendOptions.right = -cropAmount;
+              extendOptions.right = diff;
               break;
             case 'right':
-              extendOptions.left = -cropAmount;
+              extendOptions.left = diff;
               break;
             case 'center':
             default:
-              const leftCrop = Math.floor(cropAmount / 2);
-              extendOptions.left = -leftCrop;
-              extendOptions.right = -(cropAmount - leftCrop);
+              extendOptions.left = Math.floor(diff / 2);
+              extendOptions.right = diff - extendOptions.left;
               break;
           }
         }
-      }
 
-      // Calculate vertical padding/cropping
-      const verticalDiff = targetHeight - currentHeight;
-      if (verticalDiff !== 0) {
-        if (verticalDiff > 0) {
-          // Extension needed
+        if (targetHeight > currentHeight) {
+          const diff = targetHeight - currentHeight;
           switch (positionConfig.vertical) {
             case 'top':
-              extendOptions.bottom = verticalDiff;
+              extendOptions.bottom = diff;
               break;
             case 'bottom':
-              extendOptions.top = verticalDiff;
+              extendOptions.top = diff;
               break;
             case 'center':
             default:
-              extendOptions.top = Math.floor(verticalDiff / 2);
-              extendOptions.bottom = verticalDiff - extendOptions.top;
-              break;
-          }
-        } else {
-          // Reduction needed (negative values will crop)
-          const cropAmount = Math.abs(verticalDiff);
-          switch (positionConfig.vertical) {
-            case 'top':
-              extendOptions.bottom = -cropAmount;
-              break;
-            case 'bottom':
-              extendOptions.top = -cropAmount;
-              break;
-            case 'center':
-            default:
-              const topCrop = Math.floor(cropAmount / 2);
-              extendOptions.top = -topCrop;
-              extendOptions.bottom = -(cropAmount - topCrop);
+              extendOptions.top = Math.floor(diff / 2);
+              extendOptions.bottom = diff - extendOptions.top;
               break;
           }
         }
-      }
 
-      // Set background color
-      if (options.background) {
-        // parseHexToRgba should handle: #RGB, #RGBA, #RRGGBB, #RRGGBBAA, rgb(), rgba(), color names
-        const rgba = parseHexToRgba(options.background);
-        if (rgba) {
-          extendOptions.background = rgba;
-        } else {
-          logger.warning(`Invalid background color '${options.background}', using default`);
-          // Fall through to format-based defaults
+        if (options.background) {
+          const rgba = parseHexToRgba(options.background);
+          if (rgba) {
+            extendOptions.background = rgba;
+          } else {
+            logger.warning(`Invalid background color '${options.background}', using default`);
+          }
         }
-      }
 
-      // Use format-appropriate defaults if no valid background specified
-      if (!extendOptions.background) {
-        const transparentFormats = ['png', 'webp', 'avif', 'tiff'];
-        if (transparentFormats.includes(sharpFormat)) {
-          extendOptions.background = { r: 0, g: 0, b: 0, alpha: 0 }; // Transparent
-        } else {
-          extendOptions.background = { r: 255, g: 255, b: 255, alpha: 1 }; // White
+        if (!extendOptions.background) {
+          const transparentFormats = ['png', 'webp', 'avif', 'tiff'];
+          if (transparentFormats.includes(sharpFormat)) {
+            extendOptions.background = { r: 0, g: 0, b: 0, alpha: 0 };
+          } else {
+            extendOptions.background = { r: 255, g: 255, b: 255, alpha: 1 };
+          }
         }
+
+        sharpInstance = sharpInstance.extend(extendOptions);
       }
 
-      // Apply the extension/cropping
-      sharpInstance = sharpInstance.extend(extendOptions);
       logger.debug(`🖼️ Canvas: ${currentWidth}x${currentHeight} → ${targetWidth}x${targetHeight}`);
     }
   }
