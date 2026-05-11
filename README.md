@@ -6,7 +6,7 @@
   ![Node.js Version](https://img.shields.io/node/v/imgconvert-cli)
   ![downloads](https://img.shields.io/npm/dm/imgconvert-cli)
   ![license](https://img.shields.io/npm/l/imgconvert-cli)
-  ![test coverage](https://img.shields.io/badge/tests-96%20passing-brightgreen)
+  ![test coverage](https://img.shields.io/badge/tests-159%20passing-brightgreen)
   ![GitHub Stars](https://img.shields.io/github/stars/macCesar/imgconvert-cli)
 
 </div>
@@ -66,28 +66,27 @@ Typical compression results:
 - JPEG to WebP: 25-35% size reduction
 - PNG to WebP: 40-60% size reduction
 - Batch processing: ~50-100 images/second
-- Handles large batches without memory issues
 
 ## Project stats
 
 - Platforms: macOS, Linux, Windows
 - Bundle size: ~45KB (excluding Sharp)
-- Tests: 74 passing
+- Tests: 159 passing
 - Dependencies: 3 (sharp, minimist, chalk)
 
-## Table of Contents
+## Table of contents
 - [Features](#features)
 - [Installation](#installation)
-- [Basic Usage](#basic-usage)
+- [Basic usage](#basic-usage)
 - [Options](#options)
-- [File Naming and Batch Renaming](#file-naming-and-batch-renaming)
+- [File naming and batch renaming](#file-naming-and-batch-renaming)
 - [Examples](#examples)
-- [File Extension Behavior](#file-extension-behavior)
+- [File extension behavior](#file-extension-behavior)
 - [Presets](#presets)
-- [Custom Presets](#custom-presets)
-- [Alloy Preset](#alloy-preset)
-- [Configuration File](#configuration-file)
-- [Debug Mode](#debug-mode)
+- [Custom presets](#custom-presets)
+- [Alloy preset](#alloy-preset)
+- [Configuration file](#configuration-file)
+- [Debug mode](#debug-mode)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
@@ -110,7 +109,7 @@ Typical compression results:
 - Custom output directory with `-o`
 - Debug mode with `-d` for troubleshooting
 
-## How It Works
+## How it works
 
 - Accepts a single file or a directory as input
 - Uses `sharp` to apply compression, format conversion, resizing, and optional background color
@@ -132,7 +131,7 @@ npm install -g imgconvert-cli
 yarn global add imgconvert-cli
 ```
 
-### Verify Installation
+### Verify installation
 ```bash
 imgconvert --version
 ```
@@ -179,7 +178,7 @@ Pipe the raw script to wherever you want:
 imgconvert completions print zsh > /path/of/your/choice/_imgconvert
 ```
 
-## Basic Usage
+## Basic usage
 
 ```bash
 imgconvert <source_path>
@@ -220,7 +219,7 @@ imgconvert <source_path>
 
 Processing order: Manual Crop → Resize → Format Conversion
 
-### Fit Strategies (`--fit`)
+### Fit strategies (`--fit`)
 
 Controls how images are resized when both width and height are specified:
 
@@ -232,7 +231,7 @@ Controls how images are resized when both width and height are specified:
 | `inside`  | Only shrink, never enlarge         | High-res source images  | Preserved    |
 | `outside` | Only enlarge, never shrink         | Upscaling small images  | Preserved    |
 
-### Position Control (`--position`)
+### Position control (`--position`)
 
 When using `--fit cover`, `--fit contain`, or `--canvas`, controls which part of the image to preserve or focus on:
 
@@ -248,7 +247,7 @@ When using `--fit cover`, `--fit contain`, or `--canvas`, controls which part of
 | `bottom left`  | Focus on bottom-left corner  | Signatures               |
 | `bottom right` | Focus on bottom-right corner | Watermarks               |
 
-### Manual Cropping (`--crop`)
+### Manual cropping (`--crop`)
 
 Extract specific regions before resizing:
 
@@ -258,21 +257,18 @@ Extract specific regions before resizing:
 
 ### Canvas resize vs image resize (`--canvas`)
 
-#### Standard Resize (Default)
-- **Use case**: Traditional image resizing
-- **Behavior**: Scales the image proportionally
-- **Transparency**: Preserves existing transparency
+#### Standard resize (default)
+
+Scales the image proportionally to fit the target dimensions, preserving aspect ratio and existing transparency.
 
 ```bash
 imgconvert photo.png -h 1660
 # 1024x1536 → 1107x1660 (proportional scaling)
 ```
 
-#### Canvas Resize (`--canvas`)
-- **Use case**: Design layouts, maintaining exact canvas sizes
-- **Behavior**: Maintains original pixel data, adds padding when target is larger and crops when target is smaller
-- **Transparency**: When padding, adds transparent space for PNG/WebP and white for JPEG
-- **Position Control**: `--position` controls the anchor in both directions
+#### Canvas resize (`--canvas`)
+
+Keeps the original pixel data unchanged. When the target is larger, padding is added (transparent for PNG/WebP, white for JPEG). When the target is smaller, pixels are cropped. `--position` controls the anchor in both directions.
 
 ```bash
 imgconvert photo.png --canvas -h 1660
@@ -619,7 +615,7 @@ Presets are predefined configurations for common use cases:
 - **hero-images**: High-quality hero images (`webp`, quality `85`, 1920x1080). Optionally defines a `source` path.
 - **alloy**: For Titanium SDK. Generates scaled images for Android and iOS at all required densities. Supports a single-source legacy format and a multi-configuration format (e.g., cards, thumbnails, icons with independent settings). Process everything with `-p alloy` or target one group with `-p alloy:configName`.
 
-## Custom Presets
+## Custom presets
 
 You can define your own presets in `.imgconverter.config.json`.
 
@@ -689,7 +685,7 @@ See [custom_presets.md](custom_presets.md) for more examples.
 | Config File             | ✅              | ❌           | ❌         |
 | Extension Preservation  | ✅              | ❌           | ❌         |
 | Multi-Format Output     | ✅              | ✅           | ❌         |
-| **Comprehensive Tests** | **✅**          | **❌**       | **❌**     |
+| Test suite              | ✅ 159 tests    | ❌           | ❌         |
 
 ## Alloy preset
 
@@ -1087,11 +1083,11 @@ app/
 
 ## Titanium — Modern branding (SDK 13.x, Alloy + Classic)
 
-For Titanium SDK 13.x projects (both Alloy and Classic), `--preset ti-branding` generates a full modern branding asset set from a single SVG or PNG master — matching what `titanium` / `alloy new` ships out of the box, plus everything a production app actually needs on Android (adaptive icons, notification icons, splash icons) and for marketplace submission.
+For Titanium SDK 13.x projects (both Alloy and Classic), `--preset ti-branding` generates a full modern branding asset set from a single SVG or PNG master — matching what `titanium` / `alloy new` ships out of the box, plus the full Android asset set (adaptive icons, notification icons, splash icons) and marketplace artwork.
 
 Auto-detects project layout: `app/` → Alloy, `Resources/` → Classic. The generated Android paths adjust automatically (`app/platform/android/res/...` vs `platform/android/res/...`). Root-level icons (`DefaultIcon.png`, `DefaultIcon-ios.png`, `iTunesConnect.png`, `MarketplaceArtwork.png`) land at the project root in both cases.
 
-**Preset name:** `ti-branding` is the preferred name going forward (matches the [TiTools `ti-branding` skill](https://github.com/macCesar/titools/tree/main/skills/ti-branding) for Claude Code users). The older `--preset alloy --modern` spelling is kept as a backward-compatible alias — both invocations route to the same pipeline.
+**Preset name:** `ti-branding` is the canonical preset name (matches the [TiTools `ti-branding` skill](https://github.com/macCesar/titools/tree/main/skills/ti-branding) for Claude Code users). `--preset alloy --modern` is kept as a backward-compatible alias — both invocations route to the same pipeline.
 
 **Backward compatibility:** `--preset alloy` without any modern flag continues to emit the legacy 1x/2x/3x (iPhone) + mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi (Android) output exactly as v1.x did. No existing scripts need to change.
 
@@ -1241,7 +1237,7 @@ fi
 - Test with debug mode first when setting up new configurations
 - Always verify configuration names exist before running automated scripts
 
-## Configuration File
+## Configuration file
 
 Global defaults and custom presets live in `.imgconverter.config.json`.
 
