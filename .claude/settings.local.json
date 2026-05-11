@@ -4,7 +4,9 @@
       "WebFetch(domain:github.com)",
       "Bash(node:*)",
       "Bash(rm:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Read(//Users/cesar/**)",
+      "Bash(cat)"
     ],
     "deny": []
   }
