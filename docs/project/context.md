@@ -58,3 +58,11 @@ The user's existing VS Code SFTP workflow uploads saved changes automatically an
 The official manual is in English, matching the repository, as explicitly selected by the user. Keep `docs/README.md` as its index and `docs/guide/` as the canonical user-facing chapters. README and the earlier custom-preset entry point link to those chapters. Preserve useful old README/preset anchors when reorganizing navigation. The npm file list includes only the public docs index/guide tree, not internal audit/session notes.
 
 Examples describe this source checkout; an installed npm release can lag behind it even when an unreleased checkout retains the same package version. Check the installed help before making claims about published availability. Documentation changes require example, option-coverage, link and package checks proportional to scope; do not repeat the full image suite for prose alone.
+
+## Release publication
+
+`.github/workflows/publish.yml` publishes version-tag pushes (`v*`) through GitHub Actions OIDC on a GitHub-hosted Ubuntu runner using Node 24. It checks the tag against package.json and both root lockfile version fields, installs dependencies, runs lint/the full suite, then publishes to npm. It uses `id-token: write` without an npm token secret or NODE_AUTH_TOKEN.
+
+The package-specific npm trusted publisher names `macCesar / imgconvert-cli / publish.yml` with no GitHub environment. The owner performs registry authorization/2FA. Renaming the workflow or adding an environment requires updating that registration. Push deliberately approved version tags, wait for the job, and verify direct registry version/latest metadata, provenance and tarball integrity. npm may accept a package and report processing before its metadata/artifact becomes available.
+
+Main is the aligned default branch. Post-release notes intentionally follow the tag. The npm file list excludes docs/project and docs/audits while including the public docs index/guide tree; notes-only edits must leave the package payload unchanged.

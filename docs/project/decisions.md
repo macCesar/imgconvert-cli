@@ -47,3 +47,11 @@ After the verified implementation handoff, the user explicitly authorized semant
 The user requested structured official documentation and chose English to match the repository. Make `docs/README.md` the central index and `docs/guide/` the maintained chapters. Keep the root README as the project entry point and retain its useful anchors; make CUSTOM_PRESETS.md a compatibility navigation page instead of a second independent configuration reference.
 
 Ship the public index and chapters in npm through explicit file-list patterns. Keep internal project/session/audit documents out of that public manual tree. State that the guide follows source and that the published npm executable can lag behind unreleased checkout changes. Verify command examples against the current executable and compare the flag reference with Commander rather than relying on older prose.
+
+## 2026-11-08: Release 4.0.0 through trusted publishing
+
+The user confirmed a major release because the Node minimum, overwrite policy, null inheritance and error statuses change public compatibility. Keep documented legacy aliases and compatibility shims; the version bump does not silently remove them.
+
+Replace local manual publication with a tag-triggered OIDC workflow matching TiTools/AISkills. Put the workflow on main first, let the package owner register the exact trusted publisher with their own 2FA, then push the approved version tag. The user explicitly authorized main alignment by fast-forward and the publication/session-note pushes. This flow needs neither an NPM_TOKEN secret nor a local npm session.
+
+Treat workflow success and registry availability separately. npm accepted this first trusted publication before 4.0.0 and latest became visible. Confirm registry metadata, provenance, source commit and downloaded tarball integrity before reporting completion. Keep root screenshots outside Git and package artifacts.
