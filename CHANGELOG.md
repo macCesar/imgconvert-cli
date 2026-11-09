@@ -1,11 +1,19 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Documentation
+
+- Reconcile README, custom presets, test/fixture guides, CLI help, and completion descriptions with the active v3 command handlers.
+- Correct preset defaults, resize strategies, naming, source/output paths, branding SDK support, master formats, and Alloy 4x scaling.
+- Replace invalid JSON examples and obsolete v2 command examples; document migration and implementation limitations while keeping the existing processing behavior.
+- Clarify the 3.0.0 notes below: the current CLI still accepts `--ios-padding` for marketplace artwork and does not generate `DefaultIcon*.png` with `--sdk android`. Earlier claims to the contrary do not describe the current implementation.
+- Document actual dependency Node requirements, absent legacy test directories, and broad cleanup side effects. Remove unverified benchmark/test-coverage claims.
+- Include linked guides and changelog in the npm package; extract the existing README MIT text into the previously missing `LICENSE` file.
+
 
 ## [3.0.0] - 2026-05-10
 
@@ -21,32 +29,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `imgconvert config`             | `imgconvert config init`                                 |
 | `--replace-originals`           | `--replace` (old name kept as hidden alias)              |
 
-- **`imgconvert brand` requires `--sdk <target>`** — no more default. Valid target: `android` (kotlin, react-native, flutter planned for a future release). For Titanium projects, use [`purgetss brand`](https://purgetss.com) which has first-class support (master auto-discovery from `./purgetss/brand/`, config file integration, etc.).
-- **`DefaultIcon.png` padding semantics changed** — `imgconvert brand` no longer accepts `--ios-padding`. The universal `DefaultIcon.png` now uses `--padding` (the Android safe-zone) because Android falls back to it when adaptive icons aren't present, keeping the logo launcher-mask-safe.
+- `imgconvert brand` requires `--sdk <target>`: no more default. Valid target: `android` (kotlin, react-native, flutter planned for a future release). For Titanium projects, use [`purgetss brand`](https://purgetss.com) which supports Titanium projects (master auto-discovery from `./purgetss/brand/`, config file integration, etc.).
+- `DefaultIcon.png` padding semantics changed: `imgconvert brand` no longer accepts `--ios-padding`. The universal `DefaultIcon.png` now uses `--padding` (the Android safe-zone) because Android falls back to it when adaptive icons aren't present, keeping the logo launcher-mask-safe.
 
 ### New Features
 
-- **Commander.js subcommands**: `brand`, `alloy`, `config`, `help` as first-class subcommands
-- **Per-subcommand `--help`**: `imgconvert brand --help` shows only brand flags
-- **Topic-based help**: `imgconvert help <topic>` for `crop`, `resize`, `rename`, `presets`, `brand`, `alloy`
-- **Shell completions** (bash / zsh / fish) via `imgconvert completions` subcommand:
-  - `imgconvert completions` — interactive install (auto-detects shell from `$SHELL`)
-  - `imgconvert completions <shell>` — direct install for `bash`, `zsh`, or `fish`
-  - `imgconvert completions uninstall` — removes every installed completion file and the rc-file block it added
-  - `imgconvert completions print <shell>` — prints the script to stdout (for scripts / CI / custom install paths)
+- Commander.js subcommands: `brand`, `alloy`, `config`, `help` as subcommands
+- Per-subcommand `--help`: `imgconvert brand --help` shows only brand flags
+- Topic-based help: `imgconvert help <topic>` for `crop`, `resize`, `rename`, `presets`, `brand`, `alloy`
+- Shell completions (bash / zsh / fish) via `imgconvert completions` subcommand:
+  - `imgconvert completions`: interactive install (auto-detects shell from `$SHELL`)
+  - `imgconvert completions <shell>`: direct install for `bash`, `zsh`, or `fish`
+  - `imgconvert completions uninstall`: removes every installed completion file and the rc-file block it added
+  - `imgconvert completions print <shell>`: prints the script to stdout (for scripts / CI / custom install paths)
   - Installs are idempotent (no duplicate `fpath` block on re-runs), guarded by marker comments in `~/.zshrc`.
   - zsh output uses `_describe` under the group header `imgconvert commands`, so subcommands render in column format with descriptions.
-- **Typo suggestions**: Unknown commands suggest the closest match
-- **Update notifications**: Notified when a newer version is available (respects `IMGCONVERT_NO_UPDATE_CHECK=1`)
-- **Standard `-h` for help**: Follows CLI conventions (was height in v2)
-- **`InvalidArgumentError`**: Clean error messages for invalid `--width`, `--height`, `--quality`
-- **`--sdk <target>` for `brand`**: Target `android` emits the standard Android `res/` tree at `app/src/main/res/`. More SDK targets (kotlin, react-native, flutter) planned for a future release.
-- **`--canvas` symmetric resize**: pads when the target is larger AND crops when the target is smaller. `--position` controls the anchor in both directions — e.g. `--canvas --height 2688 --position top` keeps the top of the image and drops pixels from the bottom.
+- Typo suggestions: Unknown commands suggest the closest match
+- Update notifications: Notified when a newer version is available (respects `IMGCONVERT_NO_UPDATE_CHECK=1`)
+- Standard `-h` for help: Follows CLI conventions (was height in v2)
+- `InvalidArgumentError`: Clean error messages for invalid `--width`, `--height`, `--quality`
+- `--sdk <target>` for `brand`: Target `android` emits the standard Android `res/` tree at `app/src/main/res/`. More SDK targets (kotlin, react-native, flutter) planned for a future release.
+- `--canvas` symmetric resize: pads when the target is larger AND crops when the target is smaller. `--position` controls the anchor in both directions: e.g. `--canvas --height 2688 --position top` keeps the top of the image and drops pixels from the bottom.
 
 ### Other
 
 - `gen-ios()` now accepts both `androidPadding` and `iosPadding` so `DefaultIcon.png` and `DefaultIcon-ios.png` can use different values (Android safe-zone vs iOS aesthetic).
-- **Default `--padding` lowered from 20 to 15** (matches real-world apps like Gmail/Chrome; range 12-20). Spec floor is 19.44% but modern launchers are permissive; 15% gives logos better visual presence while staying safe on circular-mask launchers (Pixel, Oppo).
+- Default `--padding` lowered from 20 to 15 (matches real-world apps like Gmail/Chrome; range 12-20). Spec floor is 19.44% but modern launchers are permissive; 15% gives logos better visual presence while staying safe on circular-mask launchers (Pixel, Oppo).
 
 ### Legacy-Compatibility Shims
 
@@ -57,7 +65,7 @@ To ease the v2 → v3 transition, two shims rewrite argv and emit a deprecation 
 
 ## [2.0.3] - 2026-04-18
 
-### Fixed — `--in-place` no longer litters project root with temp files
+### Fixed: `--in-place` no longer leaves temporary files in the project root
 
 Previous `--in-place` behavior wrote the intermediate master files
 (`_master_square.png`, `_master_tight.png`, plus `_master_mono_*` when
@@ -65,21 +73,21 @@ using `--monochrome-master`) directly into the project root alongside the
 final branded icons. They were cleaned up at the end of a successful run,
 but:
 
-- They were visible in the project root DURING the run (IDE file watchers,
-  git status, `ls` all showed them as unwanted noise)
+- They were visible in the project root during the run (IDE file watchers,
+  git status, `ls` all showed them as temporary files)
 - If the run failed mid-way (validation error, master-file issue, Ctrl+C),
   the files were left behind permanently
-- The skill bash version's cleanup list was incomplete — it did not remove
+- The skill bash version's cleanup list was incomplete: it did not remove
   the `_master_mono_*` variants, leaving them orphaned forever
 
 New behavior routes temp files through `<projectRoot>/.ti-branding/` even
 in `--in-place` mode:
 
 - Temp files are created inside `.ti-branding/` (hidden, tidy)
-- If `.ti-branding/` did NOT exist before the run, the whole directory is
-  removed at the end — no trace at all
-- If `.ti-branding/` DID exist (user was mid-staging or had it from a prior
-  run), only the specific `_master_*.png` files we created are removed —
+- If `.ti-branding/` did not exist before the run, the whole directory is
+  removed at the end: leaving no temporary files
+- If `.ti-branding/` existed (user was mid-staging or had it from a prior
+  run), only the specific `_master_*.png` files we created are removed;
   user's own content inside `.ti-branding/` is untouched
 - Project root never sees temp files, before or after the run
 
@@ -88,32 +96,32 @@ files stay in `.ti-branding/` alongside the final assets for review).
 
 ## [2.0.2] - 2026-04-18
 
-### Fixed — v2.0.1 Android splash guidance was still too prescriptive
+### Fixed: v2.0.1 Android splash guidance was still too prescriptive
 
-v2.0.1 swung the pendulum the other way: it recommended the
-`android:theme="@style/Theme.App.Splash"` approach as THE fix for the
+v2.0.1 recommended the
+`android:theme="@style/Theme.App.Splash"` approach as the fix for the
 end-of-splash flicker, with a concrete snippet that inherited from
 `@style/Theme.Titanium.Light.NoTitle`. Two problems with that:
 
-1. **Not every Titanium SDK exposes that parent theme.** Titanium SDK 13.1.1,
-   for example, does NOT have `Theme.Titanium.Light.NoTitle`. Users who
+1. Not every Titanium SDK exposes that parent theme. Titanium SDK 13.1.1,
+   for example, does not have `Theme.Titanium.Light.NoTitle`. Users who
    copy-pasted the v2.0.1 snippet got a build failure:
    `resource style/Theme.Titanium.Light.NoTitle not found`.
 
-2. **`android:theme` on `<application>` is invasive.** It overrides whatever
+2. `android:theme` on `<application>` is invasive. It overrides whatever
    theme the project was using and affects every activity. If a project
-   already has its own theme setup, the snippet stomps over it.
+   already has its own theme setup, the snippet replaces it.
 
 v2.0.2 reframes the --notes guidance:
 
-- Splash theme section is now marked **"OPTIONAL, advanced"** instead of
+- Splash theme section is now marked "OPTIONAL, advanced" instead of
   "RECOMMENDED"
-- Leads with "for most apps the default is enough — do nothing"
+- Leads with "for most apps the default is enough: do nothing"
 - Only mentions the theme approach as a flicker troubleshooting step
 - Uses a placeholder `@style/YOUR_APP_PARENT_THEME` in the template with
   clear "verify this exists in your SDK" guidance
-- Lists `@style/Theme.Titanium.Light.Fullscreen` as a **known-working**
-  parent (confirmed in Titanium SDK 13.2.0) — but emphasizes the user must
+- Lists `@style/Theme.Titanium.Light.Fullscreen` as a known-working
+  parent (confirmed in Titanium SDK 13.2.0): but emphasizes the user must
   verify for their own SDK
 - Adds explicit pre-flight checklist: (a) verify parent theme exists,
   (b) check whether your project already has a custom theme (extend, don't
@@ -123,7 +131,7 @@ The `--ios-padding` 4% default from v2.0.1 is preserved.
 
 ## [2.0.1] - 2026-04-18
 
-### Fixed — post-gen Android splash guidance
+### Fixed: post-gen Android splash guidance
 
 The `--notes` output previously said:
 > ⚠ CRITICAL: NEVER set android:theme="..." on `<application>` or any `<activity>`.
@@ -132,7 +140,7 @@ This was overly absolute. The rule is narrower: don't inherit from
 `@android:style/Theme.DeviceDefault.NoActionBar` (that strips the ActionBar).
 Inheriting from a Titanium parent theme (`Theme.Titanium.Light`,
 `.Light.NoTitle`, `.Light.Fullscreen`, plus Dark variants) keeps the ActionBar
-and IS the recommended approach to prevent the end-of-splash flicker that
+and is the recommended approach to prevent the end-of-splash flicker that
 happens when Android's SplashScreen API transitions to Titanium's activity
 with a mismatched background color.
 
@@ -146,13 +154,13 @@ Reference: the production app "LM - La Baraja" uses this exact pattern
 (`Theme.Titanium.Light.Fullscreen` parent + `windowSplashScreenBackground`
 matching the activity background) with zero flicker on Android 12+.
 
-### Changed — default `--ios-padding` lowered from 8% to 4%
+### Changed: default `--ios-padding` lowered from 8% to 4%
 
 Per Apple's HIG and production app measurements (La Baraja, Mail, Safari,
 WhatsApp, most popular apps), iOS app icons typically fill 92-97% of the
 canvas. Our previous default of 8% per side (84% fill) was noticeably more
 conservative than industry standard. iOS icons have no launcher mask, so
-there's no cropping risk — the padding is purely aesthetic breathing room.
+there's no cropping risk: the padding is purely aesthetic breathing room.
 
 New default 4% per side → 92% fill matches Apple's own apps. Override with
 `--ios-padding 2` (aggressive, matches La Baraja's 1.6%) or `--ios-padding 8`
@@ -164,14 +172,14 @@ MarketplaceArtwork.png. Android adaptive padding (`--padding`) stays at 20%
 
 ## [2.0.0] - 2026-04-18
 
-### Added — Modern Titanium branding pipeline (Alloy + Classic)
+### Added: Modern Titanium branding pipeline (Alloy + Classic)
 
 Introduces a new `ti-branding` preset (and extends `--preset alloy --modern` as
-a backward-compatible alias) — a complete modern branding generator for
+a backward-compatible alias): a branding generator for
 Titanium SDK 13.x projects that works on both Alloy and Classic layouts. Pairs
 with any of the new flags below to emit a full asset set from a single SVG or
 PNG master, matching what `titanium` / `alloy new` ships out of the box plus
-everything a production app needs on Android.
+Android branding assets.
 
 The preset name matches the [TiTools `ti-branding` skill](https://github.com/macCesar/titools/tree/main/skills/ti-branding)
 so Claude Code users and npm CLI users converge on the same feature name.
@@ -179,30 +187,30 @@ Auto-detects `app/` (Alloy) vs `Resources/` (Classic) layout and adjusts the
 Android output paths automatically (`app/platform/android/res/...` vs
 `platform/android/res/...`).
 
-- `-p ti-branding` — new preset name, preferred over `-p alloy --modern`. Always routes to the modern pipeline; no sub-flags defaults to kitchen-sink (adaptive + marketplace + notification + splash).
-- `--modern` — kitchen-sink flow when used with `-p alloy` (backward-compatible alias for `-p ti-branding`)
-- `--adaptive` — Android adaptive icon triplet (foreground + background + monochrome) × 5 densities + legacy `ic_launcher.png` × 5 + `mipmap-anydpi-v26/ic_launcher.xml` binder
-- `--marketplace` — `iTunesConnect.png` (1024²) + `MarketplaceArtwork.png` (512²), both with alpha preserved (matches Titanium defaults)
-- `--notification` — Android notification icons (white on transparent) × 5 densities at `drawable-*/ic_stat_notify.png`
-- `--splash` — Android 12+ SplashScreen API icons × 5 densities
-- `--bg-color <hex>` — background for Android adaptive + iOS alpha flatten (default `#FFFFFF`). **New behavior:** when explicitly provided, also flattens `iTunesConnect.png` + `MarketplaceArtwork.png` on the given color (prevents dark-mode muddy appearance on Play Store / macOS App Store when the master logo has transparent areas). When NOT provided, the two marketplace files keep alpha to match `ti create` default.
-- `--monochrome-master <path>` — optional dedicated silhouette master for `ic_launcher_monochrome.png` (Android 13+ themed icons) and `ic_stat_notify.png` (notification status bar). When provided, these two outputs use the dedicated master instead of naively whitening the colored main master. Useful for logos with multi-color detail (e.g. a painter's palette with 4 color dots) where a color→white flatten produces a featureless blob — you design a monochrome variant with cutout holes / negative space, and the detail survives in themed icons and notification.
-- `--padding <pct>` — Android safe-zone padding per side (default `20`). Material Design spec floor is 19.44% (108dp canvas with 66dp keyline grid); the default of 20 sits just above the spec floor for a tiny buffer while keeping the logo visibly prominent. Previous pre-release drafts used 22%, which produced noticeably smaller logos (~6% less width at xxxhdpi) without real justification — the 2.5% "safety" margin didn't save any real-world logos from masking. 20% is the new recommended balance.
-- `--ios-padding <pct>` — iOS / marketplace aesthetic padding per side (default `8`)
-- `--cleanup-legacy` — context-aware cleanup using `tiapp.xml` analysis. Categorizes targets into SAFE, CONDITIONAL, and AGGRESSIVE buckets. Always prints the plan before deleting. Can run standalone (without a master) to just clean.
-- `--aggressive` — includes ldpi density folders in cleanup (<1% global market)
-- `--project <path>` — Titanium project root (default: cwd)
-- `--in-place` — skip the default `.ti-branding/` staging directory and write files directly into the project root (overwrites existing icons). Pairs well with a fresh `ti create` project where you want to immediately replace the default Titanium/Alloy icons in one command, without the manual copy step. Prints an explicit warning and recommends committing first. `--output` takes precedence over `--in-place` when both are passed.
-- `--notes` — opt-in to print the full tiapp.xml snippets, padding tuning guide, and platform-specific configuration reminders (iOS launch storyboard, Android launcher wiring, Android 12+ splash theme, FCM notification tint) after a successful run. Default output is a compact one-screen summary (~27 lines) with a pointer to `--notes`. Before this flag the full output (~100+ lines) was always printed, which buried the most important "next steps" information under reference-style documentation.
-- `--dry-run` — show plan without writing files
+- `-p ti-branding`: new preset name, preferred over `-p alloy --modern`. Always routes to the modern pipeline; no sub-flags generates all categories (adaptive + marketplace + notification + splash).
+- `--modern`: full asset generation when used with `-p alloy` (backward-compatible alias for `-p ti-branding`)
+- `--adaptive`: Android adaptive icon triplet (foreground + background + monochrome) × 5 densities + legacy `ic_launcher.png` × 5 + `mipmap-anydpi-v26/ic_launcher.xml` binder
+- `--marketplace`: `iTunesConnect.png` (1024²) + `MarketplaceArtwork.png` (512²), both with alpha preserved (matches Titanium defaults)
+- `--notification`: Android notification icons (white on transparent) × 5 densities at `drawable-*/ic_stat_notify.png`
+- `--splash`: Android 12+ SplashScreen API icons × 5 densities
+- `--bg-color <hex>`: background for Android adaptive + iOS alpha flatten (default `#FFFFFF`). New behavior: when explicitly provided, it also flattens `iTunesConnect.png` + `MarketplaceArtwork.png` on the given color (prevents poor contrast in dark mode on Play Store / macOS App Store when the master logo has transparent areas). When not provided, the two marketplace files keep alpha to match `ti create` default.
+- `--monochrome-master <path>`: optional dedicated silhouette master for `ic_launcher_monochrome.png` (Android 13+ themed icons) and `ic_stat_notify.png` (notification status bar). When provided, these two outputs use the dedicated master instead of whitening the colored main master. Useful for logos with multi-color detail (e.g. a painter's palette with 4 color dots) where a color→white flatten produces a featureless blob: you design a monochrome variant with cutout holes / negative space, and the detail survives in themed icons and notification.
+- `--padding <pct>`: Android safe-zone padding per side (default `20`). Material Design spec floor is 19.44% (108dp canvas with 66dp keyline grid); the default of 20 sits just above the spec floor for a tiny buffer while keeping the logo visibly prominent. Previous pre-release drafts used 22%, which produced noticeably smaller logos (~6% less width at xxxhdpi) without preventing masking: the 2.5% "safety" margin didn't save any real-world logos from masking. 20% is the new recommended balance.
+- `--ios-padding <pct>`: iOS / marketplace aesthetic padding per side (default `8`)
+- `--cleanup-legacy`: context-aware cleanup using `tiapp.xml` analysis. Categorizes targets into SAFE, CONDITIONAL, and AGGRESSIVE buckets. Always prints the plan before deleting. Can run standalone (without a master) to just clean.
+- `--aggressive`: includes ldpi density folders in cleanup (<1% global market)
+- `--project <path>`: Titanium project root (default: cwd)
+- `--in-place`: skip the default `.ti-branding/` staging directory and write files directly into the project root (overwrites existing icons). Pairs well with a fresh `ti create` project where you want to immediately replace the default Titanium/Alloy icons in one command, without the manual copy step. Prints an explicit warning and recommends committing first. `--output` takes precedence over `--in-place` when both are passed.
+- `--notes`: opt-in to print the full tiapp.xml snippets, padding tuning guide, and platform-specific configuration reminders (iOS launch storyboard, Android launcher wiring, Android 12+ splash theme, FCM notification tint) after a successful run. Default output is a compact one-screen summary (~27 lines) with a pointer to `--notes`. Before this flag the full output (~100+ lines) was always printed, which placed the next steps below the reference material.
+- `--dry-run`: show plan without writing files
 
 Root-level icons emitted when a master is provided:
-- `DefaultIcon.png` (1024², alpha preserved) — universal / Android
-- `DefaultIcon-ios.png` (1024², alpha flattened on bg-color) — iOS (Apple rejects alpha)
+- `DefaultIcon.png` (1024², alpha preserved): universal / Android
+- `DefaultIcon-ios.png` (1024², alpha flattened on bg-color): iOS (Apple rejects alpha)
 
-This matches the output of a fresh `ti create` + `alloy new` project — alpha is
+This matches the output of a fresh `ti create` + `alloy new` project: alpha is
 kept on `DefaultIcon.png`, `iTunesConnect.png`, and `MarketplaceArtwork.png`, and
-only stripped on `DefaultIcon-ios.png`.
+stripped only on `DefaultIcon-ios.png`.
 
 Auto-detects Alloy (`app/` directory) vs Classic (`Resources/`) project layouts.
 
@@ -214,15 +222,14 @@ Auto-detects Alloy (`app/` directory) vs Classic (`Resources/`) project layouts.
 ### Backward compatibility
 - `imgconvert --preset alloy` without any modern flag continues to emit the
   legacy 1x/2x/3x (iPhone) + mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi (Android) output
-  exactly as v1.x did. **Not deprecated** — this is a distinct multi-scale
+  as in v1.x. Not deprecated: this is a distinct multi-scale
   feature with no modern replacement.
 
 ### Deprecated
 - `--preset alloy` combined with any modern flag (`--modern`, `--adaptive`,
   `--marketplace`, `--notification`, `--splash`, `--cleanup-legacy`) prints
   a deprecation warning and will be removed in v3.0.0. Use
-  `--preset ti-branding` instead — it's an exact drop-in replacement and
-  the name accurately describes scope (works on both Alloy and Classic).
+  `--preset ti-branding` instead: it uses the same pipeline on both Alloy and Classic.
   Plain `--preset alloy` with no modern flags stays supported indefinitely.
 
 ### Dependencies
@@ -232,7 +239,7 @@ Auto-detects Alloy (`app/` directory) vs Classic (`Resources/`) project layouts.
 
 ### Tests
 - 36 new tests covering prepare-master, all generators, tiapp-reader,
-  cleanup-legacy buckets, and CLI integration (kitchen sink + dry-run +
+  cleanup-legacy buckets, and CLI integration (full asset generation + dry-run +
   sub-flag isolation).
 
 ## [1.7.9] - 2026-04-06

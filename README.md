@@ -1,1640 +1,397 @@
 # imgconvert-cli
 
-<div align="center">
+Compress, convert, crop, resize, and rename images from the terminal. Generate Android branding assets or Titanium Alloy multi-scale images with dedicated subcommands.
 
-  ![npm version](https://img.shields.io/npm/v/imgconvert-cli)
-  ![Node.js Version](https://img.shields.io/node/v/imgconvert-cli)
-  ![downloads](https://img.shields.io/npm/dm/imgconvert-cli)
-  ![license](https://img.shields.io/npm/l/imgconvert-cli)
-  ![test coverage](https://img.shields.io/badge/tests-159%20passing-brightgreen)
-  ![GitHub Stars](https://img.shields.io/github/stars/macCesar/imgconvert-cli)
+This guide describes v3.0.0. See [migration from v2](#migration-from-v2) before reusing older commands, and [known limitations](#known-limitations) for options whose implementation is incomplete.
 
-</div>
+## Contents
 
-`imgconvert-cli` is a command-line tool for compressing, converting, and resizing images using the `sharp` library. It supports JPEG, PNG, WebP, AVIF, TIFF, and GIF, with options for quality, background color, resize strategies, and batch processing.
+- [Installation](#installation) and [quick start](#quick-start)
+- [Command reference](#command-reference)
+- [General image processing](#general-image-processing)
+- [Presets and configuration](#presets-and-configuration)
+- [Android branding](#android-branding)
+- [Alloy multi-scale images](#alloy-multi-scale-images)
+- [Shell completions](#shell-completions)
+- [Migration from v2](#migration-from-v2)
+- [Known limitations](#known-limitations) and [troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+
+## Installation
+
+```bash
+npm install -g imgconvert-cli
+imgconvert --version
+imgconvert --help
+```
+
+Use a Node.js version supported by the installed dependencies. Sharp 0.33.5 requires `^18.17.0 || ^20.3.0 || >=21.0.0`; Commander 12 requires Node 18+. The package's own `node >=14` declaration is outdated. Development with Mocha 11 requires `^18.18.0 || ^20.9.0 || >=21.1.0`. This checkout was validated on Node 22.
 
 ## Quick start
 
 ```bash
-# Install globally
-npm install -g imgconvert-cli
+# Convert a file; creates ./converted/photo.webp
+imgconvert photo.jpg -f webp -q 80
 
-# Compress images (preserves original format)
-imgconvert my-images
+# Convert the immediate image files in a directory; creates ./photos-converted/
+imgconvert photos -f webp
 
-# Convert to WebP with 80% quality
-imgconvert my-images -f webp -q 80
+# Square thumbnail, crop anchored at the top
+imgconvert portrait.jpg --width 400 --height 400 --fit cover --position top
 
-# Advanced resizing with cover strategy (crops to fill dimensions)
-imgconvert photo.jpg --fit cover --position center -w 400 -h 400 -f webp
+# Extract a region, then scale it
+imgconvert photo.jpg --crop 100,50,800,600 --width 400 --height 300
 
-# Manual cropping: extract specific region then resize
-imgconvert photo.jpg --crop 100,50,800,600 -w 400 -h 300 -f webp
+# Change canvas size without scaling the original pixels
+imgconvert logo.png --canvas --width 1024 --height 1024
 
-# Canvas resize: maintain original image, add transparent padding
-imgconvert photo.png --canvas -h 1660
-imgconvert design.png --canvas -w 800 -h 600 -f webp
+# Android branding, staged for review
+imgconvert brand logo.svg --sdk android
 
-# Custom file naming and batch renaming
-imgconvert photo.jpg --name "hero-banner" -f webp
+# Titanium Alloy assets
+imgconvert alloy icon.png
+
+# Create a config in the current directory
+imgconvert config init
+```
+
+## Command reference
+
+| Command | Purpose |
+| --- | --- |
+| `imgconvert [source] [options]` | General image processing; source may come from config or a preset |
+| `imgconvert brand [master] [options]` | Android branding; master optional only for cleanup |
+| `imgconvert alloy <source> [options]` | Titanium Alloy multi-scale images; source argument required |
+| `imgconvert config init [--force]` | Create config; keep an existing file unless forced |
+| `imgconvert config show` | Print defaults merged with the current config as JSON |
+| `imgconvert completions [bash\|zsh\|fish]` | Install completions; interactive if shell omitted |
+| `imgconvert completions print <shell>` | Print a completion script without installing it |
+| `imgconvert completions uninstall` | Remove installed completion files and the managed zsh block |
+| `imgconvert help [topic]` | List topics or explain crop, resize, rename, presets, brand, alloy |
+
+Run `imgconvert <command> --help` for command-specific options. `-h` / `--help` shows help; `-v` / `--version` shows the version. Options belong after the subcommand they configure. General conversion flags do not configure `brand` or `alloy`.
+
+## General image processing
+
+```bash
+imgconvert [source] [options]
+```
+
+Source is one image file or a directory. Directory processing is not recursive: subdirectories and unsupported extensions are skipped. Supported input extensions are `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, `.tiff`, `.gif` (case-insensitive). SVG input is supported by `brand`, not general conversion. Animated inputs are opened without Sharp's animation option; do not use this command to preserve animation.
+
+### Options
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `-f, --format <format>` | `jpg`, `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, `all` | Preserve input format |
+| `-q, --quality <n>` | Quality 1 to 100; effect depends on encoder | 85 |
+| `-b, --background <color>` | Padding color; also flattens transparency for JPEG | Transparent padding for PNG/WebP/AVIF/TIFF; white otherwise |
+| `--width <n>` | Positive output width in pixels | Automatic |
+| `--height <n>` | Positive output height in pixels | Automatic |
+| `--fit <strategy>` | `contain`, `cover`, `fill`, `inside`, `outside` | `contain` |
+| `--position <position>` | Anchor for cover, contain, or canvas | `center` |
+| `--crop <left,top,width,height>` | Extract region in pixels before resize | None |
+| `--canvas` | Pad/crop canvas without scaling | Off |
+| `--trim` | Auto-trim borders using Sharp's edge detection | Off |
+| `-n, --name <name>` | Output basename without extension; single file only | Input basename |
+| `--rename <strategies>` | Comma-separated batch naming rules | None |
+| `-o, --output <dir>` | Output directory | See paths below |
+| `--replace` | Accepted flag; currently still writes to output directory | See known limitations |
+| `-p, --preset <name>` | Built-in conversion preset or custom preset | None |
+| `-d, --debug` | Detailed processing diagnostics | Off |
+| `-h, --help` | Show help | N/A |
+| `-v, --version` | Show version | N/A |
+
+`--replace-originals` is a hidden compatibility alias for `--replace`. Neither currently provides reliable in-place replacement. Width has no `-w` alias in v3. Use `--height` for height.
+
+Format names are lowercase. Without `-f`, the original extension is preserved after normalization to lowercase. Explicit `-f jpeg` produces `.jpeg`, while `-f jpg` produces `.jpg`. `-f all` emits all seven extensions, including both `.jpg` and `.jpeg`.
+
+Quality is an encoder setting, not a guaranteed percentage reduction or visual score. GIF ignores it; TIFF uses LZW and PNG uses compression level 9 without palette quantization. Output may be larger than the input. Processing speed and size reduction depend on the input and settings.
+
+### Paths and overwriting
+
+| Input | Default output |
+| --- | --- |
+| `/work/photo.jpg` | `/work/converted/photo.jpg` |
+| `/work/photos/` | `/work/photos-converted/` |
+| `/work/photos/` with `-o optimized` | `/work/optimized/` |
+| `/work/photo.jpg` with `-o optimized` | `/work/optimized/` |
+
+Relative `output` paths resolve beside the source file or source directory, including values from presets/config. Absolute paths are used as-is. Input paths are resolved from the current working directory. Missing output directories are created.
+
+Existing destination filenames are overwritten without confirmation. Different inputs with the same basename can collide after conversion or renaming; use separate destinations or enumeration. Processing a file re-encodes it even when the format stays the same. The output may have different bytes and metadata.
+
+### Resize strategies
+
+With only width or height, the other dimension follows the aspect ratio. With both dimensions:
+
+| Strategy | Result |
+| --- | --- |
+| `contain` | Fit the whole image into the exact canvas; pad unused space |
+| `cover` | Fill the exact canvas, cropping excess |
+| `fill` | Stretch to exact dimensions; may distort |
+| `inside` | Fit within both bounds, preserving aspect ratio; no padding |
+| `outside` | Cover both bounds, preserving aspect ratio; one dimension may exceed its bound |
+
+Both `inside` and `outside` can enlarge or shrink. The CLI has no option to prevent enlargement or reduction.
+
+Canonical positions: `center`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, `bottom-right`. Quoted forms such as `"top left"` and underscore forms work too. Invalid positions fall back to center. Additional compass aliases work for ordinary resizing, but use canonical positions for canvas operations.
+
+```bash
+imgconvert photo.jpg --width 800 --height 600 --fit inside
+imgconvert photo.jpg --width 400 --height 400 --fit cover --position top-left
+imgconvert photo.png --width 800 --height 600 --fit contain -b "#ffffff"
+```
+
+### Crop, trim, and canvas
+
+Processing order is trim → manual crop → resize/canvas → encoding. Use non-negative integer crop origins and positive integer dimensions that fit within the image. `--crop 100,50,800,600` extracts an 800×600 region beginning at x=100, y=50.
+
+`--trim` uses Sharp's default trim behavior based on edge color/transparency. It is not object detection or background removal. For predictable coordinates, perform trim, manual crop, and canvas operations in separate runs when combining them.
+
+`--canvas` retains the image's pixel scale. Larger dimensions add padding; smaller dimensions remove pixels. An omitted dimension stays at its original size. `--position` anchors the image on each axis; `--fit` does not control canvas mode.
+
+```bash
+imgconvert logo.png --trim
+imgconvert shot.png --canvas --height 2688 --position top
+imgconvert logo.png --canvas --width 1200 --height 800 -b "rgba(255,0,0,0.5)"
+```
+
+For padding, supported color forms include `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`, `rgb(...)`, `rgba(...)`, and common names (`white`, `black`, `red`, `green`, `blue`, `yellow`, `cyan`, `magenta`, `gray`, `grey`, `transparent`). Quote colors, especially hex values and values containing spaces. Background color fills padding; it does not flatten existing alpha in PNG/WebP. JPEG always flattens alpha, using white unless a background is provided.
+
+### File naming and batch renaming
+
+```bash
+imgconvert photo.jpg --name hero-banner -f webp
 imgconvert photos --rename "lowercase,replace-spaces,prefix:web-" -f webp
-
-# Generate mobile app assets (all configurations)
-imgconvert source-images -p alloy
-
-# Generate specific mobile app assets (user-defined configurations)
-imgconvert -p alloy:your-config-name
-imgconvert -p alloy:another-config
+imgconvert photos --rename "prefix:gallery-,enumerate,suffix:-small"
 ```
 
-## Common use cases
+| Strategy | Example |
+| --- | --- |
+| `enumerate` | `photo.jpg` → `001-photo.jpg` (keeps basename) |
+| `lowercase` | `MyPhoto.JPG` → `myphoto.jpg` |
+| `replace-spaces` | `my photo.png` → `my-photo.png` |
+| `prefix:text` | `photo.jpg` → `textphoto.jpg` |
+| `suffix:text` | `photo.jpg` → `phototext.jpg` |
 
-- Batch convert images to WebP for faster loading
-- Consistent square thumbnails with `--fit cover` and `--position`
-- Crop to exact dimensions with `--crop`, then resize
-- Resize canvas (extend or shrink) without scaling the image using `--canvas`
-- Resize PNGs without losing transparency
-- Generate multi-resolution assets for iOS/Android with the Titanium Alloy preset
-- Update only specific asset categories with `imgconvert -p alloy:config-name`
-- Convert to TIFF for print
-- Process entire directories at once
-- Batch rename files: lowercase, replace spaces, add prefixes/suffixes
+Enumeration starts at 001 in natural filename order (1, 2, 10). Prefixes and enumeration accumulate in the order written; suffixes also accumulate. `lowercase` and `replace-spaces` modify the original basename, not added prefixes/suffixes. For example, `prefix:WEB-,lowercase` keeps `WEB-` uppercase. `--name` takes priority over rename rules for a single input file and is rejected for directories.
 
-## Performance
+## Presets and configuration
 
-Typical compression results:
-- JPEG to WebP: 25-35% size reduction
-- PNG to WebP: 40-60% size reduction
-- Batch processing: ~50-100 images/second
-
-## Project stats
-
-- Platforms: macOS, Linux, Windows
-- Bundle size: ~45KB (excluding Sharp)
-- Tests: 159 passing
-- Dependencies: 3 (sharp, minimist, chalk)
-
-## Table of contents
-- [Features](#features)
-- [Installation](#installation)
-- [Basic usage](#basic-usage)
-- [Options](#options)
-- [File naming and batch renaming](#file-naming-and-batch-renaming)
-- [Examples](#examples)
-- [File extension behavior](#file-extension-behavior)
-- [Presets](#presets)
-- [Custom presets](#custom-presets)
-- [Alloy preset](#alloy-preset)
-- [Configuration file](#configuration-file)
-- [Debug mode](#debug-mode)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Features
-
-- Compress images while maintaining quality
-- Convert between JPEG, PNG, WebP, AVIF, TIFF, and GIF
-- Multiple resize strategies: cover, contain, fill, inside, outside
-- Position control when cropping (center, top, bottom, left, right, corners)
-- Manual cropping with precise coordinates
-- Process single files or entire directories
-- Preserves original file extensions when no format conversion is specified
-- Custom file naming and batch renaming (enumerate, lowercase, replace spaces, prefix, suffix)
-- Adjustable quality from 1-100
-- Configurable background color for transparency handling
-- Convert to all supported formats in one command with `-f all`
-- Replace originals in-place with `--replace-originals`
-- Built-in presets: web, print, thumbnail, alloy
-- Custom output directory with `-o`
-- Debug mode with `-d` for troubleshooting
-
-## How it works
-
-- Accepts a single file or a directory as input
-- Uses `sharp` to apply compression, format conversion, resizing, and optional background color
-- **Preserves original file extensions** when no format is specified (e.g., `image.jpg` → `image.jpg`)
-- Only changes file extension when explicitly converting formats (e.g., `image.jpg -f webp` → `image.webp`)
-- Outputs to a `converted` subfolder by default, or replaces original files if `--replace-originals` is used
-- Resizing preserves aspect ratio unless both width and height are specified
-
-## Installation
-
-### Prerequisites
-- Node.js 14+
-- NPM or Yarn
-
-### Install
 ```bash
-npm install -g imgconvert-cli
-# or
-yarn global add imgconvert-cli
+imgconvert photo.jpg -p web
+imgconvert photo.jpg -p thumbnail --quality 90
+imgconvert config init
+imgconvert config show
+imgconvert config init --force
 ```
 
-### Verify installation
+| Built-in conversion preset | Settings |
+| --- | --- |
+| `web` | WebP, quality 80, fit cover, position center |
+| `print` | TIFF, quality 100, fit contain |
+| `thumbnail` | PNG, 150×150, quality 60, fit cover, position center |
+
+The config file is `.imgconverter.config.json` in the current working directory, not automatically beside the input or in parent directories. `config init` writes defaults and preset templates; `--force` overwrites an existing config without prompting. `config show` prints merged defaults/config/presets; it does not resolve a selected command's options or expand relative paths. Invalid JSON logs a warning and falls back to defaults.
+
+For general processing, precedence is explicit CLI option → selected preset → global config → built-in default. Source selection is explicit input → preset source → global source. A custom definition replaces the whole built-in preset with that name (no deep merge). Unknown preset names currently fall back to global/default settings without an error.
+
+Config/preset fields applied by general conversion are `source`, `output`, `quality`, `format`, `width`, `height`, `fit`, `position`, `crop`, `background`, `trim`, `name`, `rename`, and `replace-originals`. Use `--canvas` on the command line: config/preset `canvas` values are not currently applied. Boolean settings enabled in config have no corresponding CLI `--no-*` override.
+
+```json
+{
+  "quality": 85,
+  "presets": {
+    "hero": {
+      "source": "photos",
+      "output": "web-images",
+      "format": "webp",
+      "quality": 90,
+      "width": 1200,
+      "height": 630,
+      "fit": "cover",
+      "position": "top",
+      "rename": "lowercase,replace-spaces"
+    }
+  }
+}
+```
+
+Run `imgconvert -p hero` to use its source, or `imgconvert other-photos -p hero` to override it. See [custom presets](CUSTOM_PRESETS.md) for reusable recipes and path examples.
+
+## Android branding
+
 ```bash
-imgconvert --version
+imgconvert brand logo.svg --sdk android
+imgconvert brand logo.png --sdk android --adaptive --notification
+imgconvert brand logo.svg --sdk android --project /work/my-app --dry-run
 ```
 
-### Shell completions (optional)
+Only `--sdk android` is implemented. Kotlin, React Native, Flutter, and Titanium are not accepted SDK values. This command does not generate Titanium `DefaultIcon*.png` or iOS dark/tinted variants. `alloy` generates a different kind of asset: scaled application images.
 
-`imgconvert` ships TAB completion for **bash**, **zsh**, and **fish**. The quickest path is the interactive installer — it detects your shell from `$SHELL` and handles file creation and rc-file wiring for you:
+SVG and PNG are preferred masters; JPG/JPEG/WebP are also accepted by the implementation. Use a high-resolution raster (ideally at least 1024 pixels on the longest side) or vector master. Images are normalized with aspect ratio preserved to a maximum dimension of 1024; smaller sources can be enlarged. A square 1024×1024 minimum is not enforced. Transparent padding already present in a master is retained; trim it beforehand if needed.
+
+Without generation selectors, `brand` generates adaptive icons, marketplace artwork, notification icons, and splash icons. With any selector, only selected categories are generated. `--cleanup-legacy` disables the automatic full set; when combining cleanup with generation, specify selectors explicitly.
+
+### Brand options
+
+| Option | Meaning / default |
+| --- | --- |
+| `--sdk <target>` | `android`; required except for cleanup |
+| `--adaptive` | Foreground/background/monochrome layers + legacy launcher icons at five densities and adaptive XML |
+| `--marketplace` | `iTunesConnect.png` (1024²) and `MarketplaceArtwork.png` (512²) |
+| `--notification` | White silhouettes on transparent backgrounds at five densities |
+| `--splash` | Android 12+ splash icons at five densities |
+| `--bg-color <hex>` | Six-digit hex, default `#FFFFFF`; explicitly supplying it also flattens marketplace alpha |
+| `--padding <n>` | Android padding per side; positive integer 1-40, default 15; 12-20 is tuning guidance |
+| `--ios-padding <n>` | Marketplace padding per side in this Android flow; positive integer 1-40, default 4 |
+| `--monochrome-master <path>` | Separate silhouette for monochrome adaptive and notification icons |
+| `--project <path>` | Project root, default current directory |
+| `-o, --output <dir>` | Staging directory; relative to current directory, default `<project>/.ti-branding/` |
+| `--in-place` | Write directly under project root, overwriting destinations; explicit `--output` wins |
+| `--notes` | Full integration/tuning notes; currently includes Titanium-oriented guidance |
+| `--dry-run` | Print plan without generating or deleting files; does not decode/fully validate the master |
+| `--cleanup-legacy` | Inspect/delete legacy Titanium layout artifacts in the project, even when generation is staged |
+| `--aggressive` | Include ldpi artifacts in cleanup |
+| `-d, --debug` | Include diagnostic details |
+| `-h, --help` | Show command help |
+
+### Output and integration
+
+Relative to the staging directory (or project root with `--in-place`):
+
+```text
+app/src/main/res/
+  mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/
+    ic_launcher_foreground.png
+    ic_launcher_background.png
+    ic_launcher_monochrome.png
+    ic_launcher.png
+  mipmap-anydpi-v26/ic_launcher.xml
+  drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/
+    ic_stat_notify.png
+    splash_icon.png
+iTunesConnect.png
+MarketplaceArtwork.png
+```
+
+Files depend on selected categories. Staged runs also retain `_master_*.png` intermediates; copy the final assets rather than these intermediates. Default marketplace output preserves alpha; use an explicit `--bg-color "#FFFFFF"` for opaque artwork. The themed monochrome layer is part of `--adaptive`; a separate monochrome master helps retain negative-space detail in complex logos.
+
+Copy the generated `app/src/main/res/` tree into your Android module, or choose `--in-place` after reviewing the plan. Generation does not edit your AndroidManifest or theme configuration. Wire the launcher to `@mipmap/ic_launcher`; notification code can reference `@drawable/ic_stat_notify`, and your splash theme can reference `@drawable/splash_icon`. Verify the app's resource integration in its own build.
+
+Cleanup is a legacy Titanium maintenance operation: it inspects `tiapp.xml`, Alloy `app/` or Classic `Resources/` layouts, and known legacy folders. It prints a plan and immediately deletes matched files unless `--dry-run` is present. It is not general Android resource cleanup. Staging generation does not stage cleanup deletions.
+
+```bash
+imgconvert brand --cleanup-legacy --project /work/old-ti-app --dry-run
+```
+
+## Alloy multi-scale images
+
+```bash
+imgconvert alloy /work/icons/icon.png
+```
+
+The source is treated as a 4× master on both platforms. Every output dimension is `round(source dimension / 4 × scale)`. A 400×400 source produces Android 100, 150, 200, 300, 400 pixel images and iPhone 100, 200, 300 pixel images. Scale factors are fixed.
+
+```text
+app/assets/android/images/res-mdpi/icon.png
+app/assets/android/images/res-hdpi/icon.png
+app/assets/android/images/res-xhdpi/icon.png
+app/assets/android/images/res-xxhdpi/icon.png
+app/assets/android/images/res-xxxhdpi/icon.png
+app/assets/iphone/images/icon.png
+app/assets/iphone/images/icon@2x.png
+app/assets/iphone/images/icon@3x.png
+```
+
+With no configured output base, `tiapp.xml` in the current directory selects that directory as the base; otherwise the base is the source file's directory (for a directory input, assets go inside that source directory). Platform `output` values add a subfolder within each platform's image tree, not an absolute destination.
+
+Public options are `-o, --output <dir>`, `-p, --preset <name>`, `-d, --debug`, and `-h, --help`. The current handler loses CLI `-o` during precedence resolution when no preset/global output supplies a value, and it always reads platform definitions from `presets.alloy`. Use `presets.alloy` and global `output` for reliable configuration rather than relying on a separate custom Alloy preset key. Quality/format are configured in JSON; the subcommand does not accept conversion flags like `-q`, `-f`, or `--width`.
+
+```json
+{
+  "output": "/work/my-app",
+  "presets": {
+    "alloy": {
+      "android": { "output": "icons", "quality": 85, "format": "png" },
+      "iphone": { "output": "icons", "quality": 85, "format": "png" }
+    }
+  }
+}
+```
+
+Platform `source` overrides the positional source. You must still pass an existing source argument to the v3 subcommand. A grouped format is also supported under `presets.alloy`, with each group containing `android` and `iphone` objects. All groups run; the older `alloy:group` selection syntax is not wired into v3. Platform quality/format overrides group settings, then Alloy-wide settings, then global/default values.
+
+See [custom presets](CUSTOM_PRESETS.md#alloy-configuration) for a grouped example. Existing output assets are overwritten. This command does not create launcher/adaptive icons or splash themes.
+
+## Shell completions
 
 ```bash
 imgconvert completions
-```
-
-Prefer to be explicit? Pass the shell directly:
-
-```bash
-imgconvert completions zsh      # or: bash, fish
-```
-
-#### What gets installed
-
-| Shell | Completion file                                         | RC file touched |
-| ----- | ------------------------------------------------------- | --------------- |
-| zsh   | `~/.zsh/completions/_imgconvert`                        | `~/.zshrc` (adds `fpath` + `compinit`, idempotent) |
-| bash  | `~/.local/share/bash-completion/completions/imgconvert` | none (bash-completion auto-discovers) |
-| fish  | `~/.config/fish/completions/imgconvert.fish`            | none (fish auto-loads) |
-
-The block added to `~/.zshrc` is guarded by marker comments (`# >>> imgconvert completions >>>` / `# <<< imgconvert completions <<<`), so re-running the installer never duplicates it.
-
-After installing, open a new terminal (or `source` your rc file) and try `imgconvert <TAB>` — you should see all subcommands with descriptions.
-
-#### Uninstall
-
-Removes every installed completion file and the `~/.zshrc` block:
-
-```bash
+imgconvert completions zsh
+imgconvert completions print bash
 imgconvert completions uninstall
 ```
 
-#### Scripts, Dockerfiles, custom paths
-
-Pipe the raw script to wherever you want:
-
-```bash
-imgconvert completions print zsh > /path/of/your/choice/_imgconvert
-```
-
-## Basic usage
-
-```bash
-imgconvert <source_path>
-```
-
-- `<source_path>`: The path to the image file or directory containing the images you want to process. This is a required positional argument.
-
-> When you don't specify `-f`, each output image keeps its original extension:
-> - `image.jpg` → `image.jpg` (compressed but same format)
-> - `image.png` → `image.png` (compressed but same format)
->
-> The file extension only changes when you explicitly specify a different format with `-f`.
-
-## Options
-
-
-| Option                | Alias | Description                                                                                 | Default                                    |
-| --------------------- | ----- | ------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `--format`            | `-f`  | Output format: `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, `all`                          | Original format                            |
-| `--quality`           | `-q`  | Quality (1-100)                                                                             | 85                                         |
-| `--background`        | `-b`  | Background color when converting from transparent formats to non-transparent formats        | Transparent for PNG/WebP, #ffffff for JPEG |
-| `--width`             | `-w`  | Output width in pixels                                                                      | -                                          |
-| `--height`            | `-h`  | Output height in pixels                                                                     | -                                          |
-| `--output`            | `-o`  | Output directory (relative paths resolve next to the source, absolute paths are used as-is) | `<source>-converted`                       |
-| `--preset`            | `-p`  | Apply preset: `web`, `print`, `thumbnail`, `alloy`                                          | -                                          |
-| `--fit`               | -     | Resize strategy: `cover`, `contain`, `fill`, `inside`, `outside`                            | `contain`                                  |
-| `--position`          | -     | Crop position: `center`, `top`, `bottom`, `left`, `right`, corners                          | `center`                                   |
-| `--crop`              | -     | Manual crop coordinates: `left,top,width,height`                                            | -                                          |
-| `--canvas`            | -     | Resize canvas without scaling (pad if larger, crop if smaller)                              | `false`                                    |
-| `--name`              | `-n`  | Custom filename for single file processing                                                  | -                                          |
-| `--rename`            | -     | Batch rename strategy: `enumerate`, `lowercase`, `replace-spaces`, `prefix:`, `suffix:`     | -                                          |
-| `--replace-originals` | -     | Replace original files                                                                      | `false`                                    |
-| `--debug`             | `-d`  | Enable debug mode                                                                           | `false`                                    |
-| `--version`           | `-v`  | Show version                                                                                | -                                          |
-| `--help`              | `-H`  | Show help message                                                                           | -                                          |
-
-## Advanced resize and crop control
-
-Processing order: Manual Crop → Resize → Format Conversion
-
-### Fit strategies (`--fit`)
-
-Controls how images are resized when both width and height are specified:
-
-| Strategy  | Behavior                           | Use Case                | Aspect Ratio |
-| --------- | ---------------------------------- | ----------------------- | ------------ |
-| `contain` | Shrink to fit, letterbox if needed | Preserve entire image   | Preserved    |
-| `cover`   | Crop to fill dimensions exactly    | Hero images, thumbnails | Preserved    |
-| `fill`    | Stretch to exact dimensions        | Icons, backgrounds      | Ignored      |
-| `inside`  | Only shrink, never enlarge         | High-res source images  | Preserved    |
-| `outside` | Only enlarge, never shrink         | Upscaling small images  | Preserved    |
-
-### Position control (`--position`)
-
-When using `--fit cover`, `--fit contain`, or `--canvas`, controls which part of the image to preserve or focus on:
-
-| Position       | Description                  | Best For                 |
-| -------------- | ---------------------------- | ------------------------ |
-| `center`       | Focus on center (default)    | General purpose          |
-| `top`          | Focus on top edge            | Portraits, faces         |
-| `bottom`       | Focus on bottom edge         | Architecture             |
-| `left`         | Focus on left edge           | Portraits (left-facing)  |
-| `right`        | Focus on right edge          | Portraits (right-facing) |
-| `top left`     | Focus on top-left corner     | Documents, logos         |
-| `top right`    | Focus on top-right corner    | UI screenshots           |
-| `bottom left`  | Focus on bottom-left corner  | Signatures               |
-| `bottom right` | Focus on bottom-right corner | Watermarks               |
-
-### Manual cropping (`--crop`)
-
-Extract specific regions before resizing:
-
-- **Format**: `left,top,width,height` (all in pixels)
-- **Example**: `--crop 100,50,800,600` crops 800x600 region starting at (100,50)
-- **Workflow**: Cropping is applied first, then resizing with fit/position options
-
-### Canvas resize vs image resize (`--canvas`)
-
-#### Standard resize (default)
-
-Scales the image proportionally to fit the target dimensions, preserving aspect ratio and existing transparency.
-
-```bash
-imgconvert photo.png -h 1660
-# 1024x1536 → 1107x1660 (proportional scaling)
-```
-
-#### Canvas resize (`--canvas`)
-
-Keeps the original pixel data unchanged. When the target is larger, padding is added (transparent for PNG/WebP, white for JPEG). When the target is smaller, pixels are cropped. `--position` controls the anchor in both directions.
-
-```bash
-imgconvert photo.png --canvas -h 1660
-# 1024x1536 → 1024x1660 (centered, transparent padding added)
-
-imgconvert photo.png --canvas -h 1660 --position top
-# 1024x1536 → 1024x1660 (image anchored at top, padding at bottom)
-
-imgconvert photo.png --canvas -h 1660 --position bottom
-# 1024x1536 → 1024x1660 (image anchored at bottom, padding at top)
-
-imgconvert shot.png --canvas -h 2688 --position top
-# 1242x2699 → 1242x2688 (top preserved, 11px cropped from bottom)
-
-imgconvert photo.png --canvas -h 1660 -b "#ff0000"
-# 1024x1536 → 1024x1660 (original image + red padding)
-```
-
-| Aspect                | Standard Resize          | Canvas Resize (`--canvas`)        |
-| --------------------- | ------------------------ | --------------------------------- |
-| **Image scaling**     | ✅ Scales proportionally  | ❌ Maintains original pixels       |
-| **Exact dimensions**  | ❌ Respects aspect ratio  | ✅ Exact target dimensions         |
-| **Resize direction**  | Always rescales pixels   | Pads if larger, crops if smaller  |
-| **Transparency**      | Preserves existing       | ✅ Adds transparent padding when growing |
-| **Position control**  | Via `--position`         | ✅ Via `--position` (both axes)    |
-| **Use case**          | Photo resizing           | Design layouts, mockups, fitting screenshots to spec |
-
-## File naming and batch renaming
-
-### Single file naming (`--name`, `-n`)
-
-Rename individual files during processing:
-
-```bash
-imgconvert photo.jpg --name "hero-image" -f webp
-# Output: hero-image.webp
-```
-
-**Important**: The `--name` option only works with single files, not directories.
-
-### Batch renaming strategies (`--rename`)
-
-Apply systematic renaming to multiple files:
-
-| Strategy         | Description                 | Example Input  | Example Output    |
-| ---------------- | --------------------------- | -------------- | ----------------- |
-| `enumerate`      | Add sequential numbers      | `photo.jpg`    | `001-photo.jpg`   |
-| `lowercase`      | Convert to lowercase        | `MyPhoto.JPG`  | `myphoto.jpg`     |
-| `replace-spaces` | Replace spaces with hyphens | `my photo.png` | `my-photo.png`    |
-| `prefix:text`    | Add prefix to filename      | `image.jpg`    | `thumb-image.jpg` |
-| `suffix:text`    | Add suffix to filename      | `image.jpg`    | `image-small.jpg` |
-
-### Combining strategies
-
-Multiple rename strategies can be combined by separating them with commas:
-
-```bash
-imgconvert photos --rename "lowercase,replace-spaces,prefix:web-"
-# "My Photo.jpg" → "web-my-photo.jpg"
-
-imgconvert images --rename "prefix:gallery-,enumerate"
-# "photo.jpg" → "gallery-001-photo.jpg"
-```
-
-Strategies are applied left to right, so the result matches the order you write them.
-
-## Examples
-
-### Basic operations
-
-1. **Compress images without changing format (preserves extensions):**
-   ```bash
-   imgconvert image.jpg      # → image.jpg (compressed)
-   imgconvert image.png      # → image.png (compressed)
-   ```
-
-2. **Compress all images in directory (preserves original formats):**
-   ```bash
-   imgconvert source_folder  # Each file keeps its original extension
-   ```
-
-3. **Convert to different format (changes extension):**
-   ```bash
-   imgconvert image.jpg -f webp -q 75    # → image.webp
-   imgconvert image.png -f jpeg          # → image.jpeg
-   ```
-
-### Resizing and cropping
-
-4. **Smart resizing strategies:**
-   ```bash
-   # Cover strategy: crop to fill exact dimensions
-   imgconvert photo.jpg --fit cover -w 400 -h 400
-
-   # Contain strategy: fit inside dimensions (default)
-   imgconvert photo.jpg --fit contain -w 400 -h 400
-
-   # Fill strategy: stretch to exact dimensions
-   imgconvert photo.jpg --fit fill -w 400 -h 400
-   ```
-
-5. **Control cropping position with cover strategy:**
-   ```bash
-   # Keep the top part when cropping
-   imgconvert portrait.jpg --fit cover --position top -w 300 -h 300
-
-   # Keep the center (default)
-   imgconvert photo.jpg --fit cover --position center -w 300 -h 300
-
-   # Keep specific corners
-   imgconvert image.jpg --fit cover --position "top left" -w 400 -h 400
-   ```
-
-6. **Control positioning with contain strategy (letterboxing):**
-   ```bash
-   # Position image at top of canvas when letterboxing
-   imgconvert wide-image.jpg --fit contain --position top -w 400 -h 400
-
-   # Position image at bottom-right when letterboxing
-   imgconvert landscape.jpg --fit contain --position "bottom right" -w 600 -h 600
-   ```
-
-7. **Manual cropping before resizing:**
-   ```bash
-   # Crop specific region then resize
-   imgconvert image.png --crop 100,50,300,200 -w 200 -h 150
-
-   # Crop and convert format
-   imgconvert photo.jpg --crop 0,0,500,500 --fit cover -w 300 -h 300 -f webp
-   ```
-
-8. **Canvas resizing (maintain original pixels, pad or crop):**
-   ```bash
-   # Grow canvas with transparent padding
-   imgconvert photo.png --canvas -h 1660
-   # Original 1024x1536 → Output 1024x1660 with transparent padding (centered)
-
-   # Control position within the expanded canvas
-   imgconvert photo.png --canvas -h 1660 --position top
-   # Original 1024x1536 → Output 1024x1660 with image at top, transparent padding at bottom
-
-   imgconvert photo.png --canvas -h 1660 --position bottom
-   # Original 1024x1536 → Output 1024x1660 with image at bottom, transparent padding at top
-
-   # Shrink canvas — drops pixels from the anchor's opposite side
-   imgconvert shot.png --canvas -h 2688 --position top
-   # Original 1242x2699 → Output 1242x2688 (top preserved, 11px cropped from bottom)
-
-   # Resize canvas with custom background color (when padding)
-   imgconvert photo.png --canvas -h 1660 -b "#ffffff"
-   # Adds white padding instead of transparent
-
-   # Resize canvas to exact dimensions (mix of pad and crop per dimension)
-   imgconvert image.jpg --canvas -w 800 -h 600 -f png
-   # Maintains original pixels; pads or crops each axis as needed to reach 800x600
-   ```
-
-### File naming and renaming
-
-9. **Custom naming for single files:**
-   ```bash
-   # Rename during conversion
-   imgconvert hero-photo.jpg --name "main-banner" -f webp
-   # Output: main-banner.webp
-
-   # Custom name with resizing
-   imgconvert profile.png --name "avatar" --fit cover -w 200 -h 200
-   # Output: avatar.png
-   ```
-
-10. **Batch renaming strategies:**
-   ```bash
-   # Add sequential numbers
-   imgconvert photos --rename enumerate -f webp
-   # photo1.jpg → 001-photo1.webp, photo2.jpg → 002-photo2.webp
-
-   # Convert to lowercase and replace spaces
-   imgconvert "My Photos" --rename "lowercase,replace-spaces"
-   # "My Photo.JPG" → "my-photo.jpg"
-
-   # Add prefix for organization
-   imgconvert thumbnails --rename "prefix:thumb-" -w 150 -h 150
-   # image.jpg → thumb-image.jpg
-   ```
-
-9. **Advanced renaming combinations:**
-   ```bash
-   # Multiple strategies for web optimization
-   imgconvert uploads --rename "lowercase,replace-spaces,suffix:-optimized" -f webp -q 80
-   # "Product Photo.png" → "product-photo-optimized.webp"
-
-   # Enumerated thumbnails with prefix
-   imgconvert gallery --rename "prefix:gallery-,enumerate" --fit cover -w 300 -h 300
-   # photo.jpg → gallery-001-photo.jpg
-   ```
-
-### Real-world examples
-
-10. **Web development:**
-    ```bash
-    # Social media thumbnails with organized naming
-    imgconvert profiles --fit cover --position top -w 150 -h 150 -f webp --rename "prefix:profile-,enumerate"
-
-    # Product images with consistent dimensions and clean filenames
-    imgconvert products --fit contain -w 800 -h 600 -f webp -q 90 --rename "lowercase,replace-spaces"
-
-    # Hero banners with descriptive names
-    imgconvert heroes --fit cover --position center -w 1920 -h 800 -f webp --rename "suffix:-hero"
-    ```
-
-11. **Mobile app assets with systematic naming:**
-    ```bash
-    # Square app icons with size indicators
-    imgconvert icons --fit cover --position center -w 512 -h 512 -f png --rename "suffix:-512"
-
-    # Profile pictures with enumeration
-    imgconvert avatars --fit cover --position top -w 200 -h 200 -f webp --rename "prefix:avatar-,enumerate"
-    ```
-
-12. **E-commerce and content management:**
-    ```bash
-    # Product catalog with clean, SEO-friendly names
-    imgconvert "Product Photos" --rename "lowercase,replace-spaces,prefix:product-" -f webp -q 85
-    # "Blue Shirt Medium.jpg" → "product-blue-shirt-medium.webp"
-
-    # Blog post images with consistent naming
-    imgconvert blog-images --rename "lowercase,replace-spaces,suffix:-post" -w 800 -q 80
-    # "My Great Article Photo.png" → "my-great-article-photo-post.png"
-    ```
-
-    # Profile pictures
-    imgconvert avatars --fit cover --position top -w 200 -h 200 -f webp
-    ```
-
-12. **Use alloy preset with platform-specific formats:**
-    ```bash
-    imgconvert source_folder -p alloy
-    # Generates images for ALL configurations (comics, thumbs-comics, baby, thumbs-baby)
-    ```
-
-13. **Process specific alloy configurations (user-defined):**
-    ```bash
-    imgconvert -p alloy:your-cards-config
-    # Processes ONLY the 'your-cards-config' configuration (both Android and iPhone)
-    # Note: 'your-cards-config' must be defined in your .imgconverter.config.json
-
-    imgconvert -p alloy:your-thumbnails-config
-    # Processes ONLY the 'your-thumbnails-config' configuration
-    # Note: 'your-thumbnails-config' must be defined in your .imgconverter.config.json
-
-    imgconvert -p alloy:your-icons-config
-    # Processes ONLY the 'your-icons-config' configuration
-    # Note: 'your-icons-config' must be defined in your .imgconverter.config.json
-    ```
-
-14. **Override preset settings with CLI arguments:**
-    ```bash
-    imgconvert source_folder -p alloy -f png -q 95
-    # CLI arguments override preset: both Android and iPhone will use PNG at 95% quality
-
-    imgconvert -p alloy:your-cards-config -q 90
-    # Only 'your-cards-config' configuration with 90% quality override
-    # Note: 'your-cards-config' must be defined in your .imgconverter.config.json
-    ```
-
-15. **Use preset settings with partial CLI override:**
-    ```bash
-    imgconvert source_folder -p alloy -q 80
-    # Only quality is overridden: Android uses WebP, iPhone uses PNG, both at 80% quality
-
-    imgconvert -p alloy:your-config-name -f webp
-    # Only your-config-name configuration, forced to WebP format for both platforms
-    # Note: 'your-config-name' must be defined in your .imgconverter.config.json
-    ```
-
-16. **Extract and optimize specific image regions with manual cropping:**
-    ```bash
-    # Extract a product from a larger photo and create web-optimized thumbnails
-    imgconvert product-photo.jpg --crop 200,150,600,800 -w 300 -h 400 -f webp -q 85
-
-    # Create hero image by cropping center portion from high-res photo
-    imgconvert landscape.jpg --crop 500,100,1920,800 --fit cover -w 1200 -h 500 -f webp
-
-    # Extract faces from group photos for profile pictures
-    imgconvert group-photo.jpg --crop 350,200,500,500 --fit cover -w 150 -h 150 -f webp
-    ```
-
-### Utility operations
-
-18. **Specify a custom output directory:**
-    ```bash
-    # Relative name — creates "custom_output" next to source_folder
-    imgconvert source_folder -o custom_output
-
-    # Absolute path — uses it as-is
-    imgconvert source_folder -o /tmp/processed
-    ```
-
-19. **Enable debug mode:**
-    ```bash
-    imgconvert source_folder -d
-    ```
-
-20. **Check the version of the module:**
-    ```bash
-    imgconvert --version
-    ```
-
-21. **Show help message:**
-    ```bash
-    imgconvert --help
-    ```
-
-## File extension behavior
-
-### Preserve original extensions
-When no format is specified with `-f`, the original file extension is preserved:
-
-| Input       | Command                | Output      |
-| ----------- | ---------------------- | ----------- |
-| `logo.png`  | `imgconvert logo.png`  | `logo.png`  |
-| `icon.webp` | `imgconvert icon.webp` | `icon.webp` |
-| `photo.jpg` | `imgconvert photo.jpg` | `photo.jpg` |
-
-### Format conversion changes extensions
-When using `-f` to specify a format, the extension changes accordingly:
-
-| Input       | Command                        | Output       |
-| ----------- | ------------------------------ | ------------ |
-| `logo.png`  | `imgconvert logo.png -f jpeg`  | `logo.jpeg`  |
-| `icon.webp` | `imgconvert icon.webp -f png`  | `icon.png`   |
-| `photo.jpg` | `imgconvert photo.jpg -f webp` | `photo.webp` |
-
-> **Tip:** The extension only changes when you explicitly use `-f`.
-
-## Presets
-
-Presets are predefined configurations for common use cases:
-
-- **web**: Optimized for the web (`webp`, quality `80`). Optionally defines a `source` path.
-- **print**: High-quality output (`tiff`, quality `100`). Optionally defines a `source` path.
-- **thumbnail**: Small previews (`png`, quality `60`, 150x150). Optionally defines a `source` path.
-- **square-thumbs**: Consistent square thumbnails (`webp`, quality `80`, 300x300). Optionally defines a `source` path.
-- **hero-images**: High-quality hero images (`webp`, quality `85`, 1920x1080). Optionally defines a `source` path.
-- **alloy**: For Titanium SDK. Generates scaled images for Android and iOS at all required densities. Supports a single-source legacy format and a multi-configuration format (e.g., cards, thumbnails, icons with independent settings). Process everything with `-p alloy` or target one group with `-p alloy:configName`.
-
-## Custom presets
-
-You can define your own presets in `.imgconverter.config.json`.
-
-### Example
-
-```json
-{
-  "presets": {
-    "instagram-post": {
-      "width": 1080,
-      "height": 1080,
-      "quality": 85,
-      "format": "jpeg",
-      "background": "#ffffff"
-    },
-    "email-newsletter": {
-      "width": 600,
-      "quality": 70,
-      "format": "jpeg",
-      "output": "email/assets",
-      "source": "content/images"
-    },
-    "product-catalog": {
-      "width": 800,
-      "height": 800,
-      "quality": 90,
-      "format": "webp",
-      "background": "#ffffff"
-    }
-  }
-}
-```
-
-### Usage
-
-```bash
-# Use your custom presets
-imgconvert photos -p instagram-post
-imgconvert products -p product-catalog
-imgconvert banner.png -p email-newsletter
-
-# Override preset settings with CLI arguments
-imgconvert photos -p instagram-post -q 95  # Uses Instagram preset but with 95% quality
-
-# Use selective configuration with custom alloy presets
-imgconvert -p alloy:your-game-cards    # Process only your-game-cards configuration
-imgconvert -p alloy:your-config-name -q 90  # Process only your-config-name with custom quality
-# Note: These configurations must be defined in your .imgconverter.config.json
-```
-
-### Key points
-
-- Presets can include source and output paths
-- CLI arguments always override preset values
-- Supports all parameters: quality, format, width, height, background, source, output, replace-originals
-
-See [custom_presets.md](custom_presets.md) for more examples.
-
-## Comparison
-
-| Feature                 | imgconvert-cli | ImageMagick | Sharp CLI |
-| ----------------------- | -------------- | ----------- | --------- |
-| Easy Setup              | ✅              | ❌           | ✅         |
-| Batch Processing        | ✅              | ✅           | ❌         |
-| Mobile Presets          | ✅              | ❌           | ❌         |
-| Custom Presets          | ✅              | ❌           | ❌         |
-| Config File             | ✅              | ❌           | ❌         |
-| Extension Preservation  | ✅              | ❌           | ❌         |
-| Multi-Format Output     | ✅              | ✅           | ❌         |
-| Test suite              | ✅ 159 tests    | ❌           | ❌         |
-
-## Alloy preset
-
-The `alloy` preset generates scaled images for Titanium Alloy apps, producing all required density variants for Android and iOS from a single set of source images.
-
-- Backward compatible with existing alloy configurations
-- Source images should be 4x resolution (the tool scales down from there)
-- Generates Android density folders (`res-mdpi` through `res-xxxhdpi`) and iOS `@2x`/`@3x` naming
-- Per-configuration quality and format settings with proper precedence
-- Scale factors are fixed to Titanium standards and cannot be changed
-- `width` and `height` parameters are ignored (scaling is based on fixed factors)
-- Supports multiple image groups (cards, thumbnails, icons) in a single command
-- Each configuration can have its own source directory and output path
-- Target a specific configuration with `alloy:configName`
-
-### Selective configuration processing
-
-You can target individual configurations instead of processing everything:
-
-- Process only what changed, saving time during development
-- Update specific asset categories in CI/CD pipelines
-- Test one configuration without waiting for all assets to rebuild
-- Add a new category and process just that one
-
-**Examples:**
-```bash
-# Process all configurations (default behavior)
-imgconvert -p alloy
-
-# Process only your custom assets configuration
-imgconvert -p alloy:your-config-name
-
-# Process only your thumbnail variants (user-defined configurations)
-imgconvert -p alloy:your-thumbs-config1
-imgconvert -p alloy:your-thumbs-config2
-
-# Perfect for adding new categories
-imgconvert -p alloy:your-new-category  # Only process your custom 'new-category' configuration
-# Note: All configuration names must be defined in your .imgconverter.config.json
-```
-
-### Scale factors
-
-These are fixed to match Titanium platform standards:
-- **iOS**: 1x, 2x, 3x
-- **Android**: res-mdpi (1x), res-hdpi (1.5x), res-xhdpi (2x), res-xxhdpi (3x), res-xxxhdpi (4x)
-
-> Scale factors cannot be customized. They match what Titanium expects.
-
-### Usage
-
-#### Process all configurations:
-```bash
-# Legacy format (single android/iphone configuration)
-imgconvert source-images -p alloy
-
-# Multi-configuration format (all configuration groups)
-imgconvert -p alloy
-```
-
-#### Process a specific configuration:
-```bash
-# Process only your custom configuration
-imgconvert -p alloy:your-config-name
-
-# Process only your custom thumbnail configurations
-imgconvert -p alloy:your-thumbs-config1
-imgconvert -p alloy:your-thumbs-config2
-
-# Process only your custom configuration
-imgconvert -p alloy:another-config-name
-# Note: All configuration names must be defined in your .imgconverter.config.json
-```
-
-#### Single configuration (legacy format):
-```bash
-imgconvert source-images -p alloy
-```
-
-#### Multi-configuration format:
-```bash
-imgconvert -p alloy
-```
-> With multi-configuration format, all groups are processed from their respective source directories. Use `-p alloy:configName` to target one.
-
-> `width` and `height` are ignored with the alloy preset. Images are scaled based on fixed factors.
-
-### Output for Alloy (Android & iPhone)
-
-When using the `alloy` preset, the output follows this structure:
-
-- Android: `<base>/app/assets/android/images`
-- iPhone: `<base>/app/assets/iphone/images`
-
-**Output directory precedence:**
-
-| Priority | Condition                               | Output base (`<base>`)                            |
-| -------- | --------------------------------------- | ------------------------------------------------- |
-| 1        | `-o /absolute/path` specified           | `/absolute/path`                                  |
-| 2        | `-o relative-name` specified            | Resolved next to the input file's directory       |
-| 3        | `tiapp.xml` exists in current directory | Current working directory (Titanium project root) |
-| 4        | No `-o` and no `tiapp.xml` in CWD       | Same directory as the input file                  |
-
-**Examples:**
-
-```bash
-# With absolute output path
-imgconvert ~/Desktop/logo.png -p alloy -o ~/Developer/my-titanium-app
-# Output: ~/Developer/my-titanium-app/app/assets/android/images/...
-
-# With relative output name — resolves next to the input file
-imgconvert ~/Desktop/logo.png -p alloy -o my-project
-# Output: ~/Desktop/my-project/app/assets/android/images/...
-
-# Inside a Titanium project (tiapp.xml exists in CWD)
-cd ~/Developer/my-titanium-app
-imgconvert ~/Desktop/logo.png -p alloy
-# Output: ~/Developer/my-titanium-app/app/assets/android/images/...
-
-# Outside a Titanium project, no -o flag
-cd ~/Downloads
-imgconvert ~/Desktop/logo.png -p alloy
-# Output: ~/Desktop/app/assets/android/images/...
-```
-
-You only need to specify the relative subfolder (without leading or trailing slashes, e.g. `thumbs/baby`) as the `output` in the preset configuration. The script will generate the correct structure for each density:
-
-**Correct usage:**
-
-```
-"output": "thumbs/baby"
-```
-
-**Do NOT use:**
-- `/thumbs/baby`
-- `thumbs/baby/`
-- `/thumbs/baby/`
-
-**Android Example:**
-
-```
-app/assets/android/images/res-mdpi/thumbs/baby/logo.png
-app/assets/android/images/res-hdpi/thumbs/baby/logo.png
-app/assets/android/images/res-xhdpi/thumbs/baby/logo.png
-app/assets/android/images/res-xxhdpi/thumbs/baby/logo.png
-app/assets/android/images/res-xxxhdpi/thumbs/baby/logo.png
-```
-
-**iPhone Example:**
-
-```
-app/assets/iphone/images/thumbs/baby/logo.png
-app/assets/iphone/images/thumbs/baby/logo@2x.png
-app/assets/iphone/images/thumbs/baby/logo@3x.png
-```
-
-You do **not** need to specify the full output path, just the subfolder as shown above. The script will handle the rest.
-
-### Preset source folders
-
-Two configuration formats are supported:
-
-#### Legacy format (single source per platform)
-
-```json
-"presets": {
-  "alloy": {
-    "android": {
-      "output": "thumbs/baby",
-      "source": "android-source-folder"
-    },
-    "iphone": {
-      "output": "thumbs/baby",
-      "source": "iphone-source-folder"
-    }
-  }
-}
-```
-
-> Scale factors are applied automatically. The `scales` property is no longer supported.
-
-#### Multi-configuration format (recommended)
-
-```json
-"presets": {
-  "alloy": {
-    "cards": {
-      "android": {
-        "quality": 90,
-        "format": "webp",
-        "source": "originals",
-        "output": "cards/baby"
-      },
-      "iphone": {
-        "quality": 90,
-        "format": "webp",
-        "source": "originals",
-        "output": "cards/baby"
-      }
-    },
-    "thumbs": {
-      "android": {
-        "quality": 80,
-        "format": "webp",
-        "output": "thumbs/baby",
-        "source": "original-thumbs"
-      },
-      "iphone": {
-        "quality": 80,
-        "format": "webp",
-        "output": "thumbs/baby",
-        "source": "original-thumbs"
-      }
-    },
-    "icons": {
-      "android": {
-        "quality": 95,
-        "format": "png",
-        "output": "icons",
-        "source": "icons-4x"
-      },
-      "iphone": {
-        "quality": 95,
-        "format": "png",
-        "output": "icons",
-        "source": "icons-4x"
-      }
-    }
-  }
-}
-```
-
-The tool auto-detects which format you're using. Each group can have its own quality, format, source, and output.
-
-Then run:
-
-```bash
-imgconvert -p alloy
-```
-
-This will:
-1. Process each configuration group sequentially
-2. Show progress for each configuration and platform
-3. Show detailed debug info when using `-d`
-4. Auto-detect legacy vs multi-configuration format
-
-**Multi-configuration alloy output:**
-```
-Processing configuration: cards
-  Processing android from: originals
-  Processing iphone from: originals
-
-Processing configuration: thumbs
-  Processing android from: original-thumbs
-  Processing iphone from: original-thumbs
-
-Processed files:
- - app/assets/android/images/res-mdpi/cards/baby/card1.webp (config: cards, platform: android, scale: res-mdpi)
- - app/assets/android/images/res-hdpi/cards/baby/card1.webp (config: cards, platform: android, scale: res-hdpi)
- - app/assets/iphone/images/cards/baby/card1.webp (config: cards, platform: iphone, scale: 1x)
- - app/assets/iphone/images/cards/baby/card1@2x.webp (config: cards, platform: iphone, scale: 2x)
- - app/assets/android/images/res-mdpi/thumbs/baby/thumb1.webp (config: thumbs, platform: android, scale: res-mdpi)
- ...
-
-Processing complete! Summary:
-  - Processed files: 24
-  - Total original size: 2.45 MB
-  - Total new size: 0.89 MB
-  - Total savings: 63.67%
-  - Duration: 1.24 seconds
-```
-
-### Example: game development workflow
-
-Say you're building a card game with this directory structure:
-
-```
-my-game/
-├── originals/          # 4x resolution card images
-│   ├── card1.png
-│   ├── card2.png
-│   └── card3.png
-├── original-thumbs/    # 4x resolution thumbnail images
-│   ├── card1.png
-│   ├── card2.png
-│   └── card3.png
-├── icons-4x/           # 4x resolution icon images
-│   ├── star.png
-│   ├── coin.png
-│   └── heart.png
-└── .imgconverter.config.json
-```
-
-With this `.imgconverter.config.json`:
-
-```json
-{
-  "presets": {
-    "alloy": {
-      "cards": {
-        "android": {
-          "quality": 90,
-          "format": "webp",
-          "source": "originals",
-          "output": "cards/baby"
-        },
-        "iphone": {
-          "quality": 90,
-          "format": "webp",
-          "source": "originals",
-          "output": "cards/baby"
-        }
-      },
-      "thumbs": {
-        "android": {
-          "quality": 80,
-          "format": "webp",
-          "output": "thumbs/baby",
-          "source": "original-thumbs"
-        },
-        "iphone": {
-          "quality": 80,
-          "format": "webp",
-          "output": "thumbs/baby",
-          "source": "original-thumbs"
-        }
-      },
-      "icons": {
-        "android": {
-          "quality": 95,
-          "format": "png",
-          "output": "icons",
-          "source": "icons-4x"
-        },
-        "iphone": {
-          "quality": 95,
-          "format": "png",
-          "output": "icons",
-          "source": "icons-4x"
-        }
-      }
-    }
-  }
-}
-```
-
-One command:
-
-```bash
-imgconvert -p alloy
-```
-
-Generates:
-
-```
-app/
-└── assets/
-    ├── android/
-    │   └── images/
-    │       ├── res-mdpi/
-    │       │   ├── cards/baby/card1.webp (1x)
-    │       │   ├── thumbs/baby/card1.webp (1x)
-    │       │   └── icons/star.png (1x)
-    │       ├── res-hdpi/
-    │       │   ├── cards/baby/card1.webp (1.5x)
-    │       │   ├── thumbs/baby/card1.webp (1.5x)
-    │       │   └── icons/star.png (1.5x)
-    │       ├── res-xhdpi/
-    │       │   ├── cards/baby/card1.webp (2x)
-    │       │   ├── thumbs/baby/card1.webp (2x)
-    │       │   └── icons/star.png (2x)
-    │       ├── res-xxhdpi/
-    │       │   ├── cards/baby/card1.webp (3x)
-    │       │   ├── thumbs/baby/card1.webp (3x)
-    │       │   └── icons/star.png (3x)
-    │       └── res-xxxhdpi/
-    │           ├── cards/baby/card1.webp (4x)
-    │           ├── thumbs/baby/card1.webp (4x)
-    │           └── icons/star.png (4x)
-    └── iphone/
-        └── images/
-            ├── cards/baby/
-            │   ├── card1.webp (1x)
-            │   ├── card1@2x.webp (2x)
-            │   └── card1@3x.webp (3x)
-            ├── thumbs/baby/
-            │   ├── card1.webp (1x)
-            │   ├── card1@2x.webp (2x)
-            │   └── card1@3x.webp (3x)
-            └── icons/
-                ├── star.png (1x)
-                ├── star@2x.png (2x)
-                └── star@3x.png (3x)
-```
-
-## Titanium — Modern branding (SDK 13.x, Alloy + Classic)
-
-> **Note (v3.0):** the modern branding pipeline now also lives behind the `brand` subcommand for non-Titanium projects (currently `--sdk android`). Run `imgconvert brand --help` for the Android-targeted syntax. The `--preset ti-branding` / `--preset alloy --modern` invocations described below remain the Titanium-targeted path.
-
-For Titanium SDK 13.x projects (both Alloy and Classic), `--preset ti-branding` generates a full modern branding asset set from a single SVG or PNG master — matching what `titanium` / `alloy new` ships out of the box, plus the full Android asset set (adaptive icons, notification icons, splash icons) and marketplace artwork.
-
-Auto-detects project layout: `app/` → Alloy, `Resources/` → Classic. The generated Android paths adjust automatically (`app/platform/android/res/...` vs `platform/android/res/...`). Root-level icons (`DefaultIcon.png`, `DefaultIcon-ios.png`, `iTunesConnect.png`, `MarketplaceArtwork.png`) land at the project root in both cases.
-
-**Preset name:** `ti-branding` is the canonical preset name (matches the [TiTools `ti-branding` skill](https://github.com/macCesar/titools/tree/main/skills/ti-branding) for Claude Code users). `--preset alloy --modern` is kept as a backward-compatible alias — both invocations route to the same pipeline.
-
-**Backward compatibility:** `--preset alloy` without any modern flag continues to emit the legacy 1x/2x/3x (iPhone) + mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi (Android) output exactly as v1.x did. No existing scripts need to change.
-
-### What gets generated
-
-Root-level icons (when a master is provided):
-
-| File                      | Size    | Alpha      | Purpose                                                   |
-| ------------------------- | ------- | ---------- | --------------------------------------------------------- |
-| `DefaultIcon.png`         | 1024²   | preserved  | Universal / Android source — matches `ti create` default  |
-| `DefaultIcon-ios.png`     | 1024²   | flattened  | iOS-specific (Apple rejects alpha on icons)               |
-
-Marketplace (`--marketplace` or `--modern`):
-
-| File                      | Size    | Alpha      | Purpose                         |
-| ------------------------- | ------- | ---------- | ------------------------------- |
-| `iTunesConnect.png`       | 1024²   | preserved  | App Store artwork               |
-| `MarketplaceArtwork.png`  | 512²    | preserved  | Google Play artwork             |
-
-Android adaptive icons (`--adaptive` or `--modern`) — 5 densities × 3 layers:
-
-| Density   | Canvas | Files                                                                            |
-| --------- | ------ | -------------------------------------------------------------------------------- |
-| mdpi      | 108²   | `ic_launcher_foreground.png`, `ic_launcher_background.png`, `ic_launcher_monochrome.png` |
-| hdpi      | 162²   | ″                                                                                |
-| xhdpi     | 216²   | ″                                                                                |
-| xxhdpi    | 324²   | ″                                                                                |
-| xxxhdpi   | 432²   | ″                                                                                |
-
-Plus `mipmap-anydpi-v26/ic_launcher.xml` (adaptive binder) and legacy `ic_launcher.png` at 48/72/96/144/192 for API 21–25 fallback.
-
-Optional — Android notification icons (`--notification`) at `drawable-*/ic_stat_notify.png`, sized 24/36/48/72/96 (white-on-transparent, runtime-tinted).
-
-Optional — Android 12+ splash icons (`--splash`) at `drawable-*/splash_icon.png`, sized 288/432/576/864/1152 per the SplashScreen API spec.
-
-### Flags
-
-| Flag                      | Default     | Purpose                                                                          |
-| ------------------------- | ----------- | -------------------------------------------------------------------------------- |
-| `-p ti-branding`          | —           | Select the modern pipeline (preferred name)                                      |
-| `--modern`                | off         | With `-p alloy`: route to modern pipeline (same as using `-p ti-branding`)       |
-| `--adaptive`              | off         | Android adaptive icon triplet + legacy + XML binder                              |
-| `--marketplace`           | off         | iTunesConnect.png + MarketplaceArtwork.png                                       |
-| `--notification`          | off         | Notification icons × 5 densities                                                 |
-| `--splash`                | off         | Android 12+ splash_icon × 5 densities                                            |
-| `--bg-color <hex>`        | `#FFFFFF`   | Background for Android adaptive layer + iOS alpha flatten                        |
-| `--padding <pct>`         | `20`        | Android safe-zone padding per side (0–40). Material spec floor is 19.44%; default of 20 gives a tiny buffer while keeping the logo visibly prominent |
-| `--ios-padding <pct>`     | `4`         | iOS / marketplace aesthetic padding per side (0–40). Apple's HIG + production apps (Mail, Safari, La Baraja, etc.) typically use 2-6% per side. iOS icons have no launcher mask so there's no cropping risk — the padding is purely aesthetic breathing room |
-| `--cleanup-legacy`        | off         | Context-aware cleanup driven by tiapp.xml (prints plan before deleting)          |
-| `--aggressive`            | off         | With `--cleanup-legacy`, also remove ldpi density folders                        |
-| `--project <path>`        | cwd         | Titanium project root                                                            |
-| `--output <path>`         | `<project>/.ti-branding` | Staging directory                                                    |
-| `--in-place`              | off         | Skip staging — write directly into the project (**overwrites existing icons**)   |
-| `--monochrome-master <path>` | —         | Optional dedicated silhouette master for `ic_launcher_monochrome.png` + `ic_stat_notify.png`. Falls back to whitening the main master when not provided. Use when the colored logo has multi-color detail that collapses into a featureless blob when naively converted to white (example: a painter's palette with 4 color dots → design a monochrome variant with 4 cutout holes instead of solid white blobs) |
-| `--notes`                 | off         | Print full tiapp.xml snippets + padding tuning guide (default: compact summary)  |
-| `--dry-run`               | off         | Show what would be generated / deleted without writing                           |
-
-### Examples
-
-```bash
-# Brand a fresh project — overwrites default Titanium icons directly (no staging)
-cd ~/Developer/my-app
-imgconvert logo.svg -p ti-branding --in-place --bg-color "#0B1326"
-
-# Safer: stage to .ti-branding/ first, review, then copy manually (default behavior)
-imgconvert logo.svg -p ti-branding --bg-color "#0B1326" --project ~/Developer/my-app
-
-# Just the Android adaptive icon triplet (no marketplace, no extras)
-imgconvert logo.svg -p ti-branding --adaptive --bg-color "#FDD900" --project ~/Developer/my-app
-
-# Cleanup mode — preview what would be removed from a Titanium project's legacy cruft
-imgconvert -p ti-branding --cleanup-legacy --dry-run --project ~/Developer/my-app
-
-# Cleanup + aggressive (remove ldpi too)
-imgconvert -p ti-branding --cleanup-legacy --aggressive --project ~/Developer/my-app
-
-# Full flow + cleanup in one command, in-place
-imgconvert logo.svg -p ti-branding --in-place --cleanup-legacy --bg-color "#0B1326"
-
-# Backward-compat alias: --preset alloy --modern works identically
-imgconvert logo.svg -p alloy --modern --in-place --bg-color "#0B1326"
-```
-
-### Context-aware cleanup
-
-`--cleanup-legacy` reads your `tiapp.xml` to decide what's safe to delete. Targets are grouped into three buckets:
-
-- **SAFE** — always removed. Universally obsolete artifacts (e.g. `res-long-*/` and `res-notlong-*/` qualifier folders that have been dead since Android 3.0).
-- **CONDITIONAL** — only removed when your project config guarantees they're unused:
-  - iOS `Default-*.png` legacy launch images — removed only when `<enable-launch-screen-storyboard>true</enable-launch-screen-storyboard>` is set.
-  - Android landscape folders (`res-*-land-*`) — removed only when your app is portrait-only.
-  - Legacy `appicon.png` and `default.png` under `app/assets/android/` — removed only when adaptive icons are already in place.
-- **AGGRESSIVE** — behind `--aggressive`. Strongly defensible but has edge cases (currently: ldpi resource folders, which represent <1% of active Android devices in 2026).
-
-The plan is always printed before anything is deleted. Pair with `--dry-run` to preview without touching disk.
-
-### Post-generation notes
-
-After a successful run the tool prints `tiapp.xml` snippets for:
-- iOS launch background (linking your `--bg-color` to the storyboard)
-- Android launcher icon wiring
-- Android 12+ splash theme (if `--splash` was used) — both the native `android:` approach and the `androidx.core:core-splashscreen` library approach
-- FCM notification icon + tint meta-data (if `--notification` was used)
-
-None of the tiapp.xml edits are made automatically — paste only what you need after reviewing.
-
-### Why two icons for iOS (`DefaultIcon.png` + `DefaultIcon-ios.png`)?
-
-A fresh `ti create` project ships both. `DefaultIcon.png` is the universal/Android source (alpha preserved); `DefaultIcon-ios.png` is the iOS-specific file that ships into the app binary, with alpha flattened because Apple rejects alpha channels on App Store submissions. This tool generates both to match that convention.
-
-## Tips for alloy selective processing
-
-### During development:
-```bash
-# Test only what you're working on
-imgconvert -p alloy:comics -d    # Enable debug mode to see detailed processing
-```
-
-### Adding new asset categories:
-```bash
-# First, add your new configuration to .imgconverter.config.json
-# Then process only the new category
-imgconvert -p alloy:new-category
-```
-
-### Quality testing:
-```bash
-# Test different quality settings for specific configurations
-imgconvert -p alloy:comics -q 95          # Higher quality for main assets
-imgconvert -p alloy:thumbs-comics -q 60   # Lower quality for thumbnails
-```
-
-### CI/CD integration:
-```bash
-# Process only changed asset categories in your build pipeline
-if [[ "$CHANGED_ASSETS" == *"comics"* ]]; then
-  imgconvert -p alloy:comics
-fi
-```
-
-### Things to keep in mind
-
-- Use selective processing during development, run all configurations (`-p alloy`) for final builds
-- Combine with `-d` to see what's happening
-- CLI arguments override preset settings
-- Use consistent naming for your configurations
-- Test with debug mode first when setting up new configurations
-- Always verify configuration names exist before running automated scripts
-
-## Configuration file
-
-Global defaults and custom presets live in `.imgconverter.config.json`.
-
-Generate a default config file with:
-
-```bash
-imgconvert config
-```
-
-### Configuration precedence
-
-1. CLI arguments (highest)
-2. Preset settings
-3. Global config (`.imgconverter.config.json`)
-4. Default values (lowest)
-
-This applies to all parameters: `quality`, `format`, `width`, `height`, `output`, `replace-originals`, `background`, `fit`, `position`, and `crop`.
-
-### Parameters
-
-- **width** / **height**: Default dimensions for resizing.
-- **format**: Default output format.
-- **quality**: Default compression quality (1-100).
-- **fit**: Resize strategy (`cover`, `contain`, `fill`, `inside`, `outside`).
-- **position**: Crop/letterbox position (`center`, `top`, `bottom`, `left`, `right`, corners).
-- **crop**: Crop coordinates as `left,top,width,height`.
-- **canvas**: If true, resizes the canvas (pad if larger, crop if smaller) instead of scaling the image.
-- **replace-originals**: If true, overwrites the original files.
-- **source**: Default input folder (used when no path is given on the CLI).
-- **output**: Default output directory. If `null`, creates a `converted` folder next to the source.
-- **background**: Background color for transparency-to-opaque conversions (e.g., PNG to JPEG). PNG/WebP outputs keep transparency by default.
-- **presets**: Custom preset definitions. Each preset can override any of the above parameters.
-
-### Default configuration file
-
-#### Legacy alloy format:
-```json
-{
-  "width": null,
-  "height": null,
-  "quality": 85,
-  "source": null,
-  "output": null,
-  "format": null,
-  "replace": false,
-  "background": "#ffffff",
-  "presets": {
-    "web": { "source": null, "format": "webp", "quality": 80 },
-    "print": { "source": null, "format": "tiff", "quality": 100 },
-    "thumbnail": { "source": null, "format": "png", "quality": 60, "width": 150, "height": 150 },
-    "alloy": {
-      "android": {
-        "source": null,
-        "output": "./app/assets/android/images",
-        "scales": { "res-mdpi": 1, "res-hdpi": 1.5, "res-xhdpi": 2, "res-xxhdpi": 3, "res-xxxhdpi": 4 }
-      },
-      "iphone": {
-        "source": null,
-        "output": "./app/assets/iphone/images",
-        "scales": { "1x": 1, "2x": 2, "3x": 3 }
-      }
-    }
-  }
-}
-```
-
-#### Multi-configuration alloy format (recommended):
-```json
-{
-  "width": null,
-  "height": null,
-  "quality": 85,
-  "fit": "contain",
-  "position": "center",
-  "crop": null,
-  "source": null,
-  "output": null,
-  "format": null,
-  "background": null,
-  "replace-originals": false,
-
-  "presets": {
-    "web": { "source": null, "output": null, "format": "webp", "quality": 80 },
-    "print": { "source": null, "output": null, "format": "tiff", "quality": 100 },
-    "thumbnail": { "source": null, "output": null, "format": "png", "quality": 60, "width": 150, "height": 150 },
-    "alloy": {
-      "cards": {
-        "android": {
-          "quality": 90,
-          "format": "webp",
-          "source": "originals",
-          "output": "cards/baby"
-        },
-        "iphone": {
-          "quality": 90,
-          "format": "webp",
-          "source": "originals",
-          "output": "cards/baby"
-        }
-      },
-      "thumbs": {
-        "android": {
-          "quality": 80,
-          "format": "webp",
-          "output": "thumbs/baby",
-          "source": "original-thumbs"
-        },
-        "iphone": {
-          "quality": 80,
-          "format": "webp",
-          "output": "thumbs/baby",
-          "source": "original-thumbs"
-        }
-      }
-    }
-  }
-}
-```
-
-> For the alloy preset, `output` should only be the relative subfolder (e.g., `"thumbs/baby"`). The base paths (`app/assets/android/images` and `app/assets/iphone/images`) are added automatically.
-
-**Precedence example with multi-configuration**
-
-Given this configuration file:
-```json
-{
-  "quality": 75,
-  "format": "jpeg",
-
-  "presets": {
-    "alloy": {
-      "cards": {
-        "android": {
-          "quality": 90,
-          "format": "webp"
-        },
-        "iphone": {
-          "quality": 95,
-          "format": "png"
-        }
-      },
-      "thumbs": {
-        "android": {
-          "quality": 70,
-          "format": "webp"
-        },
-        "iphone": {
-          "quality": 75,
-          "format": "webp"
-        }
-      }
-    }
-  }
-}
-```
-
-Results:
-
-- `imgconvert -p alloy` →
-  - Cards: Android WebP at 90%, iPhone PNG at 95%
-  - Thumbs: Android WebP at 70%, iPhone WebP at 75%
-- `imgconvert -p alloy -q 80` → All platforms and configurations use JPEG at 80% (CLI overrides everything)
-- `imgconvert -p alloy -f jpeg` →
-  - Cards: Android JPEG at 90%, iPhone JPEG at 95%
-  - Thumbs: Android JPEG at 70%, iPhone JPEG at 75%
-- `imgconvert -p alloy -f webp -q 85` → All platforms and configurations use WebP at 85% (CLI overrides everything)
-
-## Debug mode
-
-Use `-d` or `--debug` to see detailed processing info.
-
-**Standard processing:**
-```
-Processing complete! Summary:
-  - Processed files: 5
-  - Total original size: 0.87 MB
-  - Total new size: 0.25 MB
-  - Total savings: 71.11%
-  - Duration: 0.24 seconds
-```
-
-**Sample Debug Output (Multi-Configuration Alloy):**
-```
-Processing configuration: cards
-  Processing android from: originals
-  Processing iphone from: originals
-
-Processing configuration: thumbs
-  Processing android from: thumbs
-  Processing iphone from: thumbs
-
-Processed files:
- - app/assets/android/images/res-mdpi/cards/baby/card1.webp (config: cards, platform: android, scale: res-mdpi)
- - app/assets/android/images/res-hdpi/cards/baby/card1.webp (config: cards, platform: android, scale: res-hdpi)
- - app/assets/iphone/images/cards/baby/card1.webp (config: cards, platform: iphone, scale: 1x)
- - app/assets/iphone/images/cards/baby/card1@2x.webp (config: cards, platform: iphone, scale: 2x)
- - app/assets/android/images/res-mdpi/thumbs/baby/thumb1.webp (config: thumbs, platform: android, scale: res-mdpi)
- ...
-
-Processing complete! Summary:
-  - Processed files: 24
-  - Total original size: 2.45 MB
-  - Total new size: 0.89 MB
-  - Total savings: 63.67%
-  - Duration: 1.24 seconds
-```
-
-## Dependencies
-
-- **sharp** - Image processing (compression, conversion, resizing). Note: Sharp uses 'jpeg' internally, but imgconvert preserves '.jpg' extensions in filenames.
-- **minimist** - CLI argument parsing.
-- **chalk** - Colored terminal output.
-
-## Error handling
-
-- Missing source path shows an error and exits.
-- Unsupported formats fall back to the original format.
-- Non-image files are skipped with a log message.
+| Shell | Installed file | Setup |
+| --- | --- | --- |
+| zsh | `~/.zsh/completions/_imgconvert` | Adds managed `fpath`/`compinit` block to `~/.zshrc` |
+| bash | `~/.local/share/bash-completion/completions/imgconvert` | Requires bash-completion, including `_init_completion`, loaded by your shell |
+| fish | `~/.config/fish/completions/imgconvert.fish` | Loaded automatically in a new fish shell |
+
+The interactive installer detects `$SHELL` and asks before installing. Explicit shell installation writes immediately. Reinstallation avoids duplicating the managed zsh block. Uninstall removes all three installed scripts and the block it added. Restart the shell or source `~/.zshrc` as appropriate. Completion coverage varies by shell; use `--help` for the complete option list.
+
+## Migration from v2
+
+| Earlier syntax | v3 syntax |
+| --- | --- |
+| `-w 400` | `--width 400` |
+| `-h 400` | `--height 400` (numeric `-h` has a deprecated compatibility shim) |
+| `-H` | `-h` or `--help` |
+| `imgconvert config` | `imgconvert config init` (bare config has a deprecated shim) |
+| `-p alloy` | `imgconvert alloy <source>` |
+| `-p alloy:group` | Configure `presets.alloy`; selective group execution is unavailable |
+| `-p ti-branding` / `-p alloy --modern` | `imgconvert brand <master> --sdk android` for Android branding |
+| `--replace-originals` | Hidden alias for `--replace`; see current limitation below |
+
+Old Alloy/branding preset names remain in generated config/internal modules but the root command no longer dispatches them to those processors. Use the subcommands. Compatibility shims are scheduled for removal in v4.
+
+## Known limitations
+
+The following limitations apply to v3.0.0:
+
+- `--replace` still writes into the output directory; it does not reliably replace the source. Avoid depending on it for in-place processing.
+- Alloy `-o` and custom `-p` do not consistently control the processor; use the documented JSON configuration. Group selection is unavailable.
+- `canvas` in JSON is ignored; pass `--canvas` explicitly.
+- Unknown preset names do not fail. Check spelling and `config show`.
+- Some image failures are logged while the command still returns exit code 0. For automation, inspect output files and the processed count as well as exit status.
+- Branding dry-run does not validate image decoding, master format, or optional monochrome master contents.
+- Branding notes/layout warnings contain Titanium guidance even for Android generation. Use the Android output paths above as the reference.
+- The package's declared Node minimum and some legacy npm test scripts need updating; see installation and the testing guide.
 
 ## Troubleshooting
 
-### Common issues
+Use `imgconvert ... --debug` for details. If an option is unknown, check the subcommand's `--help` and the migration table. For a missing source, verify the current directory and config source paths. For invalid configuration, use strict JSON (no comments or trailing commas).
 
-**Q: Why did my `.jpg` file become `.jpeg` in older versions?**
-A: This was an issue in versions prior to 1.1.4. Update to the latest version where original extensions are preserved when no format conversion is specified.
+If output appears missing, check source-relative paths for general conversion, the Alloy base rules, and project-relative staging for branding. A `brand` layout warning referring to Alloy/Classic does not change the Android `app/src/main/res/` destination.
 
-**Q: The CLI says "format not supported" for my file**
-A: Ensure your file has one of these extensions: `.jpeg`, `.jpg`, `.png`, `.webp`, `.avif`, `.tiff`, `.gif`
+For a crop error, ensure the rectangle fits the input. For unexpected padding, check `contain` versus `cover`. For oversized files, compare encoder/quality settings with representative inputs because conversion can increase file size.
 
-**Q: Batch processing failed on some files**
-A: Check file permissions and ensure the output directory is writable. Use `--debug` flag for detailed error information.
-
-**Q: Output quality seems poor**
-A: Adjust quality with `-q` parameter (1-100). Default is 85. Use `-q 95` for higher quality.
-
-**Q: Permission denied error**
-A: Run with sudo on macOS/Linux: `sudo imgconvert ...` or check file/directory permissions.
-
-**Q: Sharp installation fails**
-A: Install build tools:
-```bash
-# On macOS
-xcode-select --install
-
-# On Ubuntu/Debian
-sudo apt-get install build-essential
-
-# On Windows
-npm install -g windows-build-tools
-
-# Alternative: install node-gyp globally
-npm install -g node-gyp
-```
-
-**Q: Out of memory on large batches**
-A: Process in smaller batches or increase Node.js memory:
-```bash
-node --max-old-space-size=4096 $(which imgconvert) large-folder
-```
-
-**Q: Images appear blurry or pixelated**
-A: Ensure source images are high enough resolution. For Alloy preset, use 4x resolution source images for best results.
-
-**Q: Alloy preset not generating expected output structure**
-A: Verify your configuration file format and ensure output paths don't include leading/trailing slashes (use `"thumbs/baby"` not `"/thumbs/baby/"`). If files are not appearing where expected, check the output precedence: an absolute `-o` path is used as-is, a relative `-o` name resolves next to the input file, then the tool checks for `tiapp.xml` in the current directory (Titanium project detection), and finally falls back to the input file's directory.
+`NO_COLOR=1` disables colored output. `IMGCONVERT_NO_UPDATE_CHECK=1` disables the optional update check (any nonempty value disables it). Update notifications are best-effort and failures are ignored.
 
 ## Contributing
 
-### Development setup
-
-1. **Fork the repository**
-   ```bash
-   # On GitHub, click the "Fork" button
-   ```
-
-2. **Clone your fork**
-   ```bash
-   git clone https://github.com/yourusername/imgconvert-cli.git
-   cd imgconvert-cli
-   ```
-
-3. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-4. **Run tests**
-   ```bash
-   npm test
-   ```
-
-5. **Create your feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-
-6. **Make your changes and test**
-   ```bash
-   # Make your changes
-   npm test
-   npm run lint
-   ```
-
-7. **Commit your changes**
-   ```bash
-   git commit -m 'Add amazing feature'
-   ```
-
-8. **Push to your branch**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-
-9. **Open a Pull Request**
-   - Go to the original repository on GitHub
-   - Click "New Pull Request" or "Compare & pull request"
-   - **Select the correct branches**: `base: main` ← `compare: your-feature-branch`
-   - Provide a clear description of your changes
-   - **Reference issues**: Use "Fixes #123" or "Closes #456" if applicable
-   - **Add reviewers** if you know who should review your code
-   - Click "Create Pull Request"
-
-10. **After Creating the PR**
-    - Monitor for feedback and requested changes
-    - Make additional commits to the same branch if changes are needed
-    - **Keep your branch updated** with the main branch if needed:
-      ```bash
-      git checkout main
-      git pull upstream main
-      git checkout feature/amazing-feature
-      git merge main
-      ```
-
-
-### PR guidelines
-
-- Use a clear title (e.g., "Add WebP optimization for mobile preset")
-- Explain what you changed and why
-- Mark any breaking changes
-- Mention what tests you ran
-
-### PR description template:
-```
-## What does this PR do?
-Brief description of the changes
-
-## Why is this needed?
-Explain the problem this solves
-
-## How to test?
-Steps to verify the changes work
-
-## Checklist:
-- [ ] Tests pass
-- [ ] Documentation updated
-- [ ] No breaking changes (or clearly documented)
+```bash
+git clone https://github.com/macCesar/imgconvert-cli.git
+cd imgconvert-cli
+npm ci
+node index.js --help
+npm run test:help
 ```
 
-### Guidelines
-
-- Use clear commit messages
-- Reference issues in your PR
-- Follow existing code style (ESLint)
-- Add tests for new features
-- Update README if you change functionality
-
-## Roadmap
-
-- [ ] Progress bars for large batch operations
-- [ ] CLI wizard for preset configuration
-- [ ] Parallel processing for faster batch conversion
-- [ ] Plugin system for custom transformations
-- [ ] Docker support
-- [ ] Integration with build tools (Webpack, Vite)
-
-Have an idea? [Open an issue](https://github.com/macCesar/imgconvert-cli/issues).
+Use `node /absolute/path/to/imgconvert-cli/index.js` to test from an isolated working directory. Run the tests covering your change and lint the changed JavaScript. See [testing guide](test/README.md) for suite selection, fixtures, and cleanup behavior. Submit a pull request explaining behavior changes and validation. Do not update historical changelog entries to describe current behavior; add a new entry.
 
 ## License
 
-This project is licensed under the MIT License.
-
-**Copyright (c) 2026 César Estrada**
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
----
-
-<div align="center">
-
-**Made with ❤️ by [César Estrada](https://github.com/macCesar)**
-
-[⭐ Star on GitHub](https://github.com/macCesar/imgconvert-cli) • [🐛 Report Bug](https://github.com/macCesar/imgconvert-cli/issues) • [💡 Request Feature](https://github.com/macCesar/imgconvert-cli/issues)
-
-</div>
+[MIT](LICENSE). [Report issues or request features](https://github.com/macCesar/imgconvert-cli/issues).

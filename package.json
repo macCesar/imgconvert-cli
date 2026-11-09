@@ -68,6 +68,10 @@
     "index.js",
     "src/**/*",
     "README.md",
+    "CUSTOM_PRESETS.md",
+    "CHANGELOG.md",
+    "test/README.md",
+    "images/README.md",
     "LICENSE"
   ]
 }
