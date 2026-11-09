@@ -1,18 +1,17 @@
+const { parseHexToRgba, normalizePositionName } = require('../config/values');
 /**
  * Image processing module
  * Handles general image conversion and manipulation
  */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const sharp = require('sharp');
 const { logger } = require('../utils/logger');
-const { naturalSort } = require('../utils/sorting');
-const { getMergedPresets } = require('../config/loader');
-const { applyConfigPrecedence } = require('../config/precedence');
-const { SUPPORTED_FORMATS, CONSTANTS } = require('../config/defaults');
-const { determineOutputDirectory, validateOutputDirectory } = require('../utils/validation');
+const { discover, planOperations, atomicWrite, mapLimit, operationResult } = require('../utils/operations');
+const { SUPPORTED_FORMATS } = require('../config/defaults');
+const { CONSTANTS } = require('../config/defaults');
+const { determineOutputDirectory } = require('../utils/validation');
 
 /**
  * Parse color string to RGBA object for Sharp
@@ -20,80 +19,6 @@ const { determineOutputDirectory, validateOutputDirectory } = require('../utils/
  * @param {string} colorString - Color string
  * @returns {Object|null} RGBA object or null if invalid
  */
-function parseHexToRgba(colorString) {
-  if (!colorString || typeof colorString !== 'string') return null;
-
-  const color = colorString.trim().toLowerCase();
-
-  // Named colors (common ones)
-  const namedColors = {
-    'white': { r: 255, g: 255, b: 255, alpha: 1 },
-    'black': { r: 0, g: 0, b: 0, alpha: 1 },
-    'red': { r: 255, g: 0, b: 0, alpha: 1 },
-    'green': { r: 0, g: 128, b: 0, alpha: 1 },
-    'blue': { r: 0, g: 0, b: 255, alpha: 1 },
-    'yellow': { r: 255, g: 255, b: 0, alpha: 1 },
-    'cyan': { r: 0, g: 255, b: 255, alpha: 1 },
-    'magenta': { r: 255, g: 0, b: 255, alpha: 1 },
-    'transparent': { r: 0, g: 0, b: 0, alpha: 0 },
-    'gray': { r: 128, g: 128, b: 128, alpha: 1 },
-    'grey': { r: 128, g: 128, b: 128, alpha: 1 }
-  };
-
-  if (namedColors[color]) {
-    return namedColors[color];
-  }
-
-  // rgb() or rgba() format
-  const rgbMatch = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)$/);
-  if (rgbMatch) {
-    return {
-      r: parseInt(rgbMatch[1], 10),
-      g: parseInt(rgbMatch[2], 10),
-      b: parseInt(rgbMatch[3], 10),
-      alpha: rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1
-    };
-  }
-
-  // Hex format
-  let hex = color.replace('#', '');
-
-  // Convert 3-char hex to 6-char
-  if (hex.length === 3) {
-    hex = hex.split('').map(c => c + c).join('');
-  }
-
-  // Handle 4-char hex (with alpha) to 8-char
-  if (hex.length === 4) {
-    hex = hex.split('').map(c => c + c).join('');
-  }
-
-  // Parse 6-char hex
-  if (hex.length === 6) {
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-
-    if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
-      return { r, g, b, alpha: 1 };
-    }
-  }
-
-  // Parse 8-char hex (with alpha)
-  if (hex.length === 8) {
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    const a = parseInt(hex.substr(6, 2), 16);
-
-    if (!isNaN(r) && !isNaN(g) && !isNaN(b) && !isNaN(a)) {
-      return { r, g, b, alpha: a / 255 };
-    }
-  }
-
-  return null;
-}
-
 /**
  * Map user-friendly position names to Sharp gravity constants
  * @param {string} position - User-provided position string
@@ -135,14 +60,6 @@ function mapPositionToGravity(position) {
   };
 
   return positionMap[normalizedPosition] || sharp.gravity.center;
-}
-
-function normalizePositionName(position) {
-  return String(position)
-    .toLowerCase()
-    .trim()
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ');
 }
 
 /**
@@ -200,13 +117,13 @@ function generateFilename(originalName, index, args, isSingleFile = false) {
  * @returns {Promise<Object>} Processing result
  */
 async function processImage(inputFile, outputFileBase, format, options) {
-  let sharpInstance = sharp(inputFile);
+  let sharpInstance = sharp(options.inputBuffer || inputFile);
 
   logger.debug(`Processing: ${path.basename(inputFile)}`);
 
   // Handle trim first (if specified) - removes transparent borders
   if (options.trim) {
-    sharpInstance = sharpInstance.trim();
+    sharpInstance = sharp(await sharpInstance.trim().png().toBuffer());
     logger.debug(`Trimmed transparent borders`);
   }
 
@@ -224,24 +141,12 @@ async function processImage(inputFile, outputFileBase, format, options) {
     sharpFormat = 'jpeg';
   }
 
-  // If format is 'all', process for all supported formats
-  if (format === 'all') {
-    let results = [];
-    for (const fmt of SUPPORTED_FORMATS) {
-      const result = await processImage(inputFile, outputFileBase, fmt, options);
-      if (result) results.push(result);
-    }
-    const totalOriginal = results.reduce((sum, r) => sum + r.originalSize, 0);
-    const totalNew = results.reduce((sum, r) => sum + r.newSize, 0);
-    return { originalSize: totalOriginal / results.length, newSize: totalNew };
-  }
-
   // Handle crop first (if specified)
   if (options.crop) {
     const cropString = Array.isArray(options.crop) ? options.crop.join(',') : String(options.crop);
     const [left, top, cropWidth, cropHeight] = cropString.split(',').map(Number);
     if (left >= 0 && top >= 0 && cropWidth > 0 && cropHeight > 0) {
-      sharpInstance = sharpInstance.extract({ left, top, width: cropWidth, height: cropHeight });
+      sharpInstance = sharp(await sharpInstance.extract({ left, top, width: cropWidth, height: cropHeight }).png().toBuffer());
     } else {
       logger.warning(`Warning: Invalid crop coordinates "${cropString}", skipping crop.`);
     }
@@ -316,7 +221,7 @@ async function processImage(inputFile, outputFileBase, format, options) {
           }
         }
 
-        sharpInstance = sharpInstance.extract({ left, top, width: cropWidth, height: cropHeight });
+        sharpInstance = sharp(await sharpInstance.extract({ left, top, width: cropWidth, height: cropHeight }).png().toBuffer());
       }
 
       // Step 2: pad dimensions that grow (extend)
@@ -433,54 +338,13 @@ async function processImage(inputFile, outputFileBase, format, options) {
   // Apply format-specific options
   sharpInstance = applyFormatOptions(sharpInstance, sharpFormat, options);
 
-  try {
-    const { size: originalSize } = fs.statSync(inputFile);
+  const { size: originalSize } = fs.statSync(inputFile);
+  const finalOutputFile = `${outputFileBase}.${outputExtension}`;
+  await atomicWrite(finalOutputFile, temp => sharpInstance.toFile(temp), options.overwrite);
+  const { size: newSize } = fs.statSync(finalOutputFile);
+  logger.progress(`Processed: ${path.basename(inputFile)} to ${outputExtension.toUpperCase()}`);
+  return { originalSize, newSize, destination: finalOutputFile };
 
-    // Create unique temporary file name
-    const uniqueId = Math.random().toString(36).substring(2, CONSTANTS.TEMP_FILE_LENGTH);
-    const tempOutputFile = path.join(os.tmpdir(), `${path.basename(outputFileBase)}_${uniqueId}.${outputExtension}`);
-    await sharpInstance.toFile(tempOutputFile);
-
-    const finalOutputFile = options.replaceOriginal
-      ? `${outputFileBase}.${outputExtension}`
-      : path.join(options.outputDir, `${path.basename(outputFileBase)}.${outputExtension}`);
-
-    // Ensure the output directory exists
-    if (!fs.existsSync(path.dirname(finalOutputFile))) {
-      fs.mkdirSync(path.dirname(finalOutputFile), { recursive: true });
-    }
-
-    // Try to rename (move) the temp file to the final destination
-    // If cross-device link error (EXDEV), use copy+unlink instead
-    try {
-      fs.renameSync(tempOutputFile, finalOutputFile);
-    } catch (renameErr) {
-      if (renameErr.code === 'EXDEV') {
-        // Cross-device link: source and dest are on different filesystems
-        // Use copy+unlink as fallback
-        fs.copyFileSync(tempOutputFile, finalOutputFile);
-        fs.unlinkSync(tempOutputFile);
-      } else {
-        throw renameErr;
-      }
-    }
-
-    const { size: newSize } = fs.statSync(finalOutputFile);
-
-    let savings = '0.00';
-    if (originalSize > 0) {
-      savings = ((originalSize - newSize) / originalSize * 100).toFixed(2);
-    }
-
-    // For the log, use the original extension
-    const displayFormat = outputExtension.toUpperCase();
-    logger.progress(`Processed: ${path.basename(inputFile)} to ${displayFormat} (${savings}%)`);
-    return { originalSize, newSize };
-  } catch (err) {
-    const displayFormat = outputExtension ? outputExtension.toUpperCase() : 'UNKNOWN';
-    logger.error(`Error processing ${path.basename(inputFile)} to ${displayFormat}: ${err.message}`);
-    return null;
-  }
 }
 
 /**
@@ -531,97 +395,40 @@ function applyFormatOptions(sharpInstance, format, options) {
  */
 async function processImages(args, config) {
   const startTime = Date.now();
-
-  // Apply configuration precedence
-  const presets = getMergedPresets(config);
-  args = applyConfigPrecedence(args, config, presets);
-
-  const inputPath = args._[0] || args.presetSource || config.source;
-  if (!inputPath) {
-    logger.error('No input path specified');
-    return;
-  }
-
-  const isDirectory = fs.lstatSync(inputPath).isDirectory();
-  const inputDir = isDirectory ? inputPath : path.dirname(inputPath);
-  const files = isDirectory ? fs.readdirSync(inputPath).sort(naturalSort) : [path.basename(inputPath)];
-
-  // Validate incompatible options
-  if (args.name && isDirectory) {
-    logger.error('Error: --name option can only be used with single files, not directories. Use --rename for batch processing.');
-    return;
-  }
-
-  // Determine output directory
-  const outputDir = determineOutputDirectory(args, config, inputPath);
-  if (!validateOutputDirectory(outputDir)) {
-    logger.error('Failed to create output directory');
-    return;
-  }
-
-  let totalNewSize = 0;
-  let processedCount = 0;
-  let totalOriginalSize = 0;
-
-  // Process options
-  const options = {
-    fit: args.fit,
-    crop: args.crop,
-    trim: args.trim,
-    width: args.width,
-    height: args.height,
-    canvas: args.canvas,
-    outputDir: outputDir,
-    quality: args.quality,
-    position: args.position,
-    _userArgs: args._userArgs, // Pass user args to check explicit background
-    background: args.background,
-    replaceOriginal: args['replace-originals'],
-    withoutEnlargement: args.withoutEnlargement
-  };
-
-  const format = args.format && args.format !== 'none' ? args.format : null;
-
-  // Prepare file list for enumeration if needed
-  const imageFiles = files.filter(file => {
-    const inputFile = path.join(inputDir, file);
-    const fileExtension = path.extname(file).toLowerCase().slice(1);
-    return SUPPORTED_FORMATS.includes(fileExtension) && fs.lstatSync(inputFile).isFile();
+  const inputPath = path.resolve(args._[0] || args.presetSource || config.source);
+  const imageFiles = discover(inputPath);
+  const single = !fs.statSync(inputPath).isDirectory();
+  const outputDir = args.inPlace ? path.dirname(inputPath) : determineOutputDirectory(args, {}, inputPath);
+  const tasks = imageFiles.map((source, i) => {
+    const base = generateFilename(path.parse(source).name, i + 1, args, single);
+    const formats = args.format === 'all' ? SUPPORTED_FORMATS : [args.format || path.extname(source).slice(1).toLowerCase()];
+    return { source, variants: formats.map(format => ({source, format, destination: path.join(args.inPlace ? path.dirname(source) : outputDir, `${base}.${format}`), inPlace: args.inPlace})) };
   });
-
-  // Process each file
-  const tasks = imageFiles.map(async (file, index) => {
-    const inputFile = path.join(inputDir, file);
-    const originalName = path.parse(file).name;
-
-    // Generate output filename based on rename strategies
-    const outputFilename = generateFilename(originalName, index + 1, args, !isDirectory);
-    const outputFileBase = path.join(outputDir, outputFilename);
-
-    const result = await processImage(inputFile, outputFileBase, format, options);
-
-    if (result) {
-      totalOriginalSize += result.originalSize;
-      totalNewSize += result.newSize;
-      processedCount++;
+  planOperations(tasks.flatMap(t => t.variants), args);
+  const destinations = [], errors = [];
+  let processedCount = 0, failedCount = 0, totalOriginalSize = 0, totalNewSize = 0;
+  await mapLimit(tasks, args.concurrency, async task => {
+    let failed = false;
+    const originalSize = fs.statSync(task.source).size;
+    const inputBuffer = task.variants.some(op => op.destination === task.source) ? fs.readFileSync(task.source) : null;
+    for (const op of task.variants) {
+      try {
+        const result = await processImage(op.source, op.destination.slice(0, -op.format.length - 1), op.format, { ...args, inputBuffer, overwrite: op.overwrite });
+        destinations.push(op.destination);
+        totalNewSize += result.newSize;
+      } catch (error) {
+        failed = true; errors.push({source: op.source, destination: op.destination, message: error.message});
+        logger.error(`${op.source}: ${error.message}`);
+        if (args.debug) console.error(error.stack);
+      }
     }
-    return result;
+    if (failed) failedCount++; else processedCount++;
+    totalOriginalSize += originalSize;
   });
-
-  await Promise.all(tasks);
-
-  // Clear progress and show summary
   logger.clearProgress();
-
-  const endTime = Date.now();
-  const duration = ((endTime - startTime) / 1000).toFixed(2);
-
-  logger.summary({
-    duration,
-    totalNewSize,
-    processedCount,
-    totalOriginalSize
-  });
+  logger.summary({ processedCount, totalOriginalSize, totalNewSize, duration: ((Date.now()-startTime)/1000).toFixed(2) });
+  logger.info(`Failed inputs: ${failedCount}; Generated outputs: ${destinations.length}`);
+  return operationResult(processedCount, failedCount, destinations, errors);
 }
 
 module.exports = {

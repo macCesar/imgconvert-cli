@@ -10,7 +10,7 @@ module.exports = {
   init(options) {
     if (fs.existsSync(CONFIG_PATH) && !(options && options.force)) {
       logger.warning('Config file already exists. Use --force to overwrite.');
-      process.exit(0);
+      return;
     }
     createDefaultConfig();
   },

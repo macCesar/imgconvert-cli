@@ -12,7 +12,7 @@ describe('Alloy modern branding pipeline', function () {
   this.timeout(120000);
 
   const cliPath = path.resolve(__dirname, '..', 'index.js');
-  const testRoot = path.join(os.tmpdir(), 'imgconvert-modern-test');
+  const testRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'imgconvert-modern-'));
   const masterSvg = path.join(testRoot, 'master.svg');
   const stagingDir = path.join(testRoot, '.staging');
 

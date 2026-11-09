@@ -30,6 +30,8 @@ function readTiapp(tiappPath) {
     exists: false,
     storyboardEnabled: false,
     portraitOnly: false,
+    iosPortraitOnly: false,
+    androidPortraitOnly: false,
     defaultBgColor: null
   };
 
@@ -40,10 +42,30 @@ function readTiapp(tiappPath) {
   result.exists = true;
   const xml = fs.readFileSync(tiappPath, 'utf8');
 
-  if (XMLParser) {
-    return parseWithFastXml(xml, result);
-  }
-  return parseWithRegex(xml, result);
+  const parsed = XMLParser ? parseWithFastXml(xml,result) : parseWithRegex(xml,result);
+  parsed.iosPortraitOnly = parsed.portraitOnly;
+  // Require explicit orientation on every Android activity. Missing, malformed,
+  // inherited or conflicting declarations retain landscape resources.
+  try {
+    const { XMLValidator } = require('fast-xml-parser');
+    const path = require('node:path');
+    const root = path.dirname(tiappPath);
+    const documents = [xml];
+    for (const relative of ['app/platform/android/AndroidManifest.xml','platform/android/AndroidManifest.xml']) {
+      const file = path.join(root,relative);
+      if (fs.existsSync(file)) documents.push(fs.readFileSync(file,'utf8'));
+    }
+    if (documents.every(doc => XMLValidator.validate(doc) === true)) {
+      const android = xml.match(/<android\b[^>]*>([\s\S]*?)<\/android>/i)?.[1] || '';
+      const combined = [android,...documents.slice(1)].join('\n').replace(/<!--[\s\S]*?-->/g,'');
+      const activities = [...combined.matchAll(/<activity\b([^>]*)>/gi)];
+      // Titanium may generate a launcher omitted from custom activity snippets.
+      // Require an explicit launcher declaration as well as all activity orientations.
+      const launcher = /<activity\b[^>]*>[\s\S]*?android\.intent\.action\.MAIN[\s\S]*?android\.intent\.category\.LAUNCHER[\s\S]*?<\/activity>/i.test(combined);
+      parsed.androidPortraitOnly = launcher && activities.length > 0 && activities.every(([,attrs]) => /android:screenOrientation\s*=\s*["'](?:portrait|reversePortrait|sensorPortrait|userPortrait)["']/i.test(attrs)) && !/<activity-alias\b/i.test(combined);
+    }
+  } catch (_) { /* Unknown configuration conservatively keeps resources. */ }
+  return parsed;
 }
 
 function parseWithFastXml(xml, result) {
@@ -133,11 +155,16 @@ function resolveAndroidResRoot(projectRoot, projectType) {
  */
 function hasAdaptiveIcons(projectRoot) {
   const path = require('path');
-  const candidates = [
-    path.join(projectRoot, 'app', 'platform', 'android', 'res', 'mipmap-anydpi-v26'),
-    path.join(projectRoot, 'platform', 'android', 'res', 'mipmap-anydpi-v26')
-  ];
-  return candidates.some((c) => fs.existsSync(c));
+  const candidates = [path.join(projectRoot,'app','platform','android'),path.join(projectRoot,'platform','android')];
+  return candidates.some(base => {
+    const manifest = path.join(base,'AndroidManifest.xml');
+    if (!fs.existsSync(manifest)) return false;
+    const text = fs.readFileSync(manifest,'utf8');
+    const icon = text.match(/<application\b[^>]*android:icon=["']@mipmap\/([\w]+)["']/)?.[1];
+    if (!icon) return false;
+    const resource = path.join(base,'res','mipmap-anydpi-v26',`${icon}.xml`);
+    return fs.existsSync(resource) && /<adaptive-icon\b/.test(fs.readFileSync(resource,'utf8'));
+  });
 }
 
 module.exports = {

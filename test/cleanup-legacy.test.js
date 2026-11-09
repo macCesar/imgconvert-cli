@@ -7,7 +7,7 @@ const { cleanupLegacy } = require('../src/processors/alloy-modern/cleanup-legacy
 describe('cleanup-legacy', function () {
   this.timeout(20000);
 
-  const testRoot = path.join(os.tmpdir(), 'imgconvert-cleanup-test');
+  const testRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'imgconvert-cleanup-'));
 
   // Silence logger during tests by redirecting console output
   let originalLog, originalErr;
@@ -110,7 +110,7 @@ describe('cleanup-legacy', function () {
     expect(fs.existsSync(path.join(testRoot, 'app/assets/iphone/Default-568h@2x.png'))).to.equal(false);
   });
 
-  it('CONDITIONAL: removes legacy appicon.png when adaptive icons are present', async () => {
+  it('keeps legacy appicon and splash when adaptive references do not prove them unused', async () => {
     fs.mkdirSync(path.join(testRoot, 'app'));
     fs.mkdirSync(path.join(testRoot, 'app/platform/android/res/mipmap-anydpi-v26'), { recursive: true });
     writeTiapp();
@@ -120,8 +120,8 @@ describe('cleanup-legacy', function () {
     await cleanupLegacy({
       projectRoot: testRoot, projectType: 'alloy', aggressive: false, dryRun: false
     });
-    expect(fs.existsSync(path.join(testRoot, 'app/assets/android/appicon.png'))).to.equal(false);
-    expect(fs.existsSync(path.join(testRoot, 'app/assets/android/default.png'))).to.equal(false);
+    expect(fs.existsSync(path.join(testRoot, 'app/assets/android/appicon.png'))).to.equal(true);
+    expect(fs.existsSync(path.join(testRoot, 'app/assets/android/default.png'))).to.equal(true);
   });
 
   it('AGGRESSIVE: removes ldpi density folders only when --aggressive is set', async () => {

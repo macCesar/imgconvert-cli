@@ -401,7 +401,8 @@ describe('imgconvert CLI Tests', function () {
 
       const result = execCLI(command);
       logResult('Alloy preset', result);
-      expect(result).to.include('Processed files: 2');
+      expect(result).to.include('Processed files: 1');
+      expect(result).to.include('Generated outputs: 8');
 
       expect(checkFileExists(path.join(testDir, 'app', 'assets', 'android'), 'Android assets')).to.be.true;
       expect(checkFileExists(path.join(testDir, 'app', 'assets', 'iphone'), 'iPhone assets')).to.be.true;
@@ -504,7 +505,7 @@ describe('imgconvert CLI Tests', function () {
   describe('Debug mode tests', () => {
     it('should show debug information when enabled with -d flag', () => {
       const inputFile = path.join(testDir, 'canyon-river.jpg');
-      const command = `"${inputFile}" -f webp -d`;
+      const command = `"${inputFile}" -f webp -d --overwrite`;
 
       const result = execCLI(command);
       logResult('Debug mode', result);

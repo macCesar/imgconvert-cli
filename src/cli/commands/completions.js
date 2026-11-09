@@ -52,7 +52,7 @@ function detectShell() {
 function install(shell) {
   if (!SHELLS.includes(shell)) {
     process.stderr.write(chalk.red(`Unsupported shell: ${shell}. Supported: ${SHELLS.join(', ')}\n`));
-    process.exit(1);
+    throw new Error('Completion installation could not proceed');
   }
 
   const target = INSTALL_TARGETS[shell];
@@ -134,7 +134,7 @@ async function interactive() {
   if (!shell) {
     process.stderr.write(chalk.red('Could not detect your shell from $SHELL.\n'));
     process.stderr.write(`Specify one explicitly: ${chalk.green('imgconvert completions <bash|zsh|fish>')}\n`);
-    process.exit(1);
+    throw new Error('Completion installation could not proceed');
   }
 
   const target = INSTALL_TARGETS[shell];

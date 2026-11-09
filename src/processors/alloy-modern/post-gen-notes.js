@@ -26,6 +26,15 @@ const { logger } = require('../../utils/logger');
  * @param {boolean} opts.fullNotes - if true, print the long tiapp.xml snippets
  */
 function printPostGenNotes(opts) {
+  if (opts.sdk === 'android') {
+    logger.section('Android assets');
+    for (const file of opts.generated || []) logger.bullet(file);
+    if (opts.adaptive) logger.bullet('Set android:icon="@mipmap/ic_launcher" in AndroidManifest.xml.');
+    if (opts.notification) logger.bullet('Use @drawable/ic_stat_notify for notification small icons.');
+    if (opts.splash) logger.bullet('Use @drawable/splash_icon in your Android 12+ splash theme.');
+    if (opts.marketplace) logger.bullet('Marketplace artwork: iTunesConnect.png and MarketplaceArtwork.png.');
+    return;
+  }
   if (opts.fullNotes) {
     printFullNotes(opts);
   } else {

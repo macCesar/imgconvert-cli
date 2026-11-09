@@ -5,8 +5,8 @@ const chalk = require('chalk').default;
 const { version } = require('../../package.json');
 
 function parseIntArg(val) {
-  const n = parseInt(val, 10);
-  if (isNaN(n) || n <= 0) throw new InvalidArgumentError('Must be a positive integer.');
+  const n = Number(val);
+  if (!/^[0-9]+$/.test(val) || !Number.isSafeInteger(n) || n <= 0) throw new InvalidArgumentError('Must be a positive integer.');
   return n;
 }
 
@@ -18,27 +18,40 @@ program
   .version(version, '-v, --version')
   .argument('[source]', 'Image file or directory to process')
   // Format & Quality
+  .optionsGroup('Format and quality:')
   .option('-f, --format <format>',     'Output format: jpg|jpeg|png|webp|avif|tiff|gif|all')
   .option('-q, --quality <n>',         'Quality 1-100 (default: 85)', parseIntArg)
   .option('-b, --background <color>',  'Background color (hex, rgb, or named)')
   // Dimensions & Fitting
-  .option('--width <n>',               'Output width in pixels', parseIntArg)
+  .optionsGroup('Dimensions and fit:')
+  .option('-w, --width <n>',               'Output width in pixels', parseIntArg)
   .option('--height <n>',              'Output height in pixels', parseIntArg)
   .option('--fit <strategy>',          'Resize strategy: cover|contain|fill|inside|outside')
   .option('--position <pos>',          'Anchor for --fit cover/contain or --canvas')
   .option('--crop <coords>',           'Manual crop coordinates: left,top,width,height')
   .option('--canvas',                  'Resize canvas without scaling (pad if larger, crop if smaller)')
+  .option('--no-canvas', 'Disable configured canvas')
+  .option('--no-trim', 'Disable configured trim')
   .option('--trim',                    'Auto-trim edge-color/transparent borders')
   // Batch & Naming
+  .optionsGroup('Batch and naming:')
   .option('--rename <strategy>',       'Batch rename: enumerate|lowercase|replace-spaces|prefix:X|suffix:X')
   .option('-n, --name <name>',         'Custom output filename, without extension (single file only)')
   // Output
+  .optionsGroup('Output:')
   .option('-o, --output <dir>',        'Output directory')
-  .option('--replace',                 'Legacy replacement flag (currently writes to output directory)')
+  .option('--in-place', 'Update the input or create a sibling when name/format changes')
+  .option('--no-in-place', 'Disable configured in-place')
+  .option('--overwrite', 'Allow replacing existing destinations')
+  .option('--no-overwrite', 'Disable configured overwrite')
+  .option('--concurrency <n>', 'Maximum active inputs (default: min(4, available CPUs))', parseIntArg)
+  .option('--replace', 'Alias for --in-place')
   .addOption(new Option('--replace-originals').hideHelp())
   // Presets
+  .optionsGroup('Presets:')
   .option('-p, --preset <name>',       'Apply preset: web|print|thumbnail (or custom from config)')
   // Global
+  .optionsGroup('General options:')
   .option('-d, --debug',               'Debug mode')
   .action(require('./commands/general'));
 
@@ -64,13 +77,16 @@ program
   .option('--notification',                'Notification icons × 5 densities (white on transparent)')
   .option('--splash',                      'Android 12+ splash_icon × 5 densities')
   .option('--bg-color <hex>',              'Background color (default: #FFFFFF)')
-  .option('--padding <n>',                 'Android padding per side, integer 1-40 (default: 15; typical 12-20)', parseIntArg)
-  .option('--ios-padding <n>',             'Marketplace padding per side, integer 1-40 (default: 4)', parseIntArg)
+  .option('--padding <n>', 'Android padding per side, integer 0-40 (default: 15)')
+  .option('--artwork-padding <n>', 'Marketplace padding per side, integer 0-40 (default: 4)')
+  .option('--ios-padding <n>', 'Alias for --artwork-padding')
+  .option('--overwrite', 'Allow replacing existing destinations')
+  .option('--no-overwrite', 'Disable overwrite')
   .option('--monochrome-master <path>',    'Dedicated master for monochrome icon + notification icons')
   .option('--project <path>',              'Project root (default: cwd)')
   .option('-o, --output <dir>',            'Staging directory (default: .ti-branding/)')
-  .option('--in-place',                    'Write directly into project (overwrites existing icons)')
-  .option('--notes',                       'Print full integration notes (includes legacy Titanium guidance)')
+  .option('--in-place',                    'Write directly into project; existing files require --overwrite')
+  .option('--notes',                       'Print integration notes for generated categories')
   .option('--dry-run',                     'Preview without writing any files')
   .option('--cleanup-legacy',              'Delete legacy Titanium artifacts in project (reads tiapp.xml)')
   .option('--aggressive',                  'With --cleanup-legacy: also remove ldpi folders')
@@ -100,16 +116,22 @@ Examples:
 // ─── alloy subcommand ─────────────────────────────────────────────────────────
 program
   .command('alloy')
-  .argument('<source>', 'Image file or directory')
+  .argument('[source]', 'Image file or directory; fallback for configured sources')
   .description('Generate legacy Titanium Alloy multi-scale assets (1x/2x/3x + mdpi→xxxhdpi)')
-  .option('-o, --output <dir>',  'Output base (currently may be overridden by config)')
-  .option('-p, --preset <name>', 'Preset settings; platform definitions always come from presets.alloy')
+  .option('-o, --output <dir>',  'Output base directory')
+  .option('-p, --preset <name>', 'Alloy platform definition to use (default: alloy)')
+  .option('--group <name>', 'Select one Alloy group')
+  .option('-q, --quality <n>', 'Quality 1-100', parseIntArg)
+  .option('-f, --format <format>', 'Output format')
+  .option('--overwrite', 'Allow replacing existing destinations')
+  .option('--no-overwrite', 'Disable configured overwrite')
+  .option('--concurrency <n>', 'Maximum active inputs', parseIntArg)
   .option('-d, --debug',         'Debug mode')
   .addHelpText('after', `
 Examples:
   imgconvert alloy icon.png
   imgconvert alloy ./icons
-  Configure platform sources/output in presets.alloy; all groups are processed.
+  Configure platform sources/output in presets.alloy; use --group to select one group.
   Source dimensions are treated as 4x on both platforms.
 `)
   .action(require('./commands/alloy'));
@@ -183,75 +205,29 @@ program.on('command:*', (operands) => {
     (suggestion ? chalk.yellow(`Did you mean: ${chalk.bold(suggestion)}?\n`) : '') +
     `\nRun ${chalk.green('imgconvert --help')} to see available commands.\n\n`
   );
-  process.exit(1);
+  throw new Error(`Unknown command: ${operands[0]}`);
 });
 
-// ─── Custom grouped help builder ─────────────────────────────────────────────
+// Commander owns help and completion metadata.
 function buildMainHelp() {
-  const g = chalk.green;
-  const y = chalk.yellow;
-  const b = chalk.bold;
-
-  return [
-    '',
-    `  ${b('imgconvert')} v${version}: Image compression, conversion, and resizing`,
-    '',
-    `${b('Usage')}`,
-    `  ${g('imgconvert')} [source] [options]`,
-    `  ${g('imgconvert brand')} [master] --sdk android [options]`,
-    `  ${g('imgconvert alloy')} <source> [options]`,
-    `  ${g('imgconvert config')} init|show`,
-    `  ${g('imgconvert completions')} [shell]`,
-    `  ${g('imgconvert help')} [topic]`,
-    '',
-    `${b('Format and quality')}`,
-    `  ${g('-f, --format <format>')}     Output format: ${y('jpg|jpeg|png|webp|avif|tiff|gif|all')}`,
-    `  ${g('-q, --quality <n>')}         Quality 1-100 ${y('(default: 85)')}`,
-    `  ${g('-b, --background <color>')}  Background color (hex, rgb, or named)`,
-    '',
-    `${b('Dimensions and fit')}`,
-    `  ${g('--width <n>')}               Output width in pixels (no -w alias)`,
-    `  ${g('--height <n>')}              Output height in pixels`,
-    `  ${g('--fit <strategy>')}          Resize strategy: ${y('cover|contain|fill|inside|outside')}`,
-    `  ${g('--position <pos>')}          Anchor for ${y('--fit cover/contain')} or ${y('--canvas')}`,
-    `  ${g('--crop <coords>')}           Manual crop coordinates: ${y('left,top,width,height')}`,
-    `  ${g('--canvas')}                  Resize canvas without scaling (pad if larger, crop if smaller)`,
-    `  ${g('--trim')}                    Auto-trim edge-color/transparent borders`,
-    '',
-    `${b('Batch processing and naming')}`,
-    `  ${g('--rename <strategy>')}       ${y('enumerate|lowercase|replace-spaces|prefix:X|suffix:X')}`,
-    `  ${g('-n, --name <name>')}         Custom output filename (single file, no extension)`,
-    '',
-    `${b('Output')}`,
-    `  ${g('-o, --output <dir>')}        Output directory`,
-    `  ${g('--replace')}                 Legacy flag; currently writes to output directory`,
-    '',
-    `${b('Presets')}`,
-    `  ${g('-p, --preset <name>')}       Apply preset: ${y('web|print|thumbnail')} (or custom from config)`,
-    '',
-    `${b('General options')}`,
-    `  ${g('-d, --debug')}               Debug mode`,
-    `  ${g('-v, --version')}             Show version`,
-    `  ${g('-h, --help')}                Show this help`,
-    '',
-    `${b('Shell integration')}`,
-    `  ${g('imgconvert completions')}              Interactive install (auto-detects shell)`,
-    `  ${g('imgconvert completions')} ${y('bash|zsh|fish')}  Install for a specific shell`,
-    `  ${g('imgconvert completions uninstall')}    Remove installed completions`,
-    `  ${g('imgconvert completions print <shell>')} Print script without installing`,
-    '',
-    `${b('Examples')}`,
-    `  ${g('imgconvert')} ./photos -f webp -q 85`,
-    `  ${g('imgconvert')} banner.png --width 1200 --height 400 --fit cover`,
-    `  ${g('imgconvert')} ./photos --rename enumerate,lowercase`,
-    `  ${g('imgconvert brand')} logo.svg --sdk android --bg-color "#0B1326"`,
-    `  ${g('imgconvert alloy')} icon.png`,
-    `  ${g('imgconvert config')} init`,
-    '',
-    `  Run ${g('imgconvert <command> --help')} for subcommand details.`,
-    `  Run ${g('imgconvert help <topic>')} for topic details: ${y('crop|resize|rename|presets|brand|alloy')}`,
-    '',
-  ].join('\n');
+  const { Help } = require('commander');
+  return new Help().formatHelp(program, new Help()) + '\nRun imgconvert completions to install shell completion.\n';
 }
-
+const choices = {
+  format: require('../config/defaults').SUPPORTED_FORMATS.concat('all'),
+  fit: ['cover','contain','fill','inside','outside'],
+  position: ['center','top','bottom','left','right','top-left','top-right','bottom-left','bottom-right','north','south','east','west','northeast','northwest','southeast','southwest'],
+  sdk: ['android']
+};
+function annotate(command) {
+  for (const option of command.options) if (choices[option.attributeName()]) option.argChoices = choices[option.attributeName()];
+  for (const child of command.commands) annotate(child);
+}
+annotate(program);
+program.command('_complete <kind> [preset]', { hidden: true }).action((kind,preset) => {
+  const { loadConfig, getMergedPresets } = require('../config/loader');
+  const presets = getMergedPresets(loadConfig());
+  const values = kind === 'presets' ? Object.keys(presets) : Object.entries(presets[preset || 'alloy'] || {}).filter(([,value]) => value && typeof value === 'object' && (value.android || value.iphone)).map(([name])=>name);
+  console.log(values.join('\n'));
+});
 module.exports = program;

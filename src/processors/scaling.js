@@ -204,5 +204,6 @@ function applyScalingFormatOptions(sharpInstance, format, quality) {
 }
 
 module.exports = {
-  processImageWithScaling
+  processImageWithScaling,
+  applyScalingFormatOptions
 };

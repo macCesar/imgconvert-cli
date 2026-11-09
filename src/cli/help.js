@@ -28,7 +28,7 @@ function displayTopic(topic) {
       chalk.red(`\nUnknown help topic: ${chalk.bold(topic)}\n\n`) +
         `Available topics: ${Object.keys(TOPICS).join(', ')}\n\n`
     );
-    process.exit(1);
+    throw new Error(`Unknown help topic: ${topic}`);
   }
   fn();
 }
@@ -206,8 +206,8 @@ function displayBrand() {
     ${chalk.green('--notification')}         Notification icons × 5 densities
     ${chalk.green('--splash')}               Android 12+ splash_icon × 5 densities
     ${chalk.green('--bg-color <hex>')}       Background color (default: ${chalk.yellow('#FFFFFF')})
-    ${chalk.green('--padding <n>')}          Android padding 1-40% per side (typical 12-20, default: ${chalk.yellow('15')})
-    ${chalk.green('--in-place')}             Write directly into project (overwrites existing files)
+    ${chalk.green('--padding <n>')}          Android padding 0-40% per side (typical 12-20, default: ${chalk.yellow('15')})
+    ${chalk.green('--in-place')}             Write into project; use --overwrite for existing files
     ${chalk.green('--dry-run')}              Preview without writing any files
     ${chalk.green('--cleanup-legacy')}       Delete legacy Titanium artifacts in project; preview with --dry-run
 
@@ -231,7 +231,7 @@ function displayBrand() {
 function displayAlloy() {
   console.log(chalk.bold('\nTitanium Alloy multi-scale assets\n'));
   console.log(
-    `  ${chalk.green('imgconvert alloy <source> [options]')}
+    `  ${chalk.green('imgconvert alloy [source] [options]')}
 
   Generates multi-scale assets for Titanium Alloy projects:
     ${chalk.bold('Android:')} res-mdpi (1×), res-hdpi (1.5×), res-xhdpi (2×),
@@ -240,7 +240,7 @@ function displayAlloy() {
 
   ${chalk.bold('Options:')}
     ${chalk.green('-o, --output <dir>')}    Output directory
-    ${chalk.green('-p, --preset <name>')}   Preset settings; platform definitions come from presets.alloy
+    ${chalk.green('-p, --preset <name>')}   Select a platform definition (default: alloy)
 
   ${chalk.bold('Examples:')}
     ${chalk.green('imgconvert alloy icon.png')}
@@ -248,7 +248,8 @@ function displayAlloy() {
 
   Source images are treated as 4x masters on both platforms.
   Configure platforms/groups in presets.alloy; all groups run.
-  CLI -o may be overridden by config; use global output for a stable base.
+  Explicit -o wins. Use --group <name> for one configured group.
+  Existing outputs require --overwrite; --concurrency limits active inputs.
 
   Run: ${chalk.green('imgconvert alloy --help')} for full options.
 `

@@ -55,30 +55,16 @@ async function cleanupLegacy({ projectRoot, projectType, aggressive = false, dry
   }
 
   // Android landscape-variant folders — safe when app is portrait-only
-  if (tiapp.portraitOnly && layout.androidImages && fs.existsSync(layout.androidImages)) {
+  if (tiapp.androidPortraitOnly && layout.androidImages && fs.existsSync(layout.androidImages)) {
     const reason = 'Landscape variant (app is portrait-only)';
     for (const entry of listChildDirs(layout.androidImages, /(^res-.+-land-|^res-land-)/)) {
       conditional.push({ path: entry, reason });
     }
   }
 
-  // Android legacy default.png — adaptive icons already provide splash
-  if (adaptive && layout.androidAssets) {
-    const defaultPng = path.join(layout.androidAssets, 'default.png');
-    if (fs.existsSync(defaultPng)) {
-      conditional.push({
-        path: defaultPng,
-        reason: 'Legacy Android splash PNG (adaptive launcher handles splash now)'
-      });
-    }
-    const appicon = path.join(layout.androidAssets, 'appicon.png');
-    if (fs.existsSync(appicon)) {
-      conditional.push({
-        path: appicon,
-        reason: 'Legacy appicon.png (adaptive launcher takes precedence)'
-      });
-    }
-  }
+  // Launcher references do not prove that legacy splash/icon resources are
+  // unused elsewhere (themes, custom code, or lower Android versions).
+  // Keep them unless a future reference analysis can demonstrate otherwise.
 
   // ---- AGGRESSIVE -----------------------------------------------------
   if (aggressive) {
@@ -202,7 +188,7 @@ function printPlan({ projectRoot, projectType, tiapp, adaptive, aggressive, safe
   console.log('Cleanup plan');
   console.log(`  Project:            ${projectRoot} (${projectType})`);
   console.log(`  Storyboard:         ${tiapp.storyboardEnabled ? 'enabled' : 'disabled'}`);
-  console.log(`  Orientation:        ${tiapp.portraitOnly ? 'portrait-only' : 'landscape allowed'}`);
+  console.log(`  Orientation:        ${tiapp.androidPortraitOnly ? 'Android portrait-only (explicit)' : 'Android unknown or landscape allowed'}`);
   console.log(`  Adaptive icons:     ${adaptive ? 'present' : 'not detected'}`);
   console.log(`  Aggressive mode:    ${aggressive ? 'on (includes ldpi)' : 'off'}`);
 
@@ -210,7 +196,7 @@ function printPlan({ projectRoot, projectType, tiapp, adaptive, aggressive, safe
     console.log();
     logger.success('SAFE: obsolete artifacts');
     for (const { path: p, reason } of safe) {
-      console.log(`    ${formatKb(getSizeBytes(p)).padEnd(6)}  ${path.relative(projectRoot, p)}`);
+      console.log(`    ${formatKb(getSizeBytes(p)).padEnd(6)}  ${p}`);
       console.log(`              ${reason}`);
     }
   }
@@ -218,7 +204,7 @@ function printPlan({ projectRoot, projectType, tiapp, adaptive, aggressive, safe
     console.log();
     logger.warning('CONDITIONAL: unused according to project config');
     for (const { path: p, reason } of conditional) {
-      console.log(`    ${formatKb(getSizeBytes(p)).padEnd(6)}  ${path.relative(projectRoot, p)}`);
+      console.log(`    ${formatKb(getSizeBytes(p)).padEnd(6)}  ${p}`);
       console.log(`              ${reason}`);
     }
   }
@@ -226,7 +212,7 @@ function printPlan({ projectRoot, projectType, tiapp, adaptive, aggressive, safe
     console.log();
     logger.error('AGGRESSIVE: --aggressive enabled');
     for (const { path: p, reason } of aggressiveTargets) {
-      console.log(`    ${formatKb(getSizeBytes(p)).padEnd(6)}  ${path.relative(projectRoot, p)}`);
+      console.log(`    ${formatKb(getSizeBytes(p)).padEnd(6)}  ${p}`);
       console.log(`              ${reason}`);
     }
   }

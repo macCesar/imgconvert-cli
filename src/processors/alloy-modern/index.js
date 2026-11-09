@@ -55,7 +55,7 @@ const { printPostGenNotes } = require('./post-gen-notes');
  * @param {boolean} opts.notes - Print full post-gen notes (tiapp.xml snippets etc.)
  * @returns {Promise<{stagingRoot: string, generated: string[]}>}
  */
-async function runModern(opts) {
+async function generateModern(opts) {
   const {
     master,
     monochromeMaster = null,
@@ -98,7 +98,7 @@ async function runModern(opts) {
   if (master) {
     logger.property('Master:     ', master);
     logger.property('Background: ', bgColor);
-    logger.property('Padding:    ', `Android ${padding}% / iOS ${iosPadding}% per side`);
+    logger.property('Padding:    ', `Android ${padding}% / artwork ${iosPadding}% per side`);
     console.log();
     logger.property(isInPlace ? 'Writing in place to: ' : 'Staging:    ', isInPlace ? projectRoot : stagingRoot);
   }
@@ -124,7 +124,7 @@ async function runModern(opts) {
   }
 
   // Warn if layout unknown
-  if (projectType === 'unknown') {
+  if (isTitanium && projectType === 'unknown') {
     logger.warning(`Could not detect project layout. Expected 'app/' (Alloy) or 'Resources/' (Classic).`);
     logger.warning(`Assets will be staged under ${stagingRoot}/standalone/. Copy them manually.`);
   }
@@ -325,7 +325,7 @@ async function runModern(opts) {
   }
 
   // ---- Post-gen notes ----------------------------------------------------
-  printPostGenNotes({
+  if (!opts.suppressNotes) printPostGenNotes({
     projectType,
     projectRoot,
     stagingRoot,
@@ -374,4 +374,70 @@ function validateOptions({ master, bgColor, darkBgColor, padding, iosPadding, cl
   }
 }
 
+
+function brandingPaths(opts, root, projectType) {
+  const files = [];
+  const res = getStagingAndroidResRoot(root, projectType, opts.sdk);
+  if (!opts.sdk || opts.sdk === 'titanium') {
+    files.push(path.join(root,'DefaultIcon.png'), path.join(root,'DefaultIcon-ios.png'));
+    if (opts.withDark) files.push(path.join(root,'DefaultIcon-Dark.png'));
+    if (opts.withTinted) files.push(path.join(root,'DefaultIcon-Tinted.png'));
+  }
+  if (opts.marketplace) files.push(path.join(root,'iTunesConnect.png'), path.join(root,'MarketplaceArtwork.png'));
+  for (const density of ['mdpi','hdpi','xhdpi','xxhdpi','xxxhdpi']) {
+    if (opts.adaptive) for (const name of ['ic_launcher_foreground','ic_launcher_background','ic_launcher_monochrome','ic_launcher']) files.push(path.join(res,`mipmap-${density}`,`${name}.png`));
+    if (opts.notification) files.push(path.join(res,`drawable-${density}`,'ic_stat_notify.png'));
+    if (opts.splash) files.push(path.join(res,`drawable-${density}`,'splash_icon.png'));
+  }
+  if (opts.adaptive) files.push(path.join(res,'mipmap-anydpi-v26','ic_launcher.xml'));
+  return files;
+}
+async function runModern(opts) {
+  const os = require('node:os');
+  const sharp = require('sharp');
+  const { planOperations, atomicWrite, operationResult } = require('../../utils/operations');
+  const { validateOptions: validateValues } = require('../../config/precedence');
+  validateValues(opts);
+  const projectRoot = path.resolve(opts.projectRoot || process.cwd());
+  const projectType = detectProjectType(projectRoot);
+  const stagingRoot = path.resolve(opts.output || (opts.inPlace ? projectRoot : path.join(projectRoot,'.ti-branding')));
+  validateOptions({ master: opts.master, bgColor: opts.bgColor || '#FFFFFF', darkBgColor: opts.darkBgColor, padding: opts.padding ?? 15, iosPadding: opts.iosPadding ?? 4, cleanupLegacy: opts.cleanupLegacy });
+  // Decode every supplied master before planning writes, including dry-run.
+  for (const source of [opts.master, opts.monochromeMaster, opts.darkMaster, opts.tintedMaster].filter(Boolean)) {
+    if (!fs.existsSync(source)) throw new Error(`Master image not found: ${source}`);
+    await sharp(source).raw().toBuffer();
+  }
+  const planned = opts.master ? planOperations(brandingPaths(opts,stagingRoot,projectType).map(destination => ({source:opts.master,destination})),opts) : [];
+  logger.info('Generation plan:');
+  for (const op of planned) logger.info(`  WRITE ${op.destination}`);
+  if (opts.cleanupLegacy) {
+    logger.info('Project deletion plan:');
+    await cleanupLegacy({projectRoot,projectType,aggressive:opts.aggressive,dryRun:true});
+  }
+  if (opts.dryRun) { logger.info('DRY RUN: no files will be written'); return {...operationResult(0,0,[]),stagingRoot,generated:[]}; }
+  const generated = [], errors = [];
+  if (opts.master) {
+    const scratch = fs.mkdtempSync(path.join(os.tmpdir(),'imgconvert-brand-'));
+    let generationError;
+    try {
+      try { await generateModern({...opts,projectRoot,output:scratch,inPlace:false,cleanupLegacy:false,suppressNotes:true}); }
+      catch (error) { generationError = error; }
+      for (const op of planned) {
+        const staged = path.join(scratch,path.relative(stagingRoot,op.destination));
+        if (!fs.existsSync(staged)) continue;
+        try {
+          // A failed encoder may leave an incomplete scratch file; preserve only valid outputs.
+          if (path.extname(staged) === '.png') await sharp(staged).raw().toBuffer();
+          await atomicWrite(op.destination,temp => fs.promises.copyFile(staged,temp),op.overwrite);
+          generated.push(op.destination);
+        } catch (error) { errors.push({destination:op.destination,message:error.message}); }
+      }
+      if (generationError) errors.push({message:generationError.message});
+    } finally { fs.rmSync(scratch,{recursive:true,force:true}); }
+  }
+  if (opts.cleanupLegacy && !errors.length) await cleanupLegacy({projectRoot,projectType,aggressive:opts.aggressive,dryRun:false});
+  for (const error of errors) logger.error(error.message);
+  if (generated.length) printPostGenNotes({...opts,projectRoot,projectType,stagingRoot,generated,fullNotes:opts.notes});
+  return {...operationResult(errors.length ? 0 : opts.master ? 1 : 0, errors.length ? 1 : 0,generated,errors),stagingRoot,generated};
+}
 module.exports = { runModern };

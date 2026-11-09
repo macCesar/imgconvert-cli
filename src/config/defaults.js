@@ -28,13 +28,16 @@ const defaultConfig = {
   output: null,
   format: null,
   canvas: false,
+  trim: false,
+  concurrency: Math.min(4, require('node:os').availableParallelism()),
   background: null,
 
   crop: null,
   fit: 'contain',
   position: 'center',
 
-  'replace-originals': false
+  inPlace: false,
+  overwrite: false
 };
 
 // Default presets

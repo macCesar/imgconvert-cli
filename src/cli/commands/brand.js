@@ -3,6 +3,7 @@ const path = require('path');
 const chalk = require('chalk').default;
 const { runModern } = require('../../processors/alloy-modern');
 const { logger } = require('../../utils/logger');
+const { validateOptions } = require('../../config/precedence');
 
 const VALID_SDKS = ['android'];
 
@@ -13,13 +14,13 @@ module.exports = async function brandAction(master, options) {
   // keeps the error self-contained: the user picks from the supported list.
   if (!options.sdk && !options.cleanupLegacy) {
     printSdkRequiredError();
-    process.exit(1);
+    throw new Error('A valid --sdk android is required');
   }
 
   const sdk = options.sdk || 'android'; // any valid value — cleanup-only mode won't use it
   if (options.sdk && !VALID_SDKS.includes(sdk)) {
     printSdkRequiredError(sdk);
-    process.exit(1);
+    throw new Error('A valid --sdk android is required');
   }
 
   const anySubFlag = options.adaptive || options.marketplace || options.notification || options.splash;
@@ -30,8 +31,9 @@ module.exports = async function brandAction(master, options) {
   const withDark = false;
   const withTinted = false;
 
-  try {
-    await runModern({
+  validateOptions(options);
+  if (options.artworkPadding != null && options.iosPadding != null && options.artworkPadding !== options.iosPadding) throw new Error('Contradictory artwork padding aliases');
+  const result = await runModern({
       master: master ? path.resolve(master) : null,
       monochromeMaster:  options.monochromeMaster ? path.resolve(options.monochromeMaster) : null,
       darkMaster:        options.darkMaster ? path.resolve(options.darkMaster) : null,
@@ -42,7 +44,8 @@ module.exports = async function brandAction(master, options) {
       bgColor:           options.bgColor || '#FFFFFF',
       bgColorExplicit:   Boolean(options.bgColor),
       padding:           options.padding   ?? 15,
-      iosPadding:        options.iosPadding ?? 4,
+      iosPadding:        options.artworkPadding ?? options.iosPadding ?? 4,
+      overwrite:         Boolean(options.overwrite),
       adaptive:          kitchenSink ? true : Boolean(options.adaptive),
       marketplace:       kitchenSink ? true : Boolean(options.marketplace),
       notification:      kitchenSink ? true : Boolean(options.notification),
@@ -56,11 +59,7 @@ module.exports = async function brandAction(master, options) {
       notes:             Boolean(options.notes),
       sdk,
     });
-  } catch (err) {
-    logger.error(err.message);
-    if (options.debug) console.error(err.stack);
-    process.exit(1);
-  }
+  process.exitCode = result.exitCode || 0;
 };
 
 function printSdkRequiredError(invalidValue) {

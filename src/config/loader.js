@@ -22,40 +22,32 @@ function loadConfig() {
       const fileContent = fs.readFileSync(CONFIG_PATH, 'utf-8');
       config = JSON.parse(fileContent);
     } catch (error) {
-      logger.warning(`Failed to parse configuration file: ${error.message}`);
-      logger.warning('Using default configuration');
+      throw new Error(`Invalid configuration JSON: ${error.message}`);
     }
   }
 
+  if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error('Configuration must be a JSON object');
+
+  if (config.presets != null && (typeof config.presets !== 'object' || Array.isArray(config.presets))) throw new Error('presets must be an object');
+
   // Merge with defaults
-  return {
+  const merged = {
     ...defaultConfig,
-    ...config,
+    ...Object.fromEntries(Object.entries(config).filter(([, v]) => v != null)),
     presets: {
       ...defaultPresets,
       ...(config.presets || {})
     }
   };
+  Object.defineProperty(merged, '_raw', { value: config });
+  return merged;
 }
 
 /**
  * Create default configuration file
  */
 function createDefaultConfig() {
-  const configContent = {
-    quality: 85,
-    width: null,
-    height: null,
-    source: null,
-    output: null,
-    format: null,
-    crop: null,
-    fit: 'contain',
-    position: 'center',
-    background: null,
-    'replace-originals': false,
-    presets: defaultPresets,
-  };
+  const configContent = { ...defaultConfig, presets: defaultPresets };
 
   try {
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(configContent, null, 2), 'utf-8');
@@ -66,8 +58,7 @@ function createDefaultConfig() {
 
     logger.success(`Default configuration file created at ${displayPath}`);
   } catch (error) {
-    logger.error(`Failed to create configuration file: ${error.message}`);
-    process.exit(1);
+    throw new Error(`Failed to create configuration file: ${error.message}`);
   }
 }
 

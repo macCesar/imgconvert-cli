@@ -23,7 +23,7 @@ describe('imgconvert alloy subcommand', function() {
 
   it('should generate alloy assets for a single PNG file', () => {
     const inputFile = path.join(testDir, fs.readdirSync(testDir).find(f => f.endsWith('.png')));
-    const result = execSync(`node index.js alloy "${inputFile}"`, { encoding: 'utf8', stdio: 'pipe' });
+    const result = execSync(`node index.js alloy "${inputFile}" --overwrite`, { encoding: 'utf8', stdio: 'pipe' });
     expect(result).to.match(/Processed files: [1-9]\d*/);
     // alloy outputs relative to the source file's directory (not cwd)
     expect(fs.existsSync(path.join(testDir, 'app', 'assets', 'android'))).to.be.true;
@@ -32,7 +32,7 @@ describe('imgconvert alloy subcommand', function() {
 
   it('should generate android resolution directories (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi)', () => {
     const inputFile = path.join(testDir, fs.readdirSync(testDir).find(f => f.endsWith('.png')));
-    execSync(`node index.js alloy "${inputFile}"`, { encoding: 'utf8', stdio: 'pipe' });
+    execSync(`node index.js alloy "${inputFile}" --overwrite`, { encoding: 'utf8', stdio: 'pipe' });
     const androidImagesDir = path.join(testDir, 'app', 'assets', 'android', 'images');
     expect(fs.existsSync(androidImagesDir)).to.be.true;
     const resolutions = ['res-mdpi', 'res-hdpi', 'res-xhdpi', 'res-xxhdpi', 'res-xxxhdpi'];
@@ -43,7 +43,7 @@ describe('imgconvert alloy subcommand', function() {
 
   it('should generate iphone resolution directories (1x, 2x, 3x)', () => {
     const inputFile = path.join(testDir, fs.readdirSync(testDir).find(f => f.endsWith('.png')));
-    execSync(`node index.js alloy "${inputFile}"`, { encoding: 'utf8', stdio: 'pipe' });
+    execSync(`node index.js alloy "${inputFile}" --overwrite`, { encoding: 'utf8', stdio: 'pipe' });
     const iphoneImagesDir = path.join(testDir, 'app', 'assets', 'iphone', 'images');
     expect(fs.existsSync(iphoneImagesDir)).to.be.true;
     if (fs.existsSync(iphoneImagesDir)) {
@@ -56,7 +56,7 @@ describe('imgconvert alloy subcommand', function() {
     const jpgFile = fs.readdirSync(testDir).find(f => /\.jpe?g$/i.test(f));
     if (!jpgFile) return; // skip if no jpg
     const inputFile = path.join(testDir, jpgFile);
-    const result = execSync(`node index.js alloy "${inputFile}"`, { encoding: 'utf8', stdio: 'pipe' });
+    const result = execSync(`node index.js alloy "${inputFile}" --overwrite`, { encoding: 'utf8', stdio: 'pipe' });
     expect(result).to.match(/Processed files: [1-9]\d*/);
   });
 

@@ -10,7 +10,7 @@ const {
 } = require('../src/processors/alloy-modern/tiapp-reader');
 
 describe('tiapp-reader', () => {
-  const testRoot = path.join(os.tmpdir(), 'imgconvert-tiapp-test');
+  const testRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'imgconvert-tiapp-'));
 
   beforeEach(() => {
     fs.rmSync(testRoot, { recursive: true, force: true });
@@ -139,20 +139,20 @@ describe('tiapp-reader', () => {
       expect(hasAdaptiveIcons(testRoot)).to.equal(false);
     });
 
-    it('returns true for alloy project with adaptive icons', () => {
+    it('returns false for alloy project with an empty adaptive directory', () => {
       fs.mkdirSync(
         path.join(testRoot, 'app', 'platform', 'android', 'res', 'mipmap-anydpi-v26'),
         { recursive: true }
       );
-      expect(hasAdaptiveIcons(testRoot)).to.equal(true);
+      expect(hasAdaptiveIcons(testRoot)).to.equal(false);
     });
 
-    it('returns true for classic project with adaptive icons', () => {
+    it('returns false for classic project with an empty adaptive directory', () => {
       fs.mkdirSync(
         path.join(testRoot, 'platform', 'android', 'res', 'mipmap-anydpi-v26'),
         { recursive: true }
       );
-      expect(hasAdaptiveIcons(testRoot)).to.equal(true);
+      expect(hasAdaptiveIcons(testRoot)).to.equal(false);
     });
   });
 });
