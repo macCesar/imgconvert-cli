@@ -5,7 +5,7 @@ const { applyLegacyShims } = require('./cli/legacy-shims');
 const program = require('./cli/program');
 
 if (process.env.NO_COLOR) {
-  const chalk = require('chalk');
+  const chalk = require('chalk').default;
   chalk.level = 0;
 }
 

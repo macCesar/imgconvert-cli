@@ -7,28 +7,28 @@
     "imgconvert": "index.js"
   },
   "engines": {
-    "node": ">=14.0.0",
+    "node": ">=22.13.0",
     "npm": ">=6.0.0"
   },
   "scripts": {
-    "test": "mocha 'test/*.test.js' --timeout 300000",
-    "test:general": "mocha test/general.test.js --timeout 300000",
-    "test:brand": "mocha test/brand.test.js --timeout 300000",
-    "test:alloy": "mocha test/alloy.test.js --timeout 300000",
-    "test:config": "mocha test/config.test.js --timeout 60000",
-    "test:help": "mocha test/help.test.js --timeout 30000",
-    "test:verbose": "VERBOSE_TESTS=true mocha 'test/*.test.js' --timeout 300000 --reporter spec",
-    "test:watch": "mocha 'test/*.test.js' --timeout 300000 --watch",
-    "test:debug": "VERBOSE_TESTS=true mocha 'test/*.test.js' --timeout 300000 --reporter spec --inspect-brk",
-    "test:unit": "mocha test/unit/**/*.test.js --timeout 10000",
-    "test:integration": "mocha test/integration/**/*.test.js --timeout 300000",
-    "test:all": "npm run test:unit && npm run test:integration && npm run test",
-    "clean": "rm -rf test/temp-test/ converted/ app/ compressed/ output/ *-preset/ .imgconverter.config.json",
+    "test": "node test/run.cjs",
+    "test:general": "node test/run.cjs test/general.test.js",
+    "test:brand": "node test/run.cjs test/brand.test.js",
+    "test:alloy": "node test/run.cjs test/alloy.test.js",
+    "test:config": "node test/run.cjs test/config.test.js",
+    "test:help": "node test/run.cjs test/help.test.js",
+    "test:verbose": "VERBOSE_TESTS=true node test/run.cjs",
+    "test:watch": "node test/run.cjs --watch",
+    "test:debug": "VERBOSE_TESTS=true node --inspect-brk test/run.cjs",
+    "test:unit": "npm test",
+    "test:integration": "npm test",
+    "test:all": "npm test",
+    "clean": "node -e \"console.log('Tests clean their exclusive temporary directories automatically.')\"",
     "clean-all": "npm run clean",
     "clean-force": "npm run clean && rm -rf node_modules/.cache/",
     "test:clean": "npm run clean && npm test",
-    "lint": "eslint src/**/*.js",
-    "lint:fix": "eslint src/**/*.js --fix"
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "keywords": [
     "cli",
@@ -44,17 +44,16 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "chalk": "^4.1.2",
-    "commander": "^12.0.0",
-    "fast-xml-parser": "^4.5.6",
-    "sharp": "^0.33.5",
-    "update-notifier": "^6.0.0"
+    "chalk": "^6.0.1",
+    "commander": "^15.1.0",
+    "fast-xml-parser": "^5.12.0",
+    "sharp": "^0.35.5",
+    "update-notifier": "^7.3.1"
   },
   "devDependencies": {
-    "chai": "^5.2.0",
-    "eslint": "^8.57.0",
-    "mocha": "^11.4.0",
-    "sinon": "^17.0.1"
+    "chai": "^6.3.0",
+    "eslint": "^10.14.0",
+    "mocha": "^12.0.3"
   },
   "repository": {
     "type": "git",
@@ -73,5 +72,9 @@
     "test/README.md",
     "images/README.md",
     "LICENSE"
-  ]
+  ],
+  "overrides": {
+    "glob": "^14.0.4",
+    "minimatch": "^11.0.5"
+  }
 }

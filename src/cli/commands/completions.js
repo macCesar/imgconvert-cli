@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const readline = require('readline');
-const chalk = require('chalk');
+const chalk = require('chalk').default;
 const { bashCompletion, zshCompletion, fishCompletion, print } = require('../completions');
 
 const SHELLS = ['bash', 'zsh', 'fish'];

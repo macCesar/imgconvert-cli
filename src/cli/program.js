@@ -1,7 +1,7 @@
 'use strict';
 
 const { Command, Option, InvalidArgumentError } = require('commander');
-const chalk = require('chalk');
+const chalk = require('chalk').default;
 const { version } = require('../../package.json');
 
 function parseIntArg(val) {

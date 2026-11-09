@@ -8,7 +8,7 @@
  *                         Android 12+ splash theme, FCM notification tint)
  */
 
-const chalk = require('chalk');
+const chalk = require('chalk').default;
 const { logger } = require('../../utils/logger');
 
 /**

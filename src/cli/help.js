@@ -5,7 +5,7 @@
  * Each topic is a self-contained function; displayHelp() kept for backward compat.
  */
 
-const chalk = require('chalk');
+const chalk = require('chalk').default;
 
 const TOPICS = {
   crop: displayCrop,

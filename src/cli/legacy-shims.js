@@ -8,7 +8,7 @@
  * Removed in v4.
  */
 
-const chalk = require('chalk');
+const chalk = require('chalk').default;
 
 /**
  * @param {string[]} argv - The live process.argv array (mutated in place).
