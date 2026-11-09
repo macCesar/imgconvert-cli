@@ -83,8 +83,8 @@ function printFullNotes(opts) {
   const flag = (s) => chalk.yellow(s);
   const num = (n) => chalk.cyan(n);
 
-  logger.section('Notes on what was generated');
-  logger.bullet(`Brand color ${chalk.cyan(bgColor)} was baked into Android adaptive background layer`);
+  logger.section('Generated assets');
+  logger.bullet(`Brand color ${chalk.cyan(bgColor)} was applied to the Android adaptive background layer`);
   console.log('    and iOS/marketplace flattened masters (Apple rejects alpha).');
   logger.bullet(`Android padding:  ${chalk.cyan(padding + '%')}  (logo fills ${100 - 2 * padding}% of each mipmap canvas)`);
   logger.bullet(`iOS padding:      ${chalk.cyan(iosPadding + '%')}  (logo fills ${100 - 2 * iosPadding}% of DefaultIcon-ios and marketplace art)`);
@@ -99,18 +99,18 @@ function printFullNotes(opts) {
   console.log(`      ${flag('--ios-padding 2-3')}     (matches first-party apps like Mail, Safari)`);
 
   logger.section('Configuration reminders');
-  console.log('  The tool does NOT auto-edit tiapp.xml. Snippets below are optional —');
-  console.log('  paste only what you need, after reviewing.');
+  console.log('  The tool does not edit tiapp.xml. Review the optional snippets below and');
+  console.log('  paste only the settings your project needs.');
   console.log();
   console.log(`  ${chalk.yellow('⚠')}  ${chalk.yellow('tiapp.xml <application> tag may be self-closing')}`);
   console.log('     If yours looks like:');
   console.log(code('         <application android:icon="@mipmap/ic_launcher" .../>'));
-  console.log('     You must expand it BEFORE adding children:');
+  console.log('     Expand it before adding child elements:');
   console.log(code('         <application android:icon="@mipmap/ic_launcher" ...>'));
   console.log(code('         </application>'));
 
   console.log();
-  console.log(`  ${num('1.')} ${chalk.cyan('iOS launch background')} — under ${flag('<ios>')} in tiapp.xml:`);
+  console.log(`  ${num('1.')} ${chalk.cyan('iOS launch background')} under ${flag('<ios>')} in tiapp.xml:`);
   console.log('     Matches your --bg-color to the launch storyboard.');
   console.log(code('      <ios>'));
   console.log(code('        <enable-launch-screen-storyboard>true</enable-launch-screen-storyboard>'));
@@ -118,28 +118,28 @@ function printFullNotes(opts) {
   console.log(code('      </ios>'));
 
   console.log();
-  console.log(`  ${num('2.')} ${chalk.cyan('Android launcher icon')} — under ${flag('<android><manifest><application>')}:`);
+  console.log(`  ${num('2.')} ${chalk.cyan('Android launcher icon')} under ${flag('<android><manifest><application>')}:`);
   console.log(code('      <application android:icon="@mipmap/ic_launcher"'));
   console.log(code('                   android:usesCleartextTraffic="false"/>'));
 
   if (withSplash) {
     console.log();
-    console.log(`  ${num('3.')} ${chalk.cyan('Android 12+ splash screen')} — ${chalk.yellow('OPTIONAL, advanced')}`);
+    console.log(`  ${num('3.')} ${chalk.cyan('Android 12+ splash screen')} (${chalk.yellow('optional, advanced')})`);
     console.log();
     console.log('     Titanium SDK 13.x shows a system splash automatically using your');
-    console.log('     launcher icon. For most apps THE DEFAULT IS ENOUGH — do nothing.');
+    console.log('     launcher icon. Most apps can use the default settings.');
     console.log();
-    console.log('     If you experience a visible FLICKER at the end of the splash (brief');
-    console.log('     color flash before index.js renders), that is the system splash');
-    console.log('     background mismatching your first Titanium activity background.');
+    console.log('     If the splash ends with a visible flicker (a brief');
+    console.log('     color flash before index.js renders), the system splash');
+    console.log('     background differs from your first Titanium activity background.');
     console.log();
-    console.log('     Fixing it requires adding a custom theme + wiring it in tiapp.xml.');
-    console.log(`     ${chalk.yellow('This is INVASIVE')} — do NOT auto-apply the snippet below without:`);
-    console.log('       (a) verifying the parent theme you pick actually exists in your');
+    console.log('     To fix it, add a custom theme and reference it in tiapp.xml.');
+    console.log(`     ${chalk.yellow('This changes your app theme.')} Before applying the snippet:`);
+    console.log('       (a) verify that the parent theme exists in your');
     console.log('           Titanium SDK version (theme names vary across SDK releases)');
-    console.log('       (b) checking whether your project already has a custom theme —');
-    console.log('           if so, EXTEND it instead of overriding via android:theme');
-    console.log('       (c) testing the build succeeds before committing tiapp.xml');
+    console.log('       (b) check whether your project already has a custom theme;');
+    console.log('           if so, extend it rather than replacing it via android:theme');
+    console.log('       (c) test the build before committing tiapp.xml');
     console.log();
     console.log('     Template (verify parent theme exists in your SDK before using):');
     console.log(code('       <!-- app/platform/android/res/values/splash_theme.xml -->'));
@@ -156,13 +156,13 @@ function printFullNotes(opts) {
     console.log();
     console.log('     If your SDK does not expose Theme.Titanium.Light.Fullscreen, check');
     console.log('     the styles.xml shipped with your installed SDK under the android/');
-    console.log('     folder — the available parent themes vary across SDK versions.');
+    console.log('     folder. Available parent themes vary across SDK versions.');
     console.log();
-    console.log(`     ${chalk.yellow('⚠')}  ${chalk.yellow('Do NOT inherit from')} ${code('@android:style/Theme.DeviceDefault.NoActionBar')}.`);
+    console.log(`     ${chalk.yellow('⚠')}  ${chalk.yellow('Do not inherit from')} ${code('@android:style/Theme.DeviceDefault.NoActionBar')}.`);
     console.log('        That parent strips the ActionBar from every screen in your app.');
     console.log();
     console.log('     The splash_icon.png × 5 files are generated for advanced use (custom');
-    console.log('     splash icon distinct from launcher). Most apps do NOT need them —');
+    console.log('     splash icon distinct from launcher). Most apps do not need them because');
     console.log('     Titanium falls back to the launcher icon for the system splash.');
   }
 
@@ -191,20 +191,20 @@ function printFullNotes(opts) {
   logger.section('Next steps');
 
   if (inPlace) {
-    console.log(`  ${num('1.')} Preview the new icons in ${flag('Preview.app')} — the files in your project`);
+    console.log(`  ${num('1.')} Preview the new icons in ${flag('Preview.app')}. The files in your project`);
     console.log('     have been overwritten directly (no staging directory was used).');
     console.log(`  ${num('2.')} If something looks wrong, restore from git:  ${code('git checkout -- .')}`);
     console.log(`  ${num('3.')} Rebuild:           ${code('ti clean && ti build -p android -T emulator')}`);
   } else if (projectType === 'alloy') {
     console.log(`  ${num('1.')} Preview the generated icons in ${flag('Preview.app')} or your file manager.`);
-    console.log(`  ${num('2.')} If good, copy to project:`);
+    console.log(`  ${num('2.')} After reviewing, copy to the project:`);
     console.log(code(`       cp ${stagingRoot}/DefaultIcon.png ${stagingRoot}/DefaultIcon-ios.png ${stagingRoot}/iTunesConnect.png ${stagingRoot}/MarketplaceArtwork.png ${projectRoot}/`));
     console.log(code(`       cp -R ${stagingRoot}/app/platform/android/res/. ${projectRoot}/app/platform/android/res/`));
     console.log(`  ${num('3.')} Cleanup staging:   ${code('rm -rf ' + stagingRoot)}`);
     console.log(`  ${num('4.')} Rebuild:           ${code('ti clean && ti build -p android -T emulator')}`);
   } else if (projectType === 'classic') {
     console.log(`  ${num('1.')} Preview the generated icons in ${flag('Preview.app')} or your file manager.`);
-    console.log(`  ${num('2.')} If good, copy to project:`);
+    console.log(`  ${num('2.')} After reviewing, copy to the project:`);
     console.log(code(`       cp ${stagingRoot}/DefaultIcon.png ${stagingRoot}/DefaultIcon-ios.png ${stagingRoot}/iTunesConnect.png ${stagingRoot}/MarketplaceArtwork.png ${projectRoot}/`));
     console.log(code(`       cp -R ${stagingRoot}/platform/android/res/. ${projectRoot}/platform/android/res/`));
     console.log(`  ${num('3.')} Cleanup staging:   ${code('rm -rf ' + stagingRoot)}`);

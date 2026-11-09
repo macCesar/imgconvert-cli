@@ -170,12 +170,12 @@ async function processAlloyPlatform(subPresetName, subPresetConfig, configGroupN
   const sourceFolder = subPresetConfig.source || args._[0];
 
   if (!sourceFolder) {
-    logger.warning(`Warning: No source folder defined for ${configGroupName ? `${configGroupName}.` : ''}${subPresetName}, skipping...`);
+    logger.warning(`Warning: No source folder defined for ${configGroupName ? `${configGroupName}.` : ''}${subPresetName}, skipping.`);
     return null;
   }
 
   if (!fs.existsSync(sourceFolder)) {
-    logger.warning(`Warning: Source folder "${sourceFolder}" for ${configGroupName ? `${configGroupName}.` : ''}${subPresetName} does not exist, skipping...`);
+    logger.warning(`Warning: Source folder "${sourceFolder}" for ${configGroupName ? `${configGroupName}.` : ''}${subPresetName} does not exist, skipping.`);
     return null;
   }
 

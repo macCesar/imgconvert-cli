@@ -117,12 +117,12 @@ async function cleanupLegacy({ projectRoot, projectType, aggressive = false, dry
 
   const total = safe.length + conditional.length + aggressiveTargets.length;
   if (total === 0) {
-    logger.success('No legacy artifacts detected. Project is already clean.');
+    logger.success('No legacy artifacts detected.');
     return { removed: 0, bytes: 0 };
   }
 
   if (dryRun) {
-    logger.info('Dry-run mode — nothing deleted. Re-run without --dry-run to apply.');
+    logger.info('Dry-run mode: nothing deleted. Re-run without --dry-run to apply.');
     return { removed: 0, bytes: 0 };
   }
 
@@ -196,8 +196,8 @@ function formatKb(bytes) {
 
 function printPlan({ projectRoot, projectType, tiapp, adaptive, aggressive, safe, conditional, aggressiveTargets }) {
   console.log();
-  logger.warning('⚠  WARNING — --cleanup-legacy deletes files permanently.');
-  logger.warning('   Recommended: commit your project with git before running without --dry-run.');
+  logger.warning('Warning: --cleanup-legacy deletes files permanently.');
+  logger.warning('   Commit your project with git before running without --dry-run so you can restore deleted files.');
   console.log();
   console.log('Cleanup plan');
   console.log(`  Project:            ${projectRoot} (${projectType})`);
@@ -208,7 +208,7 @@ function printPlan({ projectRoot, projectType, tiapp, adaptive, aggressive, safe
 
   if (safe.length) {
     console.log();
-    logger.success('SAFE — universally obsolete');
+    logger.success('SAFE: obsolete artifacts');
     for (const { path: p, reason } of safe) {
       console.log(`    ${formatKb(getSizeBytes(p)).padEnd(6)}  ${path.relative(projectRoot, p)}`);
       console.log(`              ${reason}`);
@@ -216,7 +216,7 @@ function printPlan({ projectRoot, projectType, tiapp, adaptive, aggressive, safe
   }
   if (conditional.length) {
     console.log();
-    logger.warning('CONDITIONAL — safe given your project config');
+    logger.warning('CONDITIONAL: unused according to project config');
     for (const { path: p, reason } of conditional) {
       console.log(`    ${formatKb(getSizeBytes(p)).padEnd(6)}  ${path.relative(projectRoot, p)}`);
       console.log(`              ${reason}`);
@@ -224,7 +224,7 @@ function printPlan({ projectRoot, projectType, tiapp, adaptive, aggressive, safe
   }
   if (aggressiveTargets.length) {
     console.log();
-    logger.error('AGGRESSIVE — --aggressive enabled');
+    logger.error('AGGRESSIVE: --aggressive enabled');
     for (const { path: p, reason } of aggressiveTargets) {
       console.log(`    ${formatKb(getSizeBytes(p)).padEnd(6)}  ${path.relative(projectRoot, p)}`);
       console.log(`              ${reason}`);

@@ -75,11 +75,11 @@ function install(shell) {
       fs.appendFileSync(rcPath, block, 'utf8');
       process.stdout.write(chalk.green('✓ ') + `Added fpath setup to ${chalk.dim('~/' + target.rcFile)}\n`);
     } else {
-      process.stdout.write(chalk.dim('  (fpath already configured in ~/' + target.rcFile + ' — skipped)\n'));
+      process.stdout.write(chalk.dim('  (fpath already configured in ~/' + target.rcFile + '; skipped)\n'));
     }
   }
 
-  process.stdout.write(`\nDone! To activate: ${chalk.green(target.reload)}\n`);
+  process.stdout.write(`\nTo activate: ${chalk.green(target.reload)}\n`);
   process.stdout.write(`Then try: ${chalk.green('imgconvert <TAB>')}\n\n`);
 }
 
@@ -112,7 +112,7 @@ function uninstall() {
   if (removed === 0) {
     process.stdout.write(chalk.yellow('No imgconvert completions were installed.\n'));
   } else {
-    process.stdout.write(`\nDone! Restart your shell (or source its rc file) to apply.\n\n`);
+    process.stdout.write(`\nRestart your shell (or source its rc file) to apply.\n\n`);
   }
 }
 
@@ -148,7 +148,7 @@ async function interactive() {
 
   const ok = await askYesNo(`Install completion for ${chalk.bold(shell)}?`);
   if (!ok) {
-    process.stdout.write(chalk.yellow('Cancelled — no changes made.\n\n'));
+    process.stdout.write(chalk.yellow('Cancelled. No changes made.\n\n'));
     return;
   }
   process.stdout.write('\n');

@@ -202,12 +202,12 @@ function generateFilename(originalName, index, args, isSingleFile = false) {
 async function processImage(inputFile, outputFileBase, format, options) {
   let sharpInstance = sharp(inputFile);
 
-  logger.debug(`📂 Processing: ${path.basename(inputFile)}`);
+  logger.debug(`Processing: ${path.basename(inputFile)}`);
 
   // Handle trim first (if specified) - removes transparent borders
   if (options.trim) {
     sharpInstance = sharpInstance.trim();
-    logger.debug(`✂️ Trimmed transparent borders`);
+    logger.debug(`Trimmed transparent borders`);
   }
 
   // Preserve the original extension for the output
@@ -378,7 +378,7 @@ async function processImage(inputFile, outputFileBase, format, options) {
         sharpInstance = sharpInstance.extend(extendOptions);
       }
 
-      logger.debug(`🖼️ Canvas: ${currentWidth}x${currentHeight} → ${targetWidth}x${targetHeight}`);
+      logger.debug(`Canvas: ${currentWidth}x${currentHeight} → ${targetWidth}x${targetHeight}`);
     }
   }
   // Handle normal resize with fit and position options
@@ -427,7 +427,7 @@ async function processImage(inputFile, outputFileBase, format, options) {
     }
 
     sharpInstance = sharpInstance.resize(resizeOptions);
-    logger.debug(`📏 Resize: ${options.width || 'auto'}x${options.height || 'auto'} (${selectedFit})`);
+    logger.debug(`Resize: ${options.width || 'auto'}x${options.height || 'auto'} (${selectedFit})`);
   }
 
   // Apply format-specific options

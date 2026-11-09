@@ -100,12 +100,12 @@ async function runModern(opts) {
     logger.property('Background: ', bgColor);
     logger.property('Padding:    ', `Android ${padding}% / iOS ${iosPadding}% per side`);
     console.log();
-    logger.property(isInPlace ? 'Writing IN PLACE to: ' : 'Staging:    ', isInPlace ? projectRoot : stagingRoot);
+    logger.property(isInPlace ? 'Writing in place to: ' : 'Staging:    ', isInPlace ? projectRoot : stagingRoot);
   }
   if (isInPlace && !dryRun) {
-    logger.warning('⚠  --in-place mode: files in your project will be OVERWRITTEN. Commit first if you want a rollback.');
+    logger.warning('--in-place overwrites files in your project. Commit first so you can restore them.');
   }
-  if (dryRun) logger.warning('DRY RUN — no files will be written');
+  if (dryRun) logger.warning('DRY RUN: no files will be written');
 
   const generated = [];
 
@@ -126,7 +126,7 @@ async function runModern(opts) {
   // Warn if layout unknown
   if (projectType === 'unknown') {
     logger.warning(`Could not detect project layout. Expected 'app/' (Alloy) or 'Resources/' (Classic).`);
-    logger.warning(`Assets will be staged under ${stagingRoot}/standalone/ — copy manually.`);
+    logger.warning(`Assets will be staged under ${stagingRoot}/standalone/. Copy them manually.`);
   }
 
   // Resolve Android res root inside staging
@@ -318,7 +318,7 @@ async function runModern(opts) {
       }
     }
     logger.info('');
-    logger.success(`All assets written IN PLACE at: ${projectRoot}`);
+    logger.success(`All assets written in place at: ${projectRoot}`);
   } else {
     logger.info('');
     logger.success(`All assets staged at: ${stagingRoot}`);

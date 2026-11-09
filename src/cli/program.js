@@ -18,7 +18,7 @@ program
   .version(version, '-v, --version')
   .argument('[source]', 'Image file or directory to process')
   // Format & Quality
-  .option('-f, --format <format>',     'Output format: jpeg|png|webp|avif|tiff|gif|all')
+  .option('-f, --format <format>',     'Output format: jpg|jpeg|png|webp|avif|tiff|gif|all')
   .option('-q, --quality <n>',         'Quality 1-100 (default: 85)', parseIntArg)
   .option('-b, --background <color>',  'Background color (hex, rgb, or named)')
   // Dimensions & Fitting
@@ -28,13 +28,13 @@ program
   .option('--position <pos>',          'Anchor for --fit cover/contain or --canvas')
   .option('--crop <coords>',           'Manual crop coordinates: left,top,width,height')
   .option('--canvas',                  'Resize canvas without scaling (pad if larger, crop if smaller)')
-  .option('--trim',                    'Auto-remove transparent borders')
+  .option('--trim',                    'Auto-trim edge-color/transparent borders')
   // Batch & Naming
   .option('--rename <strategy>',       'Batch rename: enumerate|lowercase|replace-spaces|prefix:X|suffix:X')
   .option('-n, --name <name>',         'Custom output filename, without extension (single file only)')
   // Output
   .option('-o, --output <dir>',        'Output directory')
-  .option('--replace',                 'Replace original files (no copy)')
+  .option('--replace',                 'Legacy replacement flag (currently writes to output directory)')
   .addOption(new Option('--replace-originals').hideHelp())
   // Presets
   .option('-p, --preset <name>',       'Apply preset: web|print|thumbnail (or custom from config)')
@@ -57,32 +57,30 @@ program.configureHelp({
 // ─── brand subcommand ────────────────────────────────────────────────────────
 program
   .command('brand')
-  .argument('[master]', 'SVG or PNG master (min 1024x1024); optional if using --cleanup-legacy alone')
-  .description('Generate mobile app icons and branding assets from a master SVG/PNG')
+  .argument('[master]', 'SVG/PNG/JPEG/WebP master; optional for --cleanup-legacy alone')
+  .description('Generate Android branding assets and marketplace artwork')
   .option('--adaptive',                    'Android adaptive icon triplet × 5 densities')
   .option('--marketplace',                 'iTunesConnect (1024²) + Play Store artwork (512²)')
   .option('--notification',                'Notification icons × 5 densities (white on transparent)')
   .option('--splash',                      'Android 12+ splash_icon × 5 densities')
   .option('--bg-color <hex>',              'Background color (default: #FFFFFF)')
-  .option('--padding <n>',                 'Android safe-zone % (range 12-20, default: 15)', parseIntArg)
-  .option('--ios-padding <n>',             'iOS padding 0-40 (default: 4)', parseIntArg)
+  .option('--padding <n>',                 'Android padding per side, integer 1-40 (default: 15; typical 12-20)', parseIntArg)
+  .option('--ios-padding <n>',             'Marketplace padding per side, integer 1-40 (default: 4)', parseIntArg)
   .option('--monochrome-master <path>',    'Dedicated master for monochrome icon + notification icons')
   .option('--project <path>',              'Project root (default: cwd)')
   .option('-o, --output <dir>',            'Staging directory (default: .ti-branding/)')
-  .option('--in-place',                    'Write directly into project (OVERWRITES existing icons)')
-  .option('--notes',                       'Print full tiapp.xml snippets + tuning guide')
+  .option('--in-place',                    'Write directly into project (overwrites existing icons)')
+  .option('--notes',                       'Print full integration notes (includes legacy Titanium guidance)')
   .option('--dry-run',                     'Preview without writing any files')
-  .option('--cleanup-legacy',              'Remove legacy branding artifacts (reads tiapp.xml)')
+  .option('--cleanup-legacy',              'Delete legacy Titanium artifacts in project (reads tiapp.xml)')
   .option('--aggressive',                  'With --cleanup-legacy: also remove ldpi folders')
-  .option('--sdk <target>',                'Target SDK: android|kotlin|react-native|flutter (required)')
+  .option('--sdk <target>',                'Target SDK: android (required except for cleanup)')
   .option('-d, --debug',                   'Debug mode')
-  .addHelpText('before', '\n  Generate a mobile branding set (Android res/ + marketplace artwork) from a single SVG or PNG master.\n  --sdk is required. No sub-flags = kitchen-sink (adaptive + marketplace + notification + splash).\n')
+  .addHelpText('before', '\n  Generate a mobile branding set (Android res/ + marketplace artwork) from a single SVG or PNG master.\n  --sdk android is required except for cleanup. Without generation selectors, all categories are generated unless cleaning up.\n')
   .addHelpText('after', `
-SDK targets (required):
-  android       Android project — app/src/main/res/mipmap-*/
-  kotlin        Alias for android
-  react-native  React Native — android/app/src/main/res/ (iOS xcassets: coming soon)
-  flutter       Flutter — android/app/src/main/res/ (iOS xcassets: coming soon)
+SDK target:
+  android       Android project: app/src/main/res/
+  Only android is currently implemented.
 
 Android dark mode:
   Handled automatically via ic_launcher_monochrome.png (part of --adaptive).
@@ -90,9 +88,9 @@ Android dark mode:
 
 Examples:
   imgconvert brand logo.svg --sdk android
-  imgconvert brand logo.svg --sdk kotlin --bg-color "#0B1326"
-  imgconvert brand logo.svg --sdk react-native --adaptive --notification
-  imgconvert brand logo.svg --sdk flutter --adaptive --bg-color "#0B1326"
+  imgconvert brand logo.svg --sdk android --bg-color "#0B1326"
+  imgconvert brand logo.svg --sdk android --adaptive --notification
+  imgconvert brand logo.svg --sdk android --adaptive --bg-color "#0B1326"
   imgconvert brand logo.svg --sdk android --in-place
   imgconvert brand --cleanup-legacy --dry-run
   imgconvert brand logo.svg --sdk android --dry-run
@@ -104,13 +102,15 @@ program
   .command('alloy')
   .argument('<source>', 'Image file or directory')
   .description('Generate legacy Titanium Alloy multi-scale assets (1x/2x/3x + mdpi→xxxhdpi)')
-  .option('-o, --output <dir>',  'Output directory')
-  .option('-p, --preset <name>', 'Alloy preset key from config file')
+  .option('-o, --output <dir>',  'Output base (currently may be overridden by config)')
+  .option('-p, --preset <name>', 'Preset settings; platform definitions always come from presets.alloy')
   .option('-d, --debug',         'Debug mode')
   .addHelpText('after', `
 Examples:
   imgconvert alloy icon.png
-  imgconvert alloy icon.png -p my-alloy-config
+  imgconvert alloy ./icons
+  Configure platform sources/output in presets.alloy; all groups are processed.
+  Source dimensions are treated as 4x on both platforms.
 `)
   .action(require('./commands/alloy'));
 
@@ -122,12 +122,12 @@ const configCmd = program
 configCmd
   .command('init')
   .description('Create .imgconverter.config.json with defaults and example presets')
-  .option('--force', 'Overwrite existing config without prompting')
+  .option('--force', 'Overwrite existing config (otherwise it is kept)')
   .action(require('./commands/config').init);
 
 configCmd
   .command('show')
-  .description('Display the current resolved configuration as JSON')
+  .description('Display defaults merged with config as JSON (no command-specific resolution)')
   .action(require('./commands/config').show);
 
 configCmd.action(() => configCmd.help());
@@ -194,56 +194,57 @@ function buildMainHelp() {
 
   return [
     '',
-    `  ${b('imgconvert')} v${version} — Image compression, conversion, and resizing`,
+    `  ${b('imgconvert')} v${version}: Image compression, conversion, and resizing`,
     '',
-    `${b('USAGE')}`,
+    `${b('Usage')}`,
     `  ${g('imgconvert')} [source] [options]`,
-    `  ${g('imgconvert brand')} <master.svg> [options]`,
+    `  ${g('imgconvert brand')} [master] --sdk android [options]`,
     `  ${g('imgconvert alloy')} <source> [options]`,
     `  ${g('imgconvert config')} init|show`,
     `  ${g('imgconvert completions')} [shell]`,
     `  ${g('imgconvert help')} [topic]`,
     '',
-    `${b('FORMAT & QUALITY')}`,
-    `  ${g('-f, --format <format>')}     Output format: ${y('jpeg|png|webp|avif|tiff|gif|all')}`,
+    `${b('Format and quality')}`,
+    `  ${g('-f, --format <format>')}     Output format: ${y('jpg|jpeg|png|webp|avif|tiff|gif|all')}`,
     `  ${g('-q, --quality <n>')}         Quality 1-100 ${y('(default: 85)')}`,
     `  ${g('-b, --background <color>')}  Background color (hex, rgb, or named)`,
     '',
-    `${b('DIMENSIONS & FITTING')}`,
-    `  ${g('--width <n>')}               Output width in pixels`,
+    `${b('Dimensions and fit')}`,
+    `  ${g('--width <n>')}               Output width in pixels (no -w alias)`,
     `  ${g('--height <n>')}              Output height in pixels`,
     `  ${g('--fit <strategy>')}          Resize strategy: ${y('cover|contain|fill|inside|outside')}`,
     `  ${g('--position <pos>')}          Anchor for ${y('--fit cover/contain')} or ${y('--canvas')}`,
     `  ${g('--crop <coords>')}           Manual crop coordinates: ${y('left,top,width,height')}`,
     `  ${g('--canvas')}                  Resize canvas without scaling (pad if larger, crop if smaller)`,
-    `  ${g('--trim')}                    Auto-remove transparent borders`,
+    `  ${g('--trim')}                    Auto-trim edge-color/transparent borders`,
     '',
-    `${b('BATCH & NAMING')}`,
+    `${b('Batch processing and naming')}`,
     `  ${g('--rename <strategy>')}       ${y('enumerate|lowercase|replace-spaces|prefix:X|suffix:X')}`,
     `  ${g('-n, --name <name>')}         Custom output filename (single file, no extension)`,
     '',
-    `${b('OUTPUT')}`,
+    `${b('Output')}`,
     `  ${g('-o, --output <dir>')}        Output directory`,
-    `  ${g('--replace')}                 Replace original files (no copy)`,
+    `  ${g('--replace')}                 Legacy flag; currently writes to output directory`,
     '',
-    `${b('PRESETS')}`,
+    `${b('Presets')}`,
     `  ${g('-p, --preset <name>')}       Apply preset: ${y('web|print|thumbnail')} (or custom from config)`,
     '',
-    `${b('GLOBAL')}`,
+    `${b('General options')}`,
     `  ${g('-d, --debug')}               Debug mode`,
     `  ${g('-v, --version')}             Show version`,
     `  ${g('-h, --help')}                Show this help`,
     '',
-    `${b('SHELL INTEGRATION')}`,
+    `${b('Shell integration')}`,
     `  ${g('imgconvert completions')}              Interactive install (auto-detects shell)`,
     `  ${g('imgconvert completions')} ${y('bash|zsh|fish')}  Install for a specific shell`,
     `  ${g('imgconvert completions uninstall')}    Remove installed completions`,
+    `  ${g('imgconvert completions print <shell>')} Print script without installing`,
     '',
-    `${b('EXAMPLES')}`,
+    `${b('Examples')}`,
     `  ${g('imgconvert')} ./photos -f webp -q 85`,
     `  ${g('imgconvert')} banner.png --width 1200 --height 400 --fit cover`,
     `  ${g('imgconvert')} ./photos --rename enumerate,lowercase`,
-    `  ${g('imgconvert brand')} logo.svg --bg-color "#0B1326"`,
+    `  ${g('imgconvert brand')} logo.svg --sdk android --bg-color "#0B1326"`,
     `  ${g('imgconvert alloy')} icon.png`,
     `  ${g('imgconvert config')} init`,
     '',

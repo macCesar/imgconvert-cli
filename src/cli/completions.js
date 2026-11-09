@@ -17,13 +17,14 @@ _imgconvert_completions() {
     imgconvert)
       COMPREPLY=( $(compgen -W "${COMMANDS.join(' ')} --help --version" -- "$cur") )
       return ;;
-    brand) COMPREPLY=( $(compgen -W "--adaptive --marketplace --notification --splash --bg-color --padding --ios-padding --monochrome-master --project --output --in-place --notes --dry-run --cleanup-legacy --aggressive --debug --help" -- "$cur") ); return ;;
+    brand) COMPREPLY=( $(compgen -W "--adaptive --marketplace --notification --splash --bg-color --padding --ios-padding --monochrome-master --project --output --in-place --notes --dry-run --cleanup-legacy --aggressive --sdk --debug --help" -- "$cur") ); return ;;
     alloy) COMPREPLY=( $(compgen -W "--output --preset --debug --help" -- "$cur") ); return ;;
     config) COMPREPLY=( $(compgen -W "${CONFIG_CMDS.join(' ')} --help" -- "$cur") ); return ;;
     completions) COMPREPLY=( $(compgen -W "${COMPLETION_CMDS.join(' ')} --help" -- "$cur") ); return ;;
     print) COMPREPLY=( $(compgen -W "${COMPLETION_SHELLS.join(' ')}" -- "$cur") ); return ;;
     help) COMPREPLY=( $(compgen -W "${HELP_TOPICS.join(' ')}" -- "$cur") ); return ;;
     --format|-f) COMPREPLY=( $(compgen -W "${FORMATS.join(' ')}" -- "$cur") ); return ;;
+    --sdk) COMPREPLY=( $(compgen -W "android" -- "$cur") ); return ;;
     --fit) COMPREPLY=( $(compgen -W "${FIT.join(' ')}" -- "$cur") ); return ;;
   esac
   COMPREPLY=( $(compgen -W "--format --quality --background --width --height --fit --position --crop --canvas --trim --rename --name --output --replace --preset --debug --version --help" -- "$cur") )
@@ -41,7 +42,7 @@ _imgconvert() {
   local -a commands
   commands=(
     'alloy:Generate legacy Titanium Alloy multi-scale assets'
-    'brand:Generate Titanium SDK 13.x app icons and branding assets'
+    'brand:Generate Android branding assets (--sdk android)'
     'completions:Install shell completion (bash|zsh|fish)'
     'config:Manage .imgconverter.config.json'
     'help:Detailed help on a specific topic'

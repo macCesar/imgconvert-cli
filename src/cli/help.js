@@ -37,7 +37,7 @@ function displayTopic(topic) {
  * List all available topics with one-liner descriptions.
  */
 function listTopics() {
-  console.log(chalk.bold('\nHelp Topics:\n'));
+  console.log(chalk.bold('\nHelp topics:\n'));
   const descriptions = {
     crop: 'Manual crop, canvas extend, and auto-trim',
     resize: 'Width/height, fit strategies, and anchor positions',
@@ -61,7 +61,7 @@ function displayHelp() {
   console.log(chalk.bold('\nUsage:'));
   console.log(`  ${chalk.green('imgconvert')} <source> [options]\n`);
   console.log(chalk.bold('Options:'));
-  console.log(`  ${chalk.green('-H, --help')}     Show help`);
+  console.log(`  ${chalk.green('-h, --help')}     Show help`);
   console.log(`  ${chalk.green('-v, --version')}  Show version\n`);
   listTopics();
 }
@@ -71,7 +71,7 @@ function displayHelp() {
 // ---------------------------------------------------------------------------
 
 function displayCrop() {
-  console.log(chalk.bold('\nManual Crop & Canvas Operations\n'));
+  console.log(chalk.bold('\nCrop and canvas operations\n'));
   console.log(
     `  ${chalk.green('--crop <left,top,width,height>')}
     Extract a specific region from the image.
@@ -79,7 +79,7 @@ function displayCrop() {
     Example: ${chalk.green('imgconvert photo.jpg --crop 100,50,800,600')}
 
   ${chalk.green('--trim')}
-    Automatically remove transparent/white borders around images.
+    Trim borders using Sharp's default edge-color/transparency detection.
     Example: ${chalk.green('imgconvert icon.png --trim')}
 
   ${chalk.green('--canvas')} ${chalk.green('--width <n>')} ${chalk.green('--height <n>')}
@@ -89,7 +89,7 @@ function displayCrop() {
     Example: ${chalk.green('imgconvert shot.png --canvas --height 2688 --position bottom')}
 
   ${chalk.bold('Differences:')}
-    ${chalk.green('--crop')}:   Cuts INTO the image with explicit coordinates
+    ${chalk.green('--crop')}:   Crops the image with explicit coordinates
     ${chalk.green('--canvas')}: Resizes the canvas (pad if larger, crop if smaller)
     ${chalk.green('--trim')}:   Removes empty/transparent borders (auto-detection)
 `
@@ -97,7 +97,7 @@ function displayCrop() {
 }
 
 function displayResize() {
-  console.log(chalk.bold('\nResize & Fit Strategies\n'));
+  console.log(chalk.bold('\nResize and fit strategies\n'));
   console.log(
     `  ${chalk.green('--width <n>')}    Set output width in pixels
   ${chalk.green('--height <n>')}   Set output height in pixels
@@ -106,8 +106,8 @@ function displayResize() {
     ${chalk.yellow('cover')}    Scale to fill dimensions, crop excess
     ${chalk.yellow('contain')}  Scale to fit within dimensions, letterbox if needed (default)
     ${chalk.yellow('fill')}     Stretch to exact dimensions (may distort)
-    ${chalk.yellow('inside')}   Scale down to fit inside dimensions, never upscale
-    ${chalk.yellow('outside')}  Scale up to cover dimensions, never downscale
+    ${chalk.yellow('inside')}   Fit within both bounds without padding; may enlarge or shrink
+    ${chalk.yellow('outside')}  Cover both bounds without cropping; may enlarge or shrink
 
   ${chalk.green('--position <pos>')}   Anchor for --fit cover/contain or --canvas
     Values: ${chalk.yellow('center')} (default), ${chalk.yellow('top')}, ${chalk.yellow('bottom')}, ${chalk.yellow('left')}, ${chalk.yellow('right')},
@@ -124,16 +124,19 @@ function displayResize() {
 }
 
 function displayRename() {
-  console.log(chalk.bold('\nBatch Rename Strategies\n'));
+  console.log(chalk.bold('\nBatch rename strategies\n'));
   console.log(
     `  ${chalk.green('--rename <strategy[,strategy...]>')}
 
   ${chalk.bold('Strategies:')}
-    ${chalk.yellow('enumerate')}        Number files sequentially: 001.jpg, 002.jpg, ...
+    ${chalk.yellow('enumerate')}        Prefix original names: 001-photo.jpg, 002-photo.jpg, ...
     ${chalk.yellow('lowercase')}        Convert filenames to lowercase
-    ${chalk.yellow('replace-spaces')}   Replace spaces with underscores
+    ${chalk.yellow('replace-spaces')}   Replace whitespace with hyphens
     ${chalk.yellow('prefix:<text>')}    Add prefix to all filenames (e.g., ${chalk.yellow('prefix:thumb_')})
     ${chalk.yellow('suffix:<text>')}    Add suffix before extension (e.g., ${chalk.yellow('suffix:_optimized')})
+
+  Enumeration follows natural filename order. Prefix/suffix rules accumulate;
+  lowercase/replace-spaces affect the original basename only.
 
   Combine multiple strategies with commas:
     ${chalk.green('imgconvert ./photos --rename lowercase,replace-spaces,prefix:web_')}
@@ -151,15 +154,15 @@ function displayRename() {
 }
 
 function displayPresets() {
-  console.log(chalk.bold('\nPreset System\n'));
+  console.log(chalk.bold('\nPresets\n'));
   console.log(
     `  ${chalk.bold('Built-in presets')} (${chalk.green('-p, --preset')}):
-    ${chalk.yellow('web')}         Quality: 85, format: webp
+    ${chalk.yellow('web')}         Quality: 80, format: webp, fit: cover
     ${chalk.yellow('print')}       Quality: 100, format: tiff
-    ${chalk.yellow('thumbnail')}   Width: 150, height: 150, fit: cover, quality: 80
+    ${chalk.yellow('thumbnail')}   Width: 150, height: 150, fit: cover, quality: 60, format: png
 
   CLI flags always override preset values:
-    ${chalk.green('imgconvert photo.jpg -p web --quality 95')}   (quality = 95, not 85)
+    ${chalk.green('imgconvert photo.jpg -p web --quality 95')}   (quality = 95, overriding 80)
 
   ${chalk.bold('Custom presets')} in ${chalk.green('.imgconverter.config.json')}:
     {
@@ -174,6 +177,9 @@ function displayPresets() {
 
   Use: ${chalk.green('imgconvert ./photos -p mypreset')}
 
+  The config file is read from the current working directory.
+  CLI > preset > global config > default. JSON canvas is not applied; use --canvas.
+
   Create default config: ${chalk.green('imgconvert config init')}
   Show current config:   ${chalk.green('imgconvert config show')}
 `
@@ -181,34 +187,34 @@ function displayPresets() {
 }
 
 function displayBrand() {
-  console.log(chalk.bold('\nAndroid Branding Pipeline\n'));
+  console.log(chalk.bold('\nAndroid branding\n'));
   console.log(
     `  ${chalk.green('imgconvert brand <master.svg> --sdk android [options]')}
 
   Generates Android res/ branding assets + marketplace artwork from a single
-  SVG or PNG master (min 1024×1024). ${chalk.yellow('--sdk is required')} — no default.
-  No sub-flags = kitchen-sink (adaptive + marketplace + notification + splash).
+  SVG/PNG/JPEG/WebP master (high resolution recommended). ${chalk.yellow('--sdk is required')} except for cleanup.
+  Without generation selectors, all categories are generated unless --cleanup-legacy is present.
 
   ${chalk.bold('SDK target (--sdk):')}
-    ${chalk.yellow('android')}    Standard Android — ${chalk.dim('app/src/main/res/mipmap-*/')}
+    ${chalk.yellow('android')}    Standard Android: ${chalk.dim('app/src/main/res/mipmap-*/')}
     ${chalk.dim('(kotlin, react-native, flutter planned for a future release)')}
 
-  ${chalk.bold('Key flags:')}
+  ${chalk.bold('Options:')}
     ${chalk.green('--sdk <target>')}         Target SDK ${chalk.yellow('(required)')}
     ${chalk.green('--adaptive')}             Android adaptive icon triplet × 5 densities
     ${chalk.green('--marketplace')}          iTunesConnect (1024²) + Play Store artwork (512²)
     ${chalk.green('--notification')}         Notification icons × 5 densities
     ${chalk.green('--splash')}               Android 12+ splash_icon × 5 densities
     ${chalk.green('--bg-color <hex>')}       Background color (default: ${chalk.yellow('#FFFFFF')})
-    ${chalk.green('--padding <n>')}          Android safe-zone % (range 12-20, default: ${chalk.yellow('15')})
-    ${chalk.green('--in-place')}             Write directly into project (OVERWRITES)
+    ${chalk.green('--padding <n>')}          Android padding 1-40% per side (typical 12-20, default: ${chalk.yellow('15')})
+    ${chalk.green('--in-place')}             Write directly into project (overwrites existing files)
     ${chalk.green('--dry-run')}              Preview without writing any files
-    ${chalk.green('--cleanup-legacy')}       Remove legacy branding artifacts
+    ${chalk.green('--cleanup-legacy')}       Delete legacy Titanium artifacts in project; preview with --dry-run
 
   ${chalk.bold('Android dark mode:')}
     Handled automatically via ${chalk.yellow('ic_launcher_monochrome.png')} (part of --adaptive).
     Android 13+ tints the monochrome layer based on wallpaper + theme.
-    No separate 'dark' file exists on Android — no extra flags needed.
+    Android uses this layer for themed icons; no separate dark icon is needed.
 
   ${chalk.bold('Examples:')}
     ${chalk.green('imgconvert brand logo.svg --sdk android')}
@@ -223,7 +229,7 @@ function displayBrand() {
 }
 
 function displayAlloy() {
-  console.log(chalk.bold('\nLegacy Titanium Alloy Multi-Scale Assets\n'));
+  console.log(chalk.bold('\nTitanium Alloy multi-scale assets\n'));
   console.log(
     `  ${chalk.green('imgconvert alloy <source> [options]')}
 
@@ -234,11 +240,15 @@ function displayAlloy() {
 
   ${chalk.bold('Options:')}
     ${chalk.green('-o, --output <dir>')}    Output directory
-    ${chalk.green('-p, --preset <name>')}   Alloy preset key from config file
+    ${chalk.green('-p, --preset <name>')}   Preset settings; platform definitions come from presets.alloy
 
   ${chalk.bold('Examples:')}
     ${chalk.green('imgconvert alloy icon.png')}
-    ${chalk.green('imgconvert alloy icon.png -p my-alloy-config')}
+    ${chalk.green('imgconvert alloy ./icons')}
+
+  Source images are treated as 4x masters on both platforms.
+  Configure platforms/groups in presets.alloy; all groups run.
+  CLI -o may be overridden by config; use global output for a stable base.
 
   Run: ${chalk.green('imgconvert alloy --help')} for full options.
 `

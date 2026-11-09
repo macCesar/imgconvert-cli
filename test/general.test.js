@@ -198,8 +198,8 @@ describe('imgconvert CLI Tests', function () {
 
     it('should display help message', () => {
       const result = execCLI('--help');
-      expect(result).to.include('USAGE');
-      expect(result).to.include('FORMAT & QUALITY');
+      expect(result).to.include('Usage');
+      expect(result).to.include('Format and quality');
       expect(result).to.include('imgconvert');
     });
 
@@ -508,7 +508,7 @@ describe('imgconvert CLI Tests', function () {
 
       const result = execCLI(command);
       logResult('Debug mode', result);
-      expect(result).to.include('Processing complete!');
+      expect(result).to.include('Processing summary:');
       expect(result).to.include('Total original size:');
       expect(result).to.include('Total new size:');
       expect(result).to.include('Total savings:');
