@@ -1,110 +1,122 @@
 'use strict';
-
-const COMMANDS = ['alloy', 'brand', 'completions', 'config', 'help'];
-const FORMATS = ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif', 'all'];
-const FIT = ['cover', 'contain', 'fill', 'inside', 'outside'];
-const HELP_TOPICS = ['crop', 'resize', 'rename', 'presets', 'brand', 'alloy'];
-const CONFIG_CMDS = ['init', 'show'];
-const COMPLETION_SHELLS = ['bash', 'zsh', 'fish'];
-const COMPLETION_CMDS = [...COMPLETION_SHELLS, 'uninstall', 'print'];
-
+// Load lazily: this module is also used by the command handlers in program.js.
+function definitions() {
+  const root = require('./program');
+  const entries = [];
+  function visit(command, name = '') {
+    entries.push({command,name});
+    for (const child of command.commands.filter(c=>!c._hidden).sort((a,b)=>a.name().localeCompare(b.name()))) visit(child, [name,child.name()].filter(Boolean).join(' '));
+  }
+  visit(root);
+  return entries.map(({command:c,name}) => ({
+    name, description: c.description(),
+    children: c.commands.filter(x=>!x._hidden).map(x=>x.name()),
+    options: [...c.options,...(c.options.some(o=>o.long==='--help') ? [] : [{long:'--help',short:'-h',description:'Show help'}])].map(o=>({
+      flags:[o.short,o.long].filter(Boolean), description:o.description, argument:Boolean(o.required||o.optional), choices:o.argChoices || [], key:o.attributeName ? o.attributeName() : 'help'
+    }))
+  }));
+}
+const quote = s => "'" + String(s).replace(/'/g,"'\\''") + "'";
 function bashCompletion() {
+  const defs = definitions();
+  const cases = defs.map(d => {
+    const values=d.options.filter(o=>o.argument).map(o=>`      ${o.flags.join('|')}) argument=1; ${o.key === 'preset' ? 'values="$(imgconvert _complete presets 2>/dev/null)"' : o.key === 'group' ? 'values="$(imgconvert _complete groups "$preset" 2>/dev/null)"' : `values=${quote(o.choices.join(' '))}`} ;;
+`).join('');
+    return `    ${quote(d.name)})
+      case "$prev" in
+${values}      esac
+      if (( ! argument )) && [[ "$cur" == -* ]]; then values=${quote(d.options.flatMap(o=>o.flags).join(' '))}; fi
+      if (( ! argument )) && [[ -z "$values" && "$cur" != -* ]]; then values=${quote(d.children.join(' '))}; fi ;;
+`;
+  }).join('');
   return `# imgconvert bash completion
 _imgconvert_completions() {
-  local cur prev words cword
-  _init_completion || return
-  case "$prev" in
-    imgconvert)
-      COMPREPLY=( $(compgen -W "${COMMANDS.join(' ')} --help --version" -- "$cur") )
-      return ;;
-    brand) COMPREPLY=( $(compgen -W "--adaptive --marketplace --notification --splash --bg-color --padding --ios-padding --monochrome-master --project --output --in-place --notes --dry-run --cleanup-legacy --aggressive --sdk --debug --help" -- "$cur") ); return ;;
-    alloy) COMPREPLY=( $(compgen -W "--output --preset --debug --help" -- "$cur") ); return ;;
-    config) COMPREPLY=( $(compgen -W "${CONFIG_CMDS.join(' ')} --help" -- "$cur") ); return ;;
-    completions) COMPREPLY=( $(compgen -W "${COMPLETION_CMDS.join(' ')} --help" -- "$cur") ); return ;;
-    print) COMPREPLY=( $(compgen -W "${COMPLETION_SHELLS.join(' ')}" -- "$cur") ); return ;;
-    help) COMPREPLY=( $(compgen -W "${HELP_TOPICS.join(' ')}" -- "$cur") ); return ;;
-    --format|-f) COMPREPLY=( $(compgen -W "${FORMATS.join(' ')}" -- "$cur") ); return ;;
-    --sdk) COMPREPLY=( $(compgen -W "android" -- "$cur") ); return ;;
-    --fit) COMPREPLY=( $(compgen -W "${FIT.join(' ')}" -- "$cur") ); return ;;
-  esac
-  COMPREPLY=( $(compgen -W "--format --quality --background --width --height --fit --position --crop --canvas --trim --rename --name --output --replace --preset --debug --version --help" -- "$cur") )
+  local cur="\${COMP_WORDS[COMP_CWORD]}" prev="\${COMP_WORDS[COMP_CWORD-1]}" context="" values="" preset="alloy" word i argument=0 candidate
+  for ((i=1; i<COMP_CWORD; i++)); do
+    word="\${COMP_WORDS[i]}"
+    case "$word" in
+      -p|--preset) preset="\${COMP_WORDS[i+1]}"; ((i++)); continue ;;
+    esac
+    if ((i==1)); then
+      case "$word" in ${defs.filter(d=>d.name && !d.name.includes(' ')).map(d=>d.name).join('|')}) context="$word" ;; esac
+    fi
+    case "$context $word" in
+${defs.filter(d=>d.name.includes(' ')).map(d=>'      '+quote(d.name)+') context='+quote(d.name)+' ;;').join('\n')}
+    esac
+  done
+  case "$context" in
+${cases}  esac
+  if [[ "$context" == help ]]; then values="crop resize rename presets brand alloy"; fi
+  if [[ "$context" == completions || "$context" == "completions print" ]]; then values="bash zsh fish uninstall print"; fi
+  if ((argument)) && [[ -z "$values" ]]; then COMPREPLY=(); while IFS= read -r candidate; do COMPREPLY+=("$candidate"); done < <(compgen -f -- "$cur"); return; fi
+  COMPREPLY=( $(compgen -W "$values" -- "$cur") )
+  if (( ! argument )) && [[ "$cur" != -* && ( "$context" == "" || "$context" == brand || "$context" == alloy ) ]]; then while IFS= read -r candidate; do COMPREPLY+=("$candidate"); done < <(compgen -f -- "$cur"); fi
 }
 complete -F _imgconvert_completions imgconvert
 `;
 }
-
 function zshCompletion() {
-  const formats = FORMATS.join(' ');
-  const fit = FIT.join(' ');
+  const defs=definitions();
+  const cases=defs.map(d=>{
+    const opts=d.options.flatMap(o=>{
+      let action=o.choices.length ? `(${o.choices.join(' ')})` : '_files';
+      if(o.key==='preset') action='->presets';
+      if(o.key==='group') action='->groups';
+      return o.flags.map(flag => quote(`${o.flags.length>1?'('+o.flags.join(' ')+')':''}${flag}[${o.description.replace(/[\[\]:']/g,'')} ]${o.argument?':value:'+action:''}`));
+    });
+    const rest=d.children.length && d.name !== '' && d.name !== 'completions' ? quote('1:command:('+d.children.join(' ')+')'):d.name==='completions'?"'1:shell:(bash zsh fish uninstall print)' '*:shell:(bash zsh fish)'":d.name==='help'?"'1:topic:(crop resize rename presets brand alloy)'":"'*:source:_files'";
+    return `    ${quote(d.name)}) _arguments -C ${opts.join(' ')} ${rest} ;;`;
+  }).join('\n');
   return `#compdef imgconvert
 # imgconvert zsh completion
 _imgconvert() {
-  local -a commands
+  local context='' state line preset=alloy
+  local -a commands values
   commands=(
-    'alloy:Generate legacy Titanium Alloy multi-scale assets'
-    'brand:Generate Android branding assets (--sdk android)'
-    'completions:Install shell completion (bash|zsh|fish)'
-    'config:Manage .imgconverter.config.json'
-    'help:Detailed help on a specific topic'
+${defs.filter(d=>d.name && !d.name.includes(' ')).map(d=>'    '+quote(d.name+':'+d.description)).join('\n')}
   )
-  _arguments \\
-    '(-v --version)'{-v,--version}'[Show version]' \\
-    '(-h --help)'{-h,--help}'[Show help]' \\
-    '(-f --format)'{-f,--format}'[Output format]:format:(${formats})' \\
-    '(-q --quality)'{-q,--quality}'[Quality 1-100]:quality' \\
-    '--fit[Resize strategy]:fit:(${fit})' \\
-    '1: :->command_or_source' \\
-    '*:: :->args'
-  case $state in
-    command_or_source)
-      _describe -t commands 'imgconvert commands' commands
-      _files
-      ;;
+  if (( CURRENT == 2 )); then
+    _describe -t commands 'imgconvert commands' commands
+    _files
+  fi
+  case "$words[2] $words[3]" in
+${defs.filter(d=>d.name.includes(' ')).map(d=>'    '+quote(d.name)+') context='+quote(d.name)+'; words=("$words[1]" "${(@)words[4,-1]}"); ((CURRENT-=2)) ;;').join('\n')}
+    *) case "$words[2]" in ${defs.filter(d=>d.name && !d.name.includes(' ')).map(d=>d.name).join('|')}) context="$words[2]"; words=("$words[1]" "\${(@)words[3,-1]}"); ((CURRENT--)) ;; esac ;;
+  esac
+  local i
+  for ((i=2;i<\${#words};i++)); do
+    if [[ "$words[i]" == -p || "$words[i]" == --preset ]]; then preset="$words[i+1]"; fi
+  done
+  case "$context" in
+${cases}
+  esac
+  case "$state" in
+    presets) values=(\${(f)"$(imgconvert _complete presets 2>/dev/null)"}); _describe 'preset' values ;;
+    groups) values=(\${(f)"$(imgconvert _complete groups "$preset" 2>/dev/null)"}); _describe 'group' values ;;
   esac
 }
 _imgconvert
 `;
 }
-
 function fishCompletion() {
-  const lines = [
-    '# imgconvert fish completion',
-    `set -l commands ${COMMANDS.join(' ')}`,
-    `set -l formats ${FORMATS.join(' ')}`,
-    `set -l fit_strategies ${FIT.join(' ')}`,
-    `set -l help_topics ${HELP_TOPICS.join(' ')}`,
-    '',
-    '# Subcommands',
-    'complete -c imgconvert -f -n "__fish_use_subcommand" -a alloy -d "Generate legacy Alloy multi-scale assets"',
-    'complete -c imgconvert -f -n "__fish_use_subcommand" -a brand -d "Generate Titanium branding assets"',
-    'complete -c imgconvert -f -n "__fish_use_subcommand" -a completions -d "Install shell completion"',
-    'complete -c imgconvert -f -n "__fish_use_subcommand" -a config -d "Manage config file"',
-    'complete -c imgconvert -f -n "__fish_use_subcommand" -a help -d "Topic-specific help"',
-    '',
-    '# completions sub-subcommands',
-    'complete -c imgconvert -f -n "__fish_seen_subcommand_from completions" -a "bash zsh fish uninstall print"',
-    '',
-    '# Global options',
-    'complete -c imgconvert -s f -l format -d "Output format" -a "$formats"',
-    'complete -c imgconvert -s q -l quality -d "Quality 1-100"',
-    'complete -c imgconvert -l width -d "Output width in pixels"',
-    'complete -c imgconvert -l height -d "Output height in pixels"',
-    'complete -c imgconvert -l fit -d "Resize strategy" -a "$fit_strategies"',
-    'complete -c imgconvert -s h -l help -d "Show help"',
-    'complete -c imgconvert -s v -l version -d "Show version"',
-  ];
-  return lines.join('\n') + '\n';
-}
-
-function print(shell) {
-  switch (shell) {
-    case 'bash': process.stdout.write(bashCompletion()); break;
-    case 'zsh':  process.stdout.write(zshCompletion()); break;
-    case 'fish': process.stdout.write(fishCompletion()); break;
-    default:
-      process.stderr.write(`Unknown shell: ${shell}. Supported: bash, zsh, fish\n`);
-      process.exit(1);
+  const defs=definitions(), commands=defs.filter(d=>d.name && !d.name.includes(' ')).map(d=>d.name).join(' ');
+  const lines=['# imgconvert fish completion', 'function __imgconvert_groups', '  set -l preset alloy', '  set -l words (commandline -opc)', '  for i in (seq (count $words))', '    if contains -- $words[$i] -p --preset; and test $i -lt (count $words)', '      set preset $words[(math $i + 1)]', '    end', '  end', '  imgconvert _complete groups "$preset" 2>/dev/null', 'end'];
+  for(const d of defs){
+    if(d.name && !d.name.includes(' ')) lines.push(`complete -c imgconvert -f -n '__fish_use_subcommand' -a ${quote(d.name)} -d ${quote(d.description)}`);
+    const context=d.name ? d.name.split(' ').map(name=>`__fish_seen_subcommand_from ${name}`).join('; and ') : `not __fish_seen_subcommand_from ${commands}`;
+    for(const o of d.options){
+      const flags=o.flags.map(f=>f.startsWith('--')?'-l '+f.slice(2):'-s '+f.slice(1)).join(' ');
+      const values=o.key==='preset'?'(imgconvert _complete presets 2>/dev/null)':o.key==='group'?'(__imgconvert_groups)':o.choices.join(' ');
+      lines.push(`# ${o.flags.join(' ')}\ncomplete -c imgconvert -n ${quote(context)} ${flags} -d ${quote(o.description)}${o.argument?' -r':''}${values?' -f -a '+quote(values):''}`);
+    }
+    if(d.children.length) lines.push(`complete -c imgconvert -f -n ${quote(context)} -a ${quote(d.children.join(' '))}`);
   }
+  lines.push("complete -c imgconvert -f -n '__fish_seen_subcommand_from completions' -a 'bash zsh fish uninstall print'", "complete -c imgconvert -f -n '__fish_seen_subcommand_from help' -a 'crop resize rename presets brand alloy'");
+  return lines.join('\n')+'\n';
 }
-
-module.exports = { print, bashCompletion, zshCompletion, fishCompletion };
+function print(shell) {
+  const generator={bash:bashCompletion,zsh:zshCompletion,fish:fishCompletion}[shell];
+  if(!generator) throw new Error(`Unknown shell: ${shell}. Supported: bash, zsh, fish`);
+  process.stdout.write(generator());
+}
+module.exports={print,bashCompletion,zshCompletion,fishCompletion};
