@@ -193,7 +193,7 @@ describe('imgconvert CLI Tests', function () {
   describe('Basic CLI functionality', () => {
     it('should display version information', () => {
       const result = execCLI('-v');
-      expect(result).to.include('3.0.0');
+      expect(result.trim()).to.equal(require('../package.json').version);
     });
 
     it('should display help message', () => {

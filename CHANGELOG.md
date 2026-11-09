@@ -1,41 +1,55 @@
 # Changelog
 
-## Unreleased: audit corrections
-
-- Plan conversion, Alloy and branding destinations before writing; require `--overwrite` for existing outputs and reject colliding outputs within one command.
-- Implement `--in-place` and replacement aliases, preserve originals on format/name changes, and reject effective output/in-place conflicts.
-- Resolve and validate CLI/JSON options consistently, inherit through null, support boolean negations, and fail on malformed config or missing presets.
-- Return 0 for success, 1 for invalid/no-output runs, and 2 for partial output; preserve successful batch results.
-- Compose trim, crop and resize/canvas in that order. Restore Alloy preset/group/source/output selection and keep fixed platform scales.
-- Validate branding masters during dry-run, isolate intermediates, retain Android assets without sufficient cleanup evidence, add artwork-padding and SDK-specific notes.
-- Derive shell completion from Commander, bound conversion/Alloy input tasks with concurrency, isolate test runs and remove unused Sinon.
-- The public interface remains the CLI. No version or publication change accompanies these corrections.
-
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Dependencies and compatibility
+## [4.0.0] - 2026-11-08
 
-- Require Node.js 22.13.0 or later, as approved for the dependency upgrade. This changes the supported runtime compared with prior releases.
-- Update Chalk to 6.0.1, Commander to 15.1.0, fast-xml-parser to 5.12.0, Sharp to 0.35.5, and update-notifier to 7.3.1.
-- Update Chai to 6.3.0, ESLint to 10.14.0, Mocha to 12.0.3, and Sinon to 22.1.0.
-- Read the default exports of Chalk and update-notifier from CommonJS modules. Keep the existing CLI syntax and image-processing behavior.
-- Override development-tree glob/minimatch to patched versions 14.0.4 and 11.0.5. The latest direct dependencies still resolved versions with advisories without these overrides.
-- Add an ESLint flat config and lint the full src tree so `npm run lint` works with ESLint 10, including nested command and generator modules.
+### Breaking changes
 
-### Documentation
+- Require Node.js 22.13.0 or later for use and development.
+- Require explicit `--overwrite` permission for existing destinations in conversion, Alloy and branding. Reject duplicate planned destinations and outputs targeting another input, even with overwrite enabled.
+- Reject effective `output`/`inPlace` conflicts, including inherited JSON settings.
+- Treat JSON `null` as unspecified and inherit the next lower-priority value. Keep `false` and `0` explicit, subject to validation.
+- Fail on malformed JSON, unknown or malformed selected presets, invalid options, unsupported single inputs and directories without compatible images.
+- Return exit code 1 for invalid/planning/no-output failures and 2 when valid outputs exist alongside failures. Scripts must handle partial results.
 
-- Establish an English official user manual under docs/guide with a central index, complete option reference, worked recipes, path/overwrite rules, configuration, Android branding, Alloy, automation and troubleshooting. Include the manual in the npm package and link it from README and CUSTOM_PRESETS.
+### Added
 
-- Reconcile README, custom presets, test/fixture guides, CLI help, and completion descriptions with the active v3 command handlers.
-- Correct preset defaults, resize strategies, naming, source/output paths, branding SDK support, master formats, and Alloy 4x scaling.
-- Replace invalid JSON examples and obsolete v2 command examples; document migration and implementation limitations while keeping the existing processing behavior.
-- Clarify the 3.0.0 notes below: the current CLI still accepts `--ios-padding` for marketplace artwork and does not generate `DefaultIcon*.png` with `--sdk android`. Earlier claims to the contrary do not describe the current implementation.
-- Document actual dependency Node requirements, absent legacy test directories, and broad cleanup side effects. Remove unverified benchmark/test-coverage claims.
-- Include linked guides and changelog in the npm package; extract the existing README MIT text into the previously missing `LICENSE` file.
+- Add general `--in-place` processing, keeping `--replace` and `--replace-originals` as aliases. Name/format changes create sibling outputs and preserve originals.
+- Add `--no-canvas`, `--no-trim`, `--no-in-place` and `--no-overwrite` overrides, plus the `-w` width alias.
+- Add shared bounded input concurrency to conversion and Alloy, configurable with `--concurrency` or JSON and defaulting to `min(4, availableParallelism())`.
+- Add Alloy custom preset selection and `--group`; allow configured sources without a positional input and retain fixed platform scales.
+- Add `--artwork-padding`, with `--ios-padding` retained as its alias and padding zero supported.
+- Derive contextual Bash, Zsh and Fish completion from Commander, including option values, source paths and dynamic preset/group names.
+- Ship the official English user manual, full option reference, worked recipes, automation and migration guides with the npm package. Keep README and CUSTOM_PRESETS as linked entry points.
+- Publish version tags automatically from GitHub Actions through npm trusted publishing, with version guards, lint and tests before publication.
 
+### Fixed
+
+- Plan destinations before writes, protect against destination-creation races, write through exclusive adjacent temporaries and clean operation-owned files on failure.
+- Preserve successful batch outputs and report processed inputs, failed inputs and generated outputs separately.
+- Compose trim, crop and resize/canvas in that order using intermediate dimensions; interpret crop coordinates after trim and normalize canvas position aliases.
+- Apply CLI > preset > global > default precedence consistently, including JSON canvas, explicit boolean values and per-platform Alloy overwrite policy.
+- Respect Alloy output bases, platform sources, quality/format specificity and selected definitions/groups; detect cross-group collisions before generating.
+- Decode all supplied branding masters during dry-run, keep previews free of writes, isolate intermediates and show generation paths separately from project deletions.
+- Separate Android orientation evidence from iPhone preferences during cleanup. Keep landscape variants and legacy icon/splash resources when unused status cannot be established.
+- Generate Android integration notes from produced categories and destinations while retaining both marketplace artwork files.
+- Show help with exit code 0 when invoked without arguments and keep stack traces behind debug mode.
+
+### Changed
+
+- Update Chalk to 6.0.1, Commander to 15.1.0, fast-xml-parser to 5.12.0, Sharp to 0.35.5 and update-notifier to 7.3.1, with CommonJS default-export adapters.
+- Update Chai to 6.3.0, ESLint to 10.14.0 and Mocha to 12.0.3; retain patched glob/minimatch overrides and lint the full source tree with ESLint flat configuration.
+- Run tests in an exclusive temporary project copy; make cleanup preserve user configuration and output folders. Keep test:unit/test:integration/test:all as aliases for the real suite.
+- Centralize configuration validation and processing results. Retain internal adapters/generators while keeping the CLI as the supported public interface.
+- Preserve deprecated numeric `-h` and bare-config compatibility shims; use `--height` and explicit config subcommands in new scripts.
+
+### Removed
+
+- Remove unused Sinon and the legacy parser's accidental minimist dependency and duplicated precedence implementation.
 
 ## [3.0.0] - 2026-05-10
 

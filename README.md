@@ -4,6 +4,12 @@ Compress, convert, crop, resize and rename images from the terminal. Generate An
 
 **[Read the official documentation](docs/README.md)** for the full user guide, every CLI option, working examples and troubleshooting. This README is the project entry point. The manual describes this source checkout; an older npm release may not yet expose every documented option.
 
+## Version 4.0
+
+Version 4.0 requires Node.js 22.13.0 or later and explicit `--overwrite` permission for existing outputs. JSON `null` inherits the next value; invalid configuration and processing failures now return reliable nonzero exit codes. See [migration guidance](docs/guide/troubleshooting.md#migration-from-older-commands) before updating scripts.
+
+Override inherited booleans with `--no-canvas`, `--no-trim`, `--no-in-place` and `--no-overwrite`. Select Alloy asset groups with `--group`, and tune marketplace padding with `--artwork-padding` (alias `--ios-padding`). The [full CLI reference](docs/guide/cli-reference.md) covers the complete option contract.
+
 ## Contents
 
 - [Installation](#installation) and [quick start](#quick-start)
