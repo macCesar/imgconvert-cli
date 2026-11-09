@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Establish an English official user manual under docs/guide with a central index, complete option reference, worked recipes, path/overwrite rules, configuration, Android branding, Alloy, automation and troubleshooting. Include the manual in the npm package and link it from README and CUSTOM_PRESETS.
+
 - Reconcile README, custom presets, test/fixture guides, CLI help, and completion descriptions with the active v3 command handlers.
 - Correct preset defaults, resize strategies, naming, source/output paths, branding SDK support, master formats, and Alloy 4x scaling.
 - Replace invalid JSON examples and obsolete v2 command examples; document migration and implementation limitations while keeping the existing processing behavior.
