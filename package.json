@@ -67,6 +67,8 @@
     "index.js",
     "src/**/*",
     "README.md",
+    "docs/README.md",
+    "docs/guide/**/*.md",
     "CUSTOM_PRESETS.md",
     "CHANGELOG.md",
     "test/README.md",
