@@ -2,8 +2,9 @@
 
 ## Documentation map
 
-- `README.md`: public command reference, installation, source/output paths, migration, and known limitations. Read before changing public options or examples.
-- `CUSTOM_PRESETS.md`: valid preset recipes, precedence, path resolution, and grouped Alloy configuration. Read before changing configuration behavior.
+- `README.md`: project landing page, quick start and stable links into the official user guide.
+- `docs/README.md`: official documentation index. Chapters under `docs/guide/` own installation, image transforms, files/batches, configuration, Android branding, Alloy, recipes, automation, every CLI flag and troubleshooting. Read the relevant chapter before changing public behavior.
+- `CUSTOM_PRESETS.md`: compatibility navigation into the maintained configuration/Alloy chapters; avoid duplicating their reference text here.
 - `test/README.md`: suite selection, fixture isolation, safe cleanup scripts, and the explicit ESLint command for this checkout.
 - `images/README.md`: fixture names and limits of the sample images. Read before changing tests that use repository images.
 - `docs/audits/implementation-and-cli.md`: critical review of the implementation and CLI contract, evidence, decision matrix, and dependency update results. The original diagnostic evidence is retained; the final disposition matrix records the implemented corrections.
@@ -51,3 +52,9 @@ The user's existing VS Code SFTP workflow uploads saved changes automatically an
 ## Concurrency measurements
 
 `docs/audits/concurrency-benchmark.json` records one fresh-process measurement per concurrency setting on this Mac. Twelve 2400x1600 photographic PNGs converted to 1200-wide WebP took 2.147/1.095/0.728 seconds at concurrency 1/2/4, with maximum RSS 120832000/142884864/199704576 bytes. This single sample supports exposing a memory/speed tradeoff; it is not a guarantee for other codecs or workloads. Reproduce with `node test/benchmark.cjs` on macOS.
+
+## Public documentation ownership
+
+The official manual is in English, matching the repository, as explicitly selected by the user. Keep `docs/README.md` as its index and `docs/guide/` as the canonical user-facing chapters. README and the earlier custom-preset entry point link to those chapters. Preserve useful old README/preset anchors when reorganizing navigation. The npm file list includes only the public docs index/guide tree, not internal audit/session notes.
+
+Examples describe this source checkout; an installed npm release can lag behind it even when an unreleased checkout retains the same package version. Check the installed help before making claims about published availability. Documentation changes require example, option-coverage, link and package checks proportional to scope; do not repeat the full image suite for prose alone.

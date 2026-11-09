@@ -41,3 +41,9 @@ Run legacy suites inside an exclusive temporary project copy. Cleanup scripts pr
 ## 2026-11-08: Commit the reviewed work and exclude root screenshots
 
 After the verified implementation handoff, the user explicitly authorized semantic commits and session documentation. Group tooling/dependencies, processing corrections, contextual completion and documentation separately. Keep root screenshots matching `*-.png` outside the index and unchanged. This authorization covers committing; pushing, tagging, version changes and publication remain separate decisions.
+
+## 2026-11-08: Establish the official user manual
+
+The user requested structured official documentation and chose English to match the repository. Make `docs/README.md` the central index and `docs/guide/` the maintained chapters. Keep the root README as the project entry point and retain its useful anchors; make CUSTOM_PRESETS.md a compatibility navigation page instead of a second independent configuration reference.
+
+Ship the public index and chapters in npm through explicit file-list patterns. Keep internal project/session/audit documents out of that public manual tree. State that the guide follows source and that the published npm executable can lag behind unreleased checkout changes. Verify command examples against the current executable and compare the flag reference with Commander rather than relying on older prose.

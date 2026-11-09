@@ -3,9 +3,21 @@
 Updated: 2026-11-08
 Session by: Codex
 Branch: fix/cli-audit
-Phase: Audit corrections verified and organized into semantic commits; no release actions.
+Phase: Official English user manual verified and committed; session closed without release actions.
 
-## Completed
+## Official user documentation
+
+The user requested a structured official guide and explicitly chose English to match the repository. `docs/README.md` is the central index; ten chapters under `docs/guide/` cover installation, image transforms, files/batches, configuration, Android branding, Alloy, recipes, automation, the full CLI reference and troubleshooting/migration. README is the project entry point; CUSTOM_PRESETS.md preserves its old entry anchors and links into the maintained chapters.
+
+Corrected obsolete prose about JSON canvas, position fallback/compass aliases, configured Alloy sources/groups and master sizing. The manual distinguishes repository source from the currently published npm executable. Added only the public docs index/guide tree to npm's file list; internal audit/session notes remain excluded.
+
+Documentation verification: 45 isolated CLI invocations and 33 artifact checks passed, covering dimensions, alpha, naming, paths, variant counts, dry-run and partial results. Static checks covered 42 Commander long flags, seven strict JSON examples, 91 shell blocks and 138 local links/anchors across 15 Markdown files. Package dry-run includes all 11 manual files (59 package files total), with internal audit/session notes excluded. The image-processing source and tests were unchanged; the full suite was not repeated for prose and package-file-list edits.
+
+The user explicitly authorized semantic documentation commits and a session close. The manual/navigation changes are in `655f34b` (`docs(guide): add official English user manual`); npm inclusion is in `6619de5` (`build(package): include official documentation in npm package`). The updated documentation map, decisions and this status are recorded by `docs(project): record official manual and session close`.
+
+No runtime/test changes or new processing work accompanied commit grouping. Existing documentation checks remained applicable; only diff/index checks, startup import checks and screenshot preservation were checked for the close. Next step: review the branch and decide separately whether to merge or release.
+
+## Completed audit correction work
 
 Implemented F-01 through F-18 according to the accepted plan; F-12 is explicitly accepted as a CLI-only public contract. Original diagnostic evidence and the final disposition matrix are in `docs/audits/implementation-and-cli.md`. Single-process concurrency measurements are in `docs/audits/concurrency-benchmark.json`.
 
@@ -15,7 +27,7 @@ Alloy receives resolved platform options, supports configured sources and select
 
 Commander drives help and contextual shell completion recursively. Legacy internal adapters remain; duplicated precedence and accidental minimist usage were removed. Sinon had no consumers and was removed. Tests run in an exclusive temporary project and cleanup scripts preserve user configuration and outputs.
 
-## Verification
+## Audit correction verification
 
 - Development runtime Node 22.23.2: full suite 202 passing.
 - Minimum Node 22.13.0: 57 focused tests passing across contract, operations/queue, orientation, completion, config and help. Conversion, Alloy and branding produce verified image metadata/content or alpha.
@@ -34,10 +46,13 @@ The user authorized semantic commits and session documentation after the impleme
 - `6bb98cd` chore(tooling): upgrade dependencies and isolate test execution.
 - `8c33712` fix(processing): validate options and protect image output pipelines.
 - `1583f27` feat(completions): derive contextual shell completion from Commander.
-- Session documentation and final audit dispositions are recorded by `docs(project): record audit corrections and session close`.
+- `3b83288` docs(project): record audit corrections and session close.
+- `655f34b` docs(guide): add official English user manual.
+- `6619de5` build(package): include official documentation in npm package.
+- Documentation session close: `docs(project): record official manual and session close`.
 
 The unrelated root screenshots matching `*-.png` (currently `1-.png`, `2-.png`, `3-.png`) remain untracked, excluded from every commit and unchanged. No push, version bump, tag or npm publication was performed. Saved edits follow the existing SFTP upload workflow; transfer telemetry was not independently checked.
 
 ## Remaining environment verification
 
-Windows/Linux filesystem behavior, live Zsh/Fish sessions, mobile builds and SFTP transfer status remain unverified. There is no pending implementation blocker in the accepted plan. Next step: review the semantic commits and decide separately whether to merge or release. There are no implementation tasks blocked on external input.
+Windows/Linux filesystem behavior, live Zsh/Fish sessions, mobile builds and SFTP transfer status remain unverified. There is no pending implementation blocker in the accepted correction plan. The official manual follow-up is complete and committed; there are no tasks blocked on external input.
