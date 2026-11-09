@@ -1,0 +1,44 @@
+name: Publish to npm
+
+# npm trusted publisher: macCesar/imgconvert-cli, workflow publish.yml,
+# no GitHub environment. Pushing a version tag authorizes publication.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify tag and package versions
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          node <<'NODE'
+          const { version } = require('./package.json');
+          const lock = require('./package-lock.json');
+          if (process.env.RELEASE_TAG !== `v${version}` ||
+              lock.version !== version || lock.packages[''].version !== version) {
+            console.error('Release tag, package.json and package-lock.json must have the same version.');
+            process.exit(1);
+          }
+          console.log(`Publishing imgconvert-cli@${version}`);
+          NODE
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      # OIDC supplies authentication; do not set NODE_AUTH_TOKEN or NPM_TOKEN.
+      - run: npm publish --access public
