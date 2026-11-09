@@ -2,7 +2,7 @@
 
 Compress, convert, crop, resize, and rename images from the terminal. Generate Android branding assets or Titanium Alloy multi-scale images with dedicated subcommands.
 
-This guide describes v3.0.0. See [migration from v2](#migration-from-v2) before reusing older commands, and [known limitations](#known-limitations) for options whose implementation is incomplete.
+This guide describes the current CLI. See [migration from v2](#migration-from-v2) and [file safety changes](#file-safety-migration) before reusing automation.
 
 ## Contents
 
@@ -25,7 +25,7 @@ imgconvert --version
 imgconvert --help
 ```
 
-Use a Node.js version supported by the installed dependencies. Sharp 0.33.5 requires `^18.17.0 || ^20.3.0 || >=21.0.0`; Commander 12 requires Node 18+. The package's own `node >=14` declaration is outdated. Development with Mocha 11 requires `^18.18.0 || ^20.9.0 || >=21.1.0`. This checkout was validated on Node 22.
+ImgConvert requires Node.js 22.13.0 or later for both use and development. The dependency upgrade raises the runtime requirement from earlier releases. The updated CLI was tested on Node 22.23.2, with focused compatibility checks on Node 22.13.0.
 
 ## Quick start
 
@@ -61,7 +61,7 @@ imgconvert config init
 | --- | --- |
 | `imgconvert [source] [options]` | General image processing; source may come from config or a preset |
 | `imgconvert brand [master] [options]` | Android branding; master optional only for cleanup |
-| `imgconvert alloy <source> [options]` | Titanium Alloy multi-scale images; source argument required |
+| `imgconvert alloy [source] [options]` | Titanium Alloy multi-scale images; configured platform sources may supply the input |
 | `imgconvert config init [--force]` | Create config; keep an existing file unless forced |
 | `imgconvert config show` | Print defaults merged with the current config as JSON |
 | `imgconvert completions [bash\|zsh\|fish]` | Install completions; interactive if shell omitted |
@@ -86,7 +86,7 @@ Source is one image file or a directory. Directory processing is not recursive: 
 | `-f, --format <format>` | `jpg`, `jpeg`, `png`, `webp`, `avif`, `tiff`, `gif`, `all` | Preserve input format |
 | `-q, --quality <n>` | Quality 1 to 100; effect depends on encoder | 85 |
 | `-b, --background <color>` | Padding color; also flattens transparency for JPEG | Transparent padding for PNG/WebP/AVIF/TIFF; white otherwise |
-| `--width <n>` | Positive output width in pixels | Automatic |
+| `-w, --width <n>` | Positive output width in pixels | Automatic |
 | `--height <n>` | Positive output height in pixels | Automatic |
 | `--fit <strategy>` | `contain`, `cover`, `fill`, `inside`, `outside` | `contain` |
 | `--position <position>` | Anchor for cover, contain, or canvas | `center` |
@@ -96,13 +96,15 @@ Source is one image file or a directory. Directory processing is not recursive: 
 | `-n, --name <name>` | Output basename without extension; single file only | Input basename |
 | `--rename <strategies>` | Comma-separated batch naming rules | None |
 | `-o, --output <dir>` | Output directory | See paths below |
-| `--replace` | Accepted flag; currently still writes to output directory | See known limitations |
+| `--in-place` | Update input; create a sibling if format or name changes | Off |
+| `--overwrite` | Replace existing destinations | Off |
+| `--concurrency <n>` | Maximum active inputs, positive integer | `min(4, availableParallelism())` |
 | `-p, --preset <name>` | Built-in conversion preset or custom preset | None |
 | `-d, --debug` | Detailed processing diagnostics | Off |
 | `-h, --help` | Show help | N/A |
 | `-v, --version` | Show version | N/A |
 
-`--replace-originals` is a hidden compatibility alias for `--replace`. Neither currently provides reliable in-place replacement. Width has no `-w` alias in v3. Use `--height` for height.
+`--replace` and the hidden `--replace-originals` are aliases for `--in-place`. Use `--height` for height; `-h` displays help. `--no-canvas`, `--no-trim`, `--no-in-place` and `--no-overwrite` disable inherited boolean values.
 
 Format names are lowercase. Without `-f`, the original extension is preserved after normalization to lowercase. Explicit `-f jpeg` produces `.jpeg`, while `-f jpg` produces `.jpg`. `-f all` emits all seven extensions, including both `.jpg` and `.jpeg`.
 
@@ -119,7 +121,7 @@ Quality is an encoder setting, not a guaranteed percentage reduction or visual s
 
 Relative `output` paths resolve beside the source file or source directory, including values from presets/config. Absolute paths are used as-is. Input paths are resolved from the current working directory. Missing output directories are created.
 
-Existing destination filenames are overwritten without confirmation. Different inputs with the same basename can collide after conversion or renaming; use separate destinations or enumeration. Processing a file re-encodes it even when the format stays the same. The output may have different bytes and metadata.
+The command plans all destinations before writing. Existing destinations require `--overwrite`; two outputs with the same destination are rejected even with that flag. Use separate destinations or enumeration. Each output is committed from an exclusive temporary beside its destination, and temporary files owned by the operation are removed on success or failure. Without overwrite authorization, a destination created during processing is also protected. Processing a file re-encodes it even when the format stays the same. The output may have different bytes and metadata.
 
 ### Resize strategies
 
@@ -193,11 +195,11 @@ imgconvert config init --force
 | `print` | TIFF, quality 100, fit contain |
 | `thumbnail` | PNG, 150×150, quality 60, fit cover, position center |
 
-The config file is `.imgconverter.config.json` in the current working directory, not automatically beside the input or in parent directories. `config init` writes defaults and preset templates; `--force` overwrites an existing config without prompting. `config show` prints merged defaults/config/presets; it does not resolve a selected command's options or expand relative paths. Invalid JSON logs a warning and falls back to defaults.
+The config file is `.imgconverter.config.json` in the current working directory, not automatically beside the input or in parent directories. `config init` writes defaults and preset templates; `--force` overwrites an existing config without prompting. `config show` prints merged defaults/config/presets; it does not resolve a selected command's options or expand relative paths. Invalid JSON fails the command.
 
-For general processing, precedence is explicit CLI option → selected preset → global config → built-in default. Source selection is explicit input → preset source → global source. A custom definition replaces the whole built-in preset with that name (no deep merge). Unknown preset names currently fall back to global/default settings without an error.
+For general processing, precedence is explicit CLI option → selected preset → global config → built-in default. Source selection is explicit input → preset source → global source. A custom definition replaces the whole built-in preset with that name (no deep merge). Unknown preset names fail. `null` means unspecified and inherits the next available value; `false` and `0` remain explicit values subject to validation.
 
-Config/preset fields applied by general conversion are `source`, `output`, `quality`, `format`, `width`, `height`, `fit`, `position`, `crop`, `background`, `trim`, `name`, `rename`, and `replace-originals`. Use `--canvas` on the command line: config/preset `canvas` values are not currently applied. Boolean settings enabled in config have no corresponding CLI `--no-*` override.
+Config/preset fields include `source`, `output`, `quality`, `format`, `width`, `height`, `fit`, `position`, `crop`, `background`, `canvas`, `trim`, `name`, `rename`, `inPlace`, `overwrite`, and `concurrency`. The legacy `replace-originals` key maps to `inPlace`; contradictory aliases in one object fail. CLI and JSON values share validation: full integers, positive dimensions, quality 1-100, known formats/fits/positions and valid colors. Debug output includes effective values, their origins and absolute input/output paths.
 
 ```json
 {
@@ -244,14 +246,15 @@ Without generation selectors, `brand` generates adaptive icons, marketplace artw
 | `--notification` | White silhouettes on transparent backgrounds at five densities |
 | `--splash` | Android 12+ splash icons at five densities |
 | `--bg-color <hex>` | Six-digit hex, default `#FFFFFF`; explicitly supplying it also flattens marketplace alpha |
-| `--padding <n>` | Android padding per side; positive integer 1-40, default 15; 12-20 is tuning guidance |
-| `--ios-padding <n>` | Marketplace padding per side in this Android flow; positive integer 1-40, default 4 |
+| `--padding <n>` | Android padding per side; integer 0-40, default 15; 12-20 is tuning guidance |
+| `--artwork-padding <n>` (alias `--ios-padding`) | Marketplace padding per side in this Android flow; integer 0-40, default 4 |
 | `--monochrome-master <path>` | Separate silhouette for monochrome adaptive and notification icons |
 | `--project <path>` | Project root, default current directory |
 | `-o, --output <dir>` | Staging directory; relative to current directory, default `<project>/.ti-branding/` |
-| `--in-place` | Write directly under project root, overwriting destinations; explicit `--output` wins |
-| `--notes` | Full integration/tuning notes; currently includes Titanium-oriented guidance |
-| `--dry-run` | Print plan without generating or deleting files; does not decode/fully validate the master |
+| `--in-place` | Write directly under project root; existing destinations require `--overwrite`; conflicts with `--output` |
+| `--overwrite` | Allow replacement of existing planned outputs |
+| `--notes` | Integration notes for the selected SDK and generated categories |
+| `--dry-run` | Decode supplied masters and print exact write/delete plans without modifying files |
 | `--cleanup-legacy` | Inspect/delete legacy Titanium layout artifacts in the project, even when generation is staged |
 | `--aggressive` | Include ldpi artifacts in cleanup |
 | `-d, --debug` | Include diagnostic details |
@@ -276,7 +279,7 @@ iTunesConnect.png
 MarketplaceArtwork.png
 ```
 
-Files depend on selected categories. Staged runs also retain `_master_*.png` intermediates; copy the final assets rather than these intermediates. Default marketplace output preserves alpha; use an explicit `--bg-color "#FFFFFF"` for opaque artwork. The themed monochrome layer is part of `--adaptive`; a separate monochrome master helps retain negative-space detail in complex logos.
+Files depend on selected categories. Intermediate masters use an exclusive temporary directory that is removed on success and failure. Default marketplace output preserves alpha; use an explicit `--bg-color "#FFFFFF"` for opaque artwork. The themed monochrome layer is part of `--adaptive`; a separate monochrome master helps retain negative-space detail in complex logos.
 
 Copy the generated `app/src/main/res/` tree into your Android module, or choose `--in-place` after reviewing the plan. Generation does not edit your AndroidManifest or theme configuration. Wire the launcher to `@mipmap/ic_launcher`; notification code can reference `@drawable/ic_stat_notify`, and your splash theme can reference `@drawable/splash_icon`. Verify the app's resource integration in its own build.
 
@@ -307,7 +310,7 @@ app/assets/iphone/images/icon@3x.png
 
 With no configured output base, `tiapp.xml` in the current directory selects that directory as the base; otherwise the base is the source file's directory (for a directory input, assets go inside that source directory). Platform `output` values add a subfolder within each platform's image tree, not an absolute destination.
 
-Public options are `-o, --output <dir>`, `-p, --preset <name>`, `-d, --debug`, and `-h, --help`. The current handler loses CLI `-o` during precedence resolution when no preset/global output supplies a value, and it always reads platform definitions from `presets.alloy`. Use `presets.alloy` and global `output` for reliable configuration rather than relying on a separate custom Alloy preset key. Quality/format are configured in JSON; the subcommand does not accept conversion flags like `-q`, `-f`, or `--width`.
+Public options include `-o, --output <dir>`, `-p, --preset <name>`, `--group <name>`, `-q, --quality <n>`, `-f, --format <format>`, `--overwrite`, `--concurrency <n>`, `-d, --debug`, and `-h, --help`. `-p` selects the platform definition (default: `alloy`); `--group` selects a named group. Explicit `-o` controls the base. Quality and format resolve as CLI > platform > group > selected preset > global > default. The subcommand keeps its fixed scales and does not accept `--width`.
 
 ```json
 {
@@ -321,9 +324,11 @@ Public options are `-o, --output <dir>`, `-p, --preset <name>`, `-d, --debug`, a
 }
 ```
 
-Platform `source` overrides the positional source. You must still pass an existing source argument to the v3 subcommand. A grouped format is also supported under `presets.alloy`, with each group containing `android` and `iphone` objects. All groups run; the older `alloy:group` selection syntax is not wired into v3. Platform quality/format overrides group settings, then Alloy-wide settings, then global/default values.
+Platform `source` overrides the positional source, which supplies a fallback. You may omit the positional source when configuration supplies every selected platform source. A grouped format is supported under a selected preset, with `android` and/or `iphone` objects per group. All groups run unless `--group` selects one. The command plans all groups together to detect collisions before writing.
 
-See [custom presets](CUSTOM_PRESETS.md#alloy-configuration) for a grouped example. Existing output assets are overwritten. This command does not create launcher/adaptive icons or splash themes.
+See [custom presets](CUSTOM_PRESETS.md#alloy-configuration) for a grouped example. Existing output assets require `--overwrite`. This command does not create launcher/adaptive icons or splash themes.
+
+Branding dry-run validates existence and decodes all supplied masters, then lists exact generation paths and a separate project deletion plan without writing. Legacy Android icon/splash files are retained when references cannot prove them unused. Android landscape resources are only removed with explicit portrait evidence for all relevant Android activities; iPhone orientation cannot authorize Android deletions.
 
 ## Shell completions
 
@@ -337,46 +342,66 @@ imgconvert completions uninstall
 | Shell | Installed file | Setup |
 | --- | --- | --- |
 | zsh | `~/.zsh/completions/_imgconvert` | Adds managed `fpath`/`compinit` block to `~/.zshrc` |
-| bash | `~/.local/share/bash-completion/completions/imgconvert` | Requires bash-completion, including `_init_completion`, loaded by your shell |
+| bash | `~/.local/share/bash-completion/completions/imgconvert` | Uses Bash built-in completion functions |
 | fish | `~/.config/fish/completions/imgconvert.fish` | Loaded automatically in a new fish shell |
 
-The interactive installer detects `$SHELL` and asks before installing. Explicit shell installation writes immediately. Reinstallation avoids duplicating the managed zsh block. Uninstall removes all three installed scripts and the block it added. Restart the shell or source `~/.zshrc` as appropriate. Completion coverage varies by shell; use `--help` for the complete option list.
+The interactive installer detects `$SHELL` and asks before installing. Explicit shell installation writes immediately. Reinstallation avoids duplicating the managed zsh block. Uninstall removes all three installed scripts and the block it added. Restart the shell or source `~/.zshrc` as appropriate. Options and enumerated values come from the same Commander definitions as help. Preset/group names are read from the current configuration during completion.
 
 ## Migration from v2
 
 | Earlier syntax | v3 syntax |
 | --- | --- |
-| `-w 400` | `--width 400` |
+| `-w 400` | `-w 400` or `--width 400` |
 | `-h 400` | `--height 400` (numeric `-h` has a deprecated compatibility shim) |
 | `-H` | `-h` or `--help` |
 | `imgconvert config` | `imgconvert config init` (bare config has a deprecated shim) |
 | `-p alloy` | `imgconvert alloy <source>` |
-| `-p alloy:group` | Configure `presets.alloy`; selective group execution is unavailable |
+| `-p alloy:group` | `imgconvert alloy --group group` |
 | `-p ti-branding` / `-p alloy --modern` | `imgconvert brand <master> --sdk android` for Android branding |
-| `--replace-originals` | Hidden alias for `--replace`; see current limitation below |
+| `--replace-originals` | Hidden alias for `--in-place` |
 
 Old Alloy/branding preset names remain in generated config/internal modules but the root command no longer dispatches them to those processors. Use the subcommands. Compatibility shims are scheduled for removal in v4.
 
 ## Known limitations
 
-The following limitations apply to v3.0.0:
+The supported public interface is the CLI. Importing the package is not a supported JavaScript API. Directory discovery is nonrecursive and animated inputs are processed as still images.
 
-- `--replace` still writes into the output directory; it does not reliably replace the source. Avoid depending on it for in-place processing.
-- Alloy `-o` and custom `-p` do not consistently control the processor; use the documented JSON configuration. Group selection is unavailable.
-- `canvas` in JSON is ignored; pass `--canvas` explicitly.
-- Unknown preset names do not fail. Check spelling and `config show`.
-- Some image failures are logged while the command still returns exit code 0. For automation, inspect output files and the processed count as well as exit status.
-- Branding dry-run does not validate image decoding, master format, or optional monochrome master contents.
-- Branding notes/layout warnings contain Titanium guidance even for Android generation. Use the Android output paths above as the reference.
-- The package's declared Node minimum and some legacy npm test scripts need updating; see installation and the testing guide.
+### File safety migration
+
+Existing outputs now require explicit overwrite authorization. `--in-place` authorizes updating the input with the same name and format; changing either creates a sibling and preserves the original. An existing sibling requires `--overwrite`. Combining an effective `output` with any replacement alias fails, including values inherited from JSON.
+
+```bash
+# Repeat a conversion into an existing output directory
+imgconvert photos -f webp --overwrite
+
+# Resize the original in the same format
+imgconvert photo.png --in-place -w 800
+
+# Create photo.webp beside photo.png; keep photo.png
+imgconvert photo.png --in-place -f webp
+
+# Override configured boolean options
+imgconvert photo.png -p web --no-trim --no-in-place --no-overwrite
+
+# Run one configured Alloy group
+imgconvert alloy --group icons --concurrency 2
+```
+
+A JSON `null` now inherits the next lower-priority value. Use `false` to disable a boolean, or a CLI negation to override configuration. Repeated runs that intentionally replace branding assets also need `--overwrite`; `brand --in-place` only selects the project destination.
+
+### Exit codes and batches
+
+Code 0 means every requested operation succeeded. Code 1 means invalid arguments/configuration, a planning failure, or no valid output. Code 2 means valid outputs exist alongside failures. Batches continue processing valid images and report processed inputs, failed inputs and generated outputs separately. A single unsupported input or a directory without compatible images fails. Files with unsupported extensions inside directories are skipped.
+
+Conversion and Alloy use a shared bounded queue. One input occupies one task while its formats/scales are generated; variants do not multiply concurrency. Set `--concurrency 1` to reduce peak memory. Measurements and workload details are recorded in the repository audit notes.
 
 ## Troubleshooting
 
 Use `imgconvert ... --debug` for details. If an option is unknown, check the subcommand's `--help` and the migration table. For a missing source, verify the current directory and config source paths. For invalid configuration, use strict JSON (no comments or trailing commas).
 
-If output appears missing, check source-relative paths for general conversion, the Alloy base rules, and project-relative staging for branding. A `brand` layout warning referring to Alloy/Classic does not change the Android `app/src/main/res/` destination.
+If output appears missing, check source-relative paths for general conversion, the Alloy base rules, and project-relative staging for branding. Android branding uses the `app/src/main/res/` destination.
 
-For a crop error, ensure the rectangle fits the input. For unexpected padding, check `contain` versus `cover`. For oversized files, compare encoder/quality settings with representative inputs because conversion can increase file size.
+Transform order is trim, crop, resize or canvas, then encoding. Crop coordinates apply after trim; ensure the rectangle fits that intermediate image. For unexpected padding, check `contain` versus `cover`. For oversized files, compare encoder/quality settings with representative inputs because conversion can increase file size.
 
 `NO_COLOR=1` disables colored output. `IMGCONVERT_NO_UPDATE_CHECK=1` disables the optional update check (any nonempty value disables it). Update notifications are best-effort and failures are ignored.
 

@@ -1,6 +1,6 @@
 # Custom presets
 
-This guide describes conversion presets and Alloy configuration in v3. Read the [main command reference](README.md) for every option and current implementation limitations.
+This guide describes conversion presets and Alloy configuration in v3. Read the [main command reference](README.md) for every option and behavioral limits.
 
 ## Create and select a preset
 
@@ -75,15 +75,15 @@ The numbered preset creates names such as `gallery-001-photo-thumb.webp`. `print
 
 ## Fields, precedence, and paths
 
-Conversion presets support `source`, `output`, `quality`, `width`, `height`, `format`, `fit`, `position`, `crop`, `background`, `trim`, `name`, `rename`, and `replace-originals`. Omitted values fall back to global config/defaults. Explicit CLI options win over presets. `null` is an explicit preset value and prevents inheritance for that field.
+Conversion presets support `source`, `output`, `quality`, `width`, `height`, `format`, `fit`, `position`, `crop`, `background`, `trim`, `name`, `rename`, `canvas`, `inPlace`, `overwrite`, and `concurrency` (with `replace-originals` as a legacy alias). Omitted values fall back to global config/defaults. Explicit CLI options win over presets. `null` means unspecified and inherits the next available value; `false` and `0` remain explicit values.
 
-A preset with the same name as a built-in replaces its whole definition; it does not extend it. For example, redefining `thumbnail` with only `quality` removes its built-in dimensions/format. Unknown preset names currently fall back silently, so check spelling.
+A preset with the same name as a built-in replaces its whole definition; it does not extend it. For example, redefining `thumbnail` with only `quality` removes its built-in dimensions/format. Unknown preset names fail.
 
 The file is read from the current working directory. Relative `source` is relative to that directory; relative `output` resolves beside the selected source. For example, from `/work/site`, the `product` preset above reads `/work/site/photos/raw` and writes `/work/site/photos/optimized`, not `/work/site/optimized`. To target another location, choose the appropriate source-relative path or an absolute output path.
 
 An explicit source overrides preset/global source. A preset source overrides the global source. `config show` shows the merged config, not the effective options of a selected preset.
 
-For single-file presets, `name` is a basename without an extension. For directory inputs use `rename`; `name` is rejected. Existing destination files are overwritten.
+For single-file presets, `name` is a basename without an extension. For directory inputs use `rename`; `name` is rejected. Existing destination files require `--overwrite`.
 
 ## Canvas and transparency
 
@@ -111,7 +111,7 @@ Canvas adds padding or crops without scaling; it can remove content if dimension
 
 A background fills padding; existing PNG/WebP alpha is preserved. JPEG flattens alpha. `trim` removes edge-colored/transparent borders before cropping/resizing. Avoid combining trim and manual pixel coordinates without checking the intermediate image.
 
-`replace-originals` is a legacy config key, but in-place replacement is currently incomplete; use an explicit output directory. There are no `--no-*` switches to disable true booleans inherited from config.
+`replace-originals` normalizes to `inPlace`. Contradictory aliases in one object fail. Use `--no-trim`, `--no-canvas`, `--no-in-place`, or `--no-overwrite` to disable inherited booleans. Effective `output` and `inPlace` cannot be combined.
 
 ## Alloy configuration
 
@@ -147,7 +147,7 @@ Global `output` above is the absolute project base. Platform `output` is a subfo
 
 Every source is a 4× master: a 400-pixel image yields Android widths 100/150/200/300/400 and iPhone widths 100/200/300. Scale factors are fixed; a JSON `scales` field does not override them.
 
-The CLI currently always reads platform definitions from `presets.alloy`. A custom `alloy -p other-key` does not select a separate platform definition, `-o` can be lost during precedence handling, and `alloy:group` does not select a group in v3. Configure the JSON shown above to avoid these option-handling problems. See [Alloy reference](README.md#alloy-multi-scale-images) for output paths and default base selection.
+The CLI reads platform definitions from `presets.alloy` by default. Select another definition with `alloy -p other-key`, select one group with `--group <name>`, and override the output base with `-o`. Omit the positional source when every selected platform has a configured source. See [Alloy reference](README.md#alloy-multi-scale-images) for output paths and default base selection.
 
 ## Reuse across a team
 

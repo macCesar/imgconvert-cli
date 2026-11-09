@@ -19,3 +19,25 @@ Include custom presets, changelog, test/fixture guides, and LICENSE in npm's fil
 Store requirements, context, decisions, and current status in four fixed files. Import the stable three from CLAUDE.md. Read status.md on demand so session updates do not alter startup context.
 
 Consolidate the pre-existing untracked Claude memory note into context.md, preserving the explicit prohibition on subagent commits.
+
+## 2026-11-08: Upgrade all dependencies and require Node 22.13
+
+The user explicitly selected Node >=22.13 rather than retaining Node 20 compatibility. Upgrade all nine direct dependencies to the registry's latest stable releases, adapt default exports for Chalk/update-notifier, and use ESLint 10 flat configuration. Keep the public command syntax and processor behavior unchanged.
+
+Apply patched glob/minimatch overrides because the latest direct development dependencies still resolved versions with advisories. Verify the entire suite against the new tree and check the minimum runtime separately. The functional correction matrix in docs/audits/implementation-and-cli.md remains a proposal.
+
+## 2026-11-08: Implement the accepted audit corrections
+
+The user approved the correction plan for all 18 findings. Keep the dependency update as the baseline and implement behavior with explicit overwrite permission, reliable partial results and one shared configuration contract. Use the existing checkout on `fix/cli-audit` to retain pending edits and the SFTP save workflow; no commits or release actions were requested.
+
+`--in-place` updates only the same input name/format automatically. Name/format changes produce siblings. Reject effective output/in-place combinations and cross-input rename chains even with overwrite permission, so queued work cannot read an earlier output in place of its original input. Separate output directories or separate commands can express those chains.
+
+Retain legacy internal adapters while documenting the CLI as the public interface. Custom presets still replace built-in definitions completely. Null means unspecified; boolean negations provide explicit overrides. Alloy platform/group policies are resolved before entering the processor and carried into each planned write.
+
+Require explicit launcher and portrait orientation on every relevant Android activity before removing landscape variants. Conflicting or missing Android configuration keeps resources. Launcher references alone do not establish that legacy splash/icon files are unused, so those files are retained.
+
+Run legacy suites inside an exclusive temporary project copy. Cleanup scripts preserve user outputs/configuration. Expand flat test selectors in the runner to support Node 22.13 without relying on newer glob APIs. Keep unit/integration scripts as aliases until the suite is actually split.
+
+## 2026-11-08: Commit the reviewed work and exclude root screenshots
+
+After the verified implementation handoff, the user explicitly authorized semantic commits and session documentation. Group tooling/dependencies, processing corrections, contextual completion and documentation separately. Keep root screenshots matching `*-.png` outside the index and unchanged. This authorization covers committing; pushing, tagging, version changes and publication remain separate decisions.

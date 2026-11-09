@@ -1,6 +1,6 @@
 # Testing imgconvert-cli
 
-Install development dependencies with `npm ci`. Use a Node version supported by Mocha 11 (`^18.18.0 || ^20.9.0 || >=21.1.0`) and Sharp; this checkout was validated on Node 22.
+Use Node.js 22.13.0 or later and install development dependencies with `npm ci`. The updated dependency tree was tested on Node 22.23.2, with focused checks on the minimum supported version.
 
 ## Select tests for the change
 
@@ -10,8 +10,8 @@ npm run test:config
 npm run test:general -- --grep "Batch renaming"
 npm run test:alloy
 npm run test:brand
-npx mocha test/completions.test.js --timeout 30000
-npx mocha test/cleanup-legacy.test.js test/tiapp-reader.test.js --timeout 30000
+npm test -- test/completions.test.js
+npm test -- 'test/{cleanup-legacy,tiapp-reader}.test.js'
 ```
 
 Run the smallest relevant subset first. Expand only when shared behavior or a failure requires it. `--grep` is Mocha's test-name filter; there is no need to edit tests to select a category. For detailed general-suite CLI logs:
@@ -42,25 +42,26 @@ These are behavior/integration checks, not measured line or branch coverage. Do 
 npm test
 ```
 
-The main script runs `test/*.test.js` with a 300-second timeout. There is no `test/simple.test.js`, `test/unit/`, or `test/integration/` in this checkout. The existing `test:unit`, `test:integration`, and consequently `test:all` npm scripts reference absent paths; use the commands above. `test:watch` watches the main suite; `test:debug` enables verbose logging and an inspector break.
+`npm test` runs every `test/*.test.js` in an exclusive temporary copy of the project. `test:all`, `test:unit`, and `test:integration` are aliases for this same suite until a genuine unit/integration split exists. `test:watch` watches that disposable copy; restart it to copy new repository edits. `test:debug` enables verbose logging and an inspector break.
 
 ## Fixtures and side effects
 
-The general/Alloy suites copy actual images from [`images/`](../images/README.md), including `canyon-river.jpg` and `mountain-lake.png`, into temporary directories. Other tests generate their own SVG/PNG fixtures. Assert metadata, dimensions, alpha, or actual destination paths when the behavior needs them; file existence alone does not prove correctness.
+`test/run.cjs` copies source, tests and image fixtures into a fresh OS temporary directory and links installed dependencies. Every test-created config and output stays inside that copy or an exclusive per-test temporary directory. The runner removes its copy in `finally`. Use the npm scripts for isolation; direct Mocha calls bypass this boundary. An interrupted process may leave its exclusive temporary directory; it never needs to delete user output folders.
 
-Run tests in a disposable checkout or back up any existing `.imgconverter.config.json` in the working directory. Some suites create and delete that file in the repository root. Test directories and cleanup vary by suite. Do not assume a failed or interrupted run restores user configuration.
+`npm run clean` and `clean-all` only explain automatic test cleanup. They do not delete project outputs or configuration. `clean-force` additionally removes `node_modules/.cache/`.
 
-`npm run clean` (also `clean-all`) removes `test/temp-test/`, `converted/`, `app/`, `compressed/`, `output/`, `*-preset/`, and `.imgconverter.config.json` from the current project. These paths may contain project files. `clean-force` also removes `node_modules/.cache/`. Tests can run without these cleanup commands. Inspect leftovers before removing them.
+Regression suites cover the correction contract (`contract.test.js`), atomic writes and bounded tasks (`operations.test.js`), context-sensitive completion (`completion-contract.test.js`) and safe tooling (`tooling.test.js`). Assertions inspect metadata or alpha when existence alone cannot prove behavior. Run `node test/benchmark.cjs` on macOS for separate-process concurrency measurements.
 
 ## Static checks
 
-`npm run lint` targets all `src/**/*.js`, but this checkout does not include an ESLint configuration. To check JavaScript syntax with the installed ESLint 8:
+`npm run lint` uses ESLint 10 and the checked-in `eslint.config.cjs`. Its rules check parsing, unreachable code, duplicate arguments/keys, constant conditions, invalid type checks, and constructor/super usage.
 
 ```bash
-npx eslint --no-eslintrc --env node,es2022 --parser-options '{"ecmaVersion":2022}' src/cli/program.js src/cli/help.js
+npm run lint
+npx eslint src/cli/program.js src/cli/help.js
 ```
 
-Use project lint rules if a configuration is added. For documentation changes, parse fenced JSON examples and check links/command syntax as well as testing affected help output.
+For documentation changes, parse fenced JSON examples and check links/command syntax as well as testing affected help output.
 
 ## Troubleshooting
 

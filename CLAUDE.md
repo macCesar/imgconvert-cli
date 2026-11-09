@@ -27,12 +27,12 @@ npm run test:help
 npm run test:general -- --grep "Batch renaming"
 
 # See test/README.md for suites and cleanup side effects.
-# test:unit/test:integration/test:all currently reference absent directories.
+# test:unit/test:integration/test:all alias the isolated real suite.
 ```
 
 ### Code quality
 
-The checkout has no ESLint configuration. See `test/README.md` for an explicit syntax-check command; `npm run lint` needs project rules before it can run normally.
+ESLint 10 uses `eslint.config.cjs`. Run `npm run lint` or target changed JavaScript files. See `test/README.md` for the rules and suite selection.
 
 ```bash
 # Lint JavaScript files
@@ -44,7 +44,7 @@ npm run lint:fix
 
 ### Cleanup
 
-These commands also remove root config and potentially valuable `app/`, `output/`, and matching preset folders. Inspect paths before running.
+Tests own exclusive temporary directories. Cleanup scripts preserve project outputs/configuration.
 
 ```bash
 # Remove all generated files and directories
@@ -144,24 +144,24 @@ Key configuration aspects:
 - fast-xml-parser: Titanium cleanup configuration analysis
 - update-notifier: Optional best-effort update notification
 - chalk: Terminal output styling and colors
-- mocha/chai/sinon: Testing framework (dev dependencies)
+- mocha/chai: Testing framework (dev dependencies)
 - eslint: Code linting (dev dependency)
 
 ## File processing
 
 Batch Processing: Processes immediate supported files with natural sorting; not recursive
 Extension Preservation: Maintains original extensions when no format conversion specified
-Output Management: Single input uses sibling `converted/`; directory input uses sibling `<source>-converted/`. Relative output resolves beside source. `--replace` is currently incomplete and still writes to the output directory.
+Output Management: Single input uses sibling `converted/`; directory input uses sibling `<source>-converted/`. Relative output resolves beside source. `--in-place` updates the input or creates a sibling when format/name changes; existing siblings require `--overwrite`.
 Error Handling: Skips unsupported files and logs processing errors
 
 ## Development notes
 
-- Package engines still says Node 14, but Sharp/Commander require newer Node; see README installation requirements.
+- Node.js 22.13.0 or later is required for use and development.
 - Uses Sharp's internal 'jpeg' format but preserves user-friendly '.jpg' extensions
 - Immutable scale factors for Alloy preset ensure Titanium compatibility
 - Commander validates options; `cli/legacy-shims.js` rewrites numeric `-h` and bare `config` with deprecation warnings.
-- Use `--width`/`--height`; `-w` is absent and `-h` means help.
-- README known limitations documents Alloy output/preset wiring, ignored JSON canvas, and incomplete replacement behavior.
+- Use `-w`/`--width` and `--height`; `-h` means help.
+- README documents explicit overwriting, output/in-place conflicts, null inheritance and exit codes 0/1/2.
 - Debug mode (`-d`) provides detailed processing information and timing
 
 ## Project state

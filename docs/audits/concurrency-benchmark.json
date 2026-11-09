@@ -1,0 +1,27 @@
+{
+  "runtime": "v22.23.2",
+  "platform": "darwin",
+  "arch": "arm64",
+  "availableParallelism": 8,
+  "workload": "12 PNG images, 2400x1600 photographic content -> WebP width 1200 quality 85",
+  "rows": [
+    {
+      "concurrency": 1,
+      "seconds": 2.147,
+      "maxRssBytes": 120832000,
+      "outputs": 12
+    },
+    {
+      "concurrency": 2,
+      "seconds": 1.095,
+      "maxRssBytes": 142884864,
+      "outputs": 12
+    },
+    {
+      "concurrency": 4,
+      "seconds": 0.728,
+      "maxRssBytes": 199704576,
+      "outputs": 12
+    }
+  ]
+}

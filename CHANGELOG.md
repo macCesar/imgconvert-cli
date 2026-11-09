@@ -1,9 +1,29 @@
 # Changelog
 
+## Unreleased: audit corrections
+
+- Plan conversion, Alloy and branding destinations before writing; require `--overwrite` for existing outputs and reject colliding outputs within one command.
+- Implement `--in-place` and replacement aliases, preserve originals on format/name changes, and reject effective output/in-place conflicts.
+- Resolve and validate CLI/JSON options consistently, inherit through null, support boolean negations, and fail on malformed config or missing presets.
+- Return 0 for success, 1 for invalid/no-output runs, and 2 for partial output; preserve successful batch results.
+- Compose trim, crop and resize/canvas in that order. Restore Alloy preset/group/source/output selection and keep fixed platform scales.
+- Validate branding masters during dry-run, isolate intermediates, retain Android assets without sufficient cleanup evidence, add artwork-padding and SDK-specific notes.
+- Derive shell completion from Commander, bound conversion/Alloy input tasks with concurrency, isolate test runs and remove unused Sinon.
+- The public interface remains the CLI. No version or publication change accompanies these corrections.
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Dependencies and compatibility
+
+- Require Node.js 22.13.0 or later, as approved for the dependency upgrade. This changes the supported runtime compared with prior releases.
+- Update Chalk to 6.0.1, Commander to 15.1.0, fast-xml-parser to 5.12.0, Sharp to 0.35.5, and update-notifier to 7.3.1.
+- Update Chai to 6.3.0, ESLint to 10.14.0, Mocha to 12.0.3, and Sinon to 22.1.0.
+- Read the default exports of Chalk and update-notifier from CommonJS modules. Keep the existing CLI syntax and image-processing behavior.
+- Override development-tree glob/minimatch to patched versions 14.0.4 and 11.0.5. The latest direct dependencies still resolved versions with advisories without these overrides.
+- Add an ESLint flat config and lint the full src tree so `npm run lint` works with ESLint 10, including nested command and generator modules.
 
 ### Documentation
 
