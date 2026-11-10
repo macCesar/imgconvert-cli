@@ -5,3 +5,10 @@ node_modules/
 
 # Core components
 .worktrees/
+
+# Capturas de pantalla que se dejan en la raíz para la conversación
+/*.png
+/*.jpg
+/*.jpeg
+/screen-capture*
+/Captura*
